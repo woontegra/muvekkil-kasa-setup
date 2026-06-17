@@ -1,0 +1,748 @@
+.desk-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 10px;
+}
+
+.desk-form-span2 {
+  grid-column: 1 / -1;
+}
+
+.placeholder-card {
+  background: var(--surface-placeholder);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.placeholder-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* --- Vekalet taksit uyarıları (ana sayfa + rozetler) --- */
+.desk-panel--home-taksit-uyari {
+  margin-bottom: 6px;
+}
+
+.desk-panel-body--pad-sm {
+  padding: 6px 8px;
+}
+
+.desk-taksit-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #fff4e5 0%, #ffe8cc 100%);
+  border: 1px solid #d4a574;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5c3d1a;
+}
+
+.desk-taksit-alert-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.desk-taksit-alert-banner-close {
+  flex-shrink: 0;
+  padding: 0 6px;
+  line-height: 1.2;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.desk-taksit-alert-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.desk-taksit-alert-metric {
+  flex: 1 1 100px;
+  min-width: 88px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.desk-taksit-alert-metric .l {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.desk-taksit-alert-metric .v {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-deep);
+}
+
+.desk-taksit-alert-metric--gecmis {
+  border-color: #f87171;
+  background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+}
+
+.desk-taksit-alert-metric--bugun {
+  border-color: #fb923c;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffedd5 100%);
+}
+
+.desk-taksit-alert-metric--yakin {
+  border-color: var(--color-primary-muted);
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.desk-backup-notice {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+.desk-backup-notice--ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #81c784;
+}
+
+.desk-backup-notice--err {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #e57373;
+}
+
+.badge-taksit-gecmis {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  font-weight: 700;
+}
+
+.badge-taksit-bugun {
+  background: var(--color-warning-soft);
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-weight: 700;
+}
+
+.badge-taksit-yaklasiyor {
+  background: var(--primary-soft);
+  color: #1e40af;
+  border: 1px solid var(--color-primary-muted);
+  font-weight: 700;
+}
+
+.badge-taksit-odenmedi {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+}
+
+.desk-table--compact th,
+.desk-table--compact td {
+  padding: 2px 5px;
+  font-size: 11px;
+}
+
+.desk-table--striped tbody tr.desk-taksit-row--gecmis,
+.desk-table--striped tbody tr.desk-taksit-row--gecmis:nth-child(even) {
+  background: #fff2f2 !important;
+}
+
+.desk-table--striped tbody tr.desk-taksit-row--bugun,
+.desk-table--striped tbody tr.desk-taksit-row--bugun:nth-child(even) {
+  background: #fff8f0 !important;
+}
+
+.desk-table--striped tbody tr.desk-taksit-row--yaklasiyor,
+.desk-table--striped tbody tr.desk-taksit-row--yaklasiyor:nth-child(even) {
+  background: #f2f6ff !important;
+}
+
+/* --- Ana sayfa (sade) --- */
+.desk-page--home-simple .desk-page-title {
+  margin-bottom: 2px;
+}
+
+.desk-page--home-simple .desk-page-sub {
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.desk-home-toolbar {
+  margin-bottom: 6px;
+}
+
+.desk-taksit-alert-metrics--three .desk-taksit-alert-metric {
+  flex: 1 1 120px;
+}
+
+.desk-taksit-alert-metric--odenmemis {
+  border-color: var(--color-secondary);
+  background: linear-gradient(180deg, #ffffff 0%, #ecfeff 100%);
+}
+
+/* Ana sayfa: taksit uyarıları — düz masaüstü panel */
+.desk-page--home-simple .desk-taksit-alert-metric {
+  border-radius: 2px;
+  box-shadow: none;
+  padding: 5px 8px 4px;
+}
+
+.desk-page--home-simple .desk-taksit-alert-metric .l {
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+
+.desk-page--home-simple .desk-taksit-alert-metric .v {
+  font-size: 15px;
+}
+
+.desk-page--home-simple .desk-home-smm-compact {
+  margin: 4px 0;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.desk-page--home-simple .desk-home-smm-compact-num {
+  font-size: 16px;
+}
+
+.desk-page--home-simple .desk-panel--home-taksit-uyari .desk-panel-body--pad-sm {
+  padding: 5px 8px 6px;
+}
+
+.desk-home-taksit-list-caption {
+  margin: 4px 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4b5563;
+}
+
+.desk-home-taksit-table-wrap {
+  max-height: min(36vh, 280px);
+  overflow: auto;
+}
+
+.desk-home-taksit-empty {
+  margin: 4px 0;
+}
+
+.desk-home-muvekkil-table-wrap {
+  max-height: min(48vh, 520px);
+  overflow: auto;
+}
+
+.desk-panel-head--mvk-liste .desk-panel-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.desk-panel--about-app {
+  margin-bottom: 10px;
+}
+
+.desk-about-app-body {
+  padding: 10px 12px !important;
+}
+
+.desk-about-app-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.desk-about-woontegra-mark {
+  height: 22px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  object-position: left top;
+  opacity: 0.88;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.desk-about-app-text {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.desk-about-app-name {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--primary-deep);
+}
+
+.desk-about-app-meta {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.desk-about-label {
+  display: inline-block;
+  min-width: 5.5rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.desk-about-app-desc {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 52ch;
+}
+
+.desk-panel-body--pad-0 {
+  padding: 0;
+}
+
+.desk-home-mvk-liste-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.desk-home-mvk-liste-empty {
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.desk-mvk-pagination {
+  flex-shrink: 0;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.desk-mvk-pagination-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.desk-mvk-pagination-summary {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.desk-mvk-pagination-pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.desk-mvk-pagination-pagesize-lbl {
+  white-space: nowrap;
+}
+
+.desk-input.desk-input--tiny,
+select.desk-input--tiny {
+  padding: 2px 6px;
+  font-size: 11px;
+  min-height: 24px;
+  max-width: 72px;
+}
+
+.desk-mvk-pagination-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.desk-mvk-page-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  min-height: 24px;
+}
+
+.desk-mvk-page-nums {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.desk-mvk-page-num {
+  min-width: 26px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  min-height: 24px;
+  border-radius: 3px;
+}
+
+.desk-mvk-page-num--aktif {
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: #fff !important;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+}
+
+.desk-mvk-page-num--aktif:hover {
+  color: #fff !important;
+  filter: brightness(1.05);
+}
+
+.desk-home-panel-err {
+  margin: 0 0 6px;
+  font-size: 11px;
+}
+
+.desk-home-col-action {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.desk-home-cell-ellipsis {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Serbest meslek makbuzu (SMM) takip — tahsilat makbuzundan ayrı */
+@keyframes desk-blink-warning-kf {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+.desk-blink-warning {
+  display: inline-block;
+  color: var(--color-danger);
+  font-weight: 700;
+  font-size: 11px;
+  animation: desk-blink-warning-kf 1s ease-in-out infinite;
+}
+
+.desk-smm-ok-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #047857;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  max-width: 168px;
+}
+
+.desk-smm-ok-badge-meta {
+  font-weight: 500;
+  font-size: 10px;
+  color: #065f46;
+}
+
+.desk-smm-warn-cell {
+  min-width: 88px;
+}
+
+.desk-file-smm-banner {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.desk-file-smm-banner-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #b91c1c;
+}
+
+.desk-home-smm-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding: 5px 8px;
+  border-radius: 2px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.desk-home-smm-compact:hover {
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.25);
+}
+
+.desk-home-smm-compact--aktif {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+.desk-home-smm-compact-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.desk-home-smm-compact-num {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.desk-home-taksit-list-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.desk-home-smm-list-reset {
+  flex-shrink: 0;
+}
+
+.desk-sekme-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0 2px;
+}
+
+.desk-sekme-btn {
+  border: 1px solid var(--desk-border, #c5d4e8);
+  background: #f4f8fc;
+  color: #1a3a5c;
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.desk-sekme-btn--aktif {
+  background: linear-gradient(180deg, #3d7ab8 0%, #2d6aa8 100%);
+  border-color: #2a5f96;
+  color: #fff;
+  font-weight: 600;
+}
+
+.desk-kasa-toolbar {
+  margin: 8px 0 4px;
+  gap: 6px;
+}
+
+.desk-kasa-arama-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  background: #f4f8fc;
+  border: 1px solid var(--border-soft, #c5d4e8);
+}
+
+.desk-kasa-sonuc-meta {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  margin-left: auto;
+  padding-bottom: 4px;
+}
+
+.desk-kasa-footnote {
+  margin-top: 8px;
+}
+
+/* --- Ofis bilgileri (ayarlar) --- */
+.desk-page--office-settings {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.desk-page--office-settings .desk-panel {
+  width: 100%;
+}
+
+.desk-page--office-settings .desk-about-app-main {
+  width: 100%;
+}
+
+.desk-page--office-settings .desk-about-app-desc {
+  max-width: none;
+}
+
+.desk-office-settings-desc {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.desk-office-settings-panel {
+  margin-bottom: 10px;
+}
+
+.desk-office-settings-panel--backup {
+  margin-bottom: 4px;
+}
+
+.desk-office-form-row {
+  display: grid;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.desk-office-form-row--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.desk-office-form-row--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.desk-office-form-row--guvenlik {
+  grid-template-columns: minmax(160px, 1fr) minmax(220px, 2fr) minmax(160px, 1.5fr);
+}
+
+.desk-office-form-full {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.desk-office-form-full .desk-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.desk-office-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.desk-office-form-footer-logo {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.desk-office-form-footer-actions {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.desk-office-settings-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.desk-office-backup-actions {
+  margin-top: 6px;
+}
+
+.desk-office-backup-desc {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: none;
+}
+
+.desk-office-app-logo {
+  height: 56px;
+  width: auto;
+  max-width: 72px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.desk-about-woontegra-mark--settings {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+@media (max-width: 1100px) {
+  .desk-office-form-row--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .desk-office-form-row--5,
+  .desk-office-form-row--3,
+  .desk-office-form-row--guvenlik {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .desk-office-form-row--5,
+  .desk-office-form-row--3,
+  .desk-office-form-row--guvenlik {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== Giriş / ilk kurulum (auth) ========== */
+

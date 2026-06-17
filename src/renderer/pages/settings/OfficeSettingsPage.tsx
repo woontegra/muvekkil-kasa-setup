@@ -1,0 +1,509 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { GUVENLIK_SORULARI, GUVENLIK_SORU_KODLARI } from "@shared/types/auth";
+import type { OfficeSettings } from "@shared/types/office";
+import programLogo from "../../assets/logo-M6Wo_PDM.png";
+import woontegraLogo from "../../assets/woontegra-logo-C922wZYn.png";
+
+function bosForm(): {
+  ofisAdi: string;
+  avukatAdiSoyadi: string;
+  telefon: string;
+  eposta: string;
+  vergiNo: string;
+  vergiDairesi: string;
+  baroAdi: string;
+  baroSicilNo: string;
+  adres: string;
+  logoPath: string | null;
+} {
+  return {
+    ofisAdi: "",
+    avukatAdiSoyadi: "",
+    telefon: "",
+    eposta: "",
+    vergiNo: "",
+    vergiDairesi: "",
+    baroAdi: "",
+    baroSicilNo: "",
+    adres: "",
+    logoPath: null,
+  };
+}
+
+function formFromRow(row: OfficeSettings) {
+  return {
+    ofisAdi: row.ofisAdi ?? "",
+    avukatAdiSoyadi: row.avukatAdiSoyadi ?? "",
+    telefon: row.telefon ?? "",
+    eposta: row.eposta ?? "",
+    vergiNo: row.vergiNo ?? "",
+    vergiDairesi: row.vergiDairesi ?? "",
+    baroAdi: row.baroAdi ?? "",
+    baroSicilNo: row.baroSicilNo ?? "",
+    adres: row.adres ?? "",
+    logoPath: row.logoPath,
+  };
+}
+
+export function OfficeSettingsPage() {
+  const [surum, setSurum] = useState("0.1.0");
+  const [form, setForm] = useState(bosForm());
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [kaydediyor, setKaydediyor] = useState(false);
+  const [kayitMesaj, setKayitMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
+
+  const [mevcutSifre, setMevcutSifre] = useState("");
+  const [guvenlikSorusuKodu, setGuvenlikSorusuKodu] = useState("G1");
+  const [guvenlikCevabi, setGuvenlikCevabi] = useState("");
+  const [guvenlikKaydediyor, setGuvenlikKaydediyor] = useState(false);
+  const [guvenlikMesaj, setGuvenlikMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
+
+  const [backupMesaj, setBackupMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  const yukleLogoOnizleme = useCallback(async (path: string | null) => {
+    const p = (path ?? "").trim();
+    if (!p) {
+      setLogoSrc(null);
+      return;
+    }
+    try {
+      const url = await window.api.pathToFileUrl(p);
+      setLogoSrc(url);
+    } catch {
+      setLogoSrc(null);
+    }
+  }, []);
+
+  const yukle = useCallback(async () => {
+    setYukleniyor(true);
+    setKayitMesaj(null);
+    try {
+      const [row, ver, guv] = await Promise.all([
+        window.api.officeGet(),
+        window.api.getAppVersion(),
+        window.api.authGuvenlikBilgisi(),
+      ]);
+      setSurum(ver || "0.1.0");
+      const f = formFromRow(row);
+      setForm(f);
+      await yukleLogoOnizleme(f.logoPath);
+      if (guv.ok && guv.guvenlikSorusuKodu && GUVENLIK_SORU_KODLARI.includes(guv.guvenlikSorusuKodu)) {
+        setGuvenlikSorusuKodu(guv.guvenlikSorusuKodu);
+      }
+    } catch (e) {
+      console.error("[officeGet]", e);
+    } finally {
+      setYukleniyor(false);
+    }
+  }, [yukleLogoOnizleme]);
+
+  useEffect(() => {
+    void yukle();
+  }, [yukle]);
+
+  function alanDegistir<K extends keyof typeof form>(alan: K, deger: (typeof form)[K]) {
+    setForm((prev) => ({ ...prev, [alan]: deger }));
+    setKayitMesaj(null);
+  }
+
+  async function kaydet() {
+    setKaydediyor(true);
+    setKayitMesaj(null);
+    try {
+      const r = await window.api.officeSave({
+        ofisAdi: form.ofisAdi,
+        avukatAdiSoyadi: form.avukatAdiSoyadi,
+        telefon: form.telefon,
+        eposta: form.eposta,
+        vergiNo: form.vergiNo,
+        vergiDairesi: form.vergiDairesi,
+        baroAdi: form.baroAdi,
+        baroSicilNo: form.baroSicilNo,
+        adres: form.adres,
+        logoPath: form.logoPath,
+      });
+      if (!r.ok) {
+        setKayitMesaj({ tip: "err", metin: r.error });
+        return;
+      }
+      const f = formFromRow(r.row);
+      setForm(f);
+      await yukleLogoOnizleme(f.logoPath);
+      setKayitMesaj({ tip: "ok", metin: "Ofis bilgileri kaydedildi." });
+    } catch (e) {
+      console.error("[officeSave]", e);
+      setKayitMesaj({ tip: "err", metin: "Kayıt sırasında hata oluştu." });
+    } finally {
+      setKaydediyor(false);
+    }
+  }
+
+  async function logoSec() {
+    setKayitMesaj(null);
+    try {
+      const r = await window.api.officePickLogo();
+      if (!r.ok) {
+        if (!r.error.includes("iptal")) {
+          setKayitMesaj({ tip: "err", metin: r.error });
+        }
+        return;
+      }
+      alanDegistir("logoPath", r.path);
+      await yukleLogoOnizleme(r.path);
+    } catch (e) {
+      console.error("[officePickLogo]", e);
+      setKayitMesaj({ tip: "err", metin: "Logo seçilemedi." });
+    }
+  }
+
+  async function guvenlikGuncelle() {
+    setGuvenlikKaydediyor(true);
+    setGuvenlikMesaj(null);
+    try {
+      const r = await window.api.authGuvenlikGuncelle({
+        mevcutSifre,
+        guvenlikSorusuKodu,
+        guvenlikCevabi,
+      });
+      if (!r.ok) {
+        setGuvenlikMesaj({ tip: "err", metin: r.error });
+        return;
+      }
+      setMevcutSifre("");
+      setGuvenlikCevabi("");
+      setGuvenlikMesaj({ tip: "ok", metin: "Güvenlik bilgileri güncellendi." });
+    } catch (e) {
+      console.error("[authGuvenlikGuncelle]", e);
+      setGuvenlikMesaj({ tip: "err", metin: "Güvenlik güncellenemedi." });
+    } finally {
+      setGuvenlikKaydediyor(false);
+    }
+  }
+
+  async function yedekAl() {
+    setBackupBusy(true);
+    setBackupMesaj(null);
+    try {
+      const r = await window.api.backupAl();
+      if (!r.ok) {
+        if (!r.error.includes("iptal")) {
+          setBackupMesaj({ tip: "err", metin: r.error });
+        }
+        return;
+      }
+      setBackupMesaj({ tip: "ok", metin: `Yedek alındı: ${r.path}` });
+    } catch (e) {
+      console.error("[backupAl]", e);
+      setBackupMesaj({ tip: "err", metin: "Yedek alınamadı." });
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function yedektenGeriYukle() {
+    const onay = window.confirm(
+      "Seçilen yedek dosyası mevcut veritabanının üzerine yazılacaktır.\n\n" +
+        "İşlem öncesi mevcut veritabanının otomatik yedeği alınır.\n\n" +
+        "Devam etmek istiyor musunuz?"
+    );
+    if (!onay) return;
+    setBackupBusy(true);
+    setBackupMesaj(null);
+    try {
+      const r = await window.api.backupGeriYukle();
+      if (!r.ok) {
+        if (!r.error.includes("iptal")) {
+          setBackupMesaj({ tip: "err", metin: r.error });
+        }
+        return;
+      }
+      setBackupMesaj({
+        tip: "ok",
+        metin: `Geri yükleme tamamlandı. Önceki veritabanı yedeği: ${r.autoBackupPath}\n\nDeğişikliklerin tam yansıması için programı yeniden başlatmanız önerilir.`,
+      });
+      await yukle();
+    } catch (e) {
+      console.error("[backupGeriYukle]", e);
+      setBackupMesaj({ tip: "err", metin: "Geri yükleme başarısız." });
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  const logoEtiket = (form.logoPath ?? "").trim()
+    ? form.logoPath!.replace(/^.*[\\/]/, "")
+    : "Seçilmedi";
+
+  return (
+    <div className="desk-page desk-page--office-settings">
+      <div className="desk-toolbar desk-toolbar--tight">
+        <div className="desk-toolbar-left">
+          <Link className="desk-link-back" to="/">
+            ← Ana sayfa
+          </Link>
+          <span className="desk-toolbar-title">Ofis bilgileri</span>
+        </div>
+      </div>
+
+      <p className="desk-muted-compact desk-office-settings-desc">
+        Makbuz ve çıktılarda kullanılır. Ofis adı veya avukat adı soyadından en az biri zorunludur.
+      </p>
+
+      <section className="desk-panel desk-office-settings-panel">
+        <div className="desk-panel-head">
+          <span>KURUM VE İLETİŞİM</span>
+          <span className="desk-panel-meta">kayıt</span>
+        </div>
+        <div className="desk-panel-body desk-panel-body--pad-sm">
+          {kayitMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${kayitMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {kayitMesaj.metin}
+            </div>
+          ) : null}
+
+          {yukleniyor ? (
+            <p className="desk-muted-compact">Yükleniyor…</p>
+          ) : (
+            <>
+              <div className="desk-office-form-row desk-office-form-row--5">
+                <div className="field">
+                  <label htmlFor="ofis-adi">Ofis / firma adı</label>
+                  <input
+                    id="ofis-adi"
+                    className="desk-input"
+                    value={form.ofisAdi}
+                    onChange={(e) => alanDegistir("ofisAdi", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-avukat">Avukat adı soyadı</label>
+                  <input
+                    id="ofis-avukat"
+                    className="desk-input"
+                    value={form.avukatAdiSoyadi}
+                    onChange={(e) => alanDegistir("avukatAdiSoyadi", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-tel">Telefon</label>
+                  <input
+                    id="ofis-tel"
+                    className="desk-input"
+                    value={form.telefon}
+                    onChange={(e) => alanDegistir("telefon", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-eposta">E-posta</label>
+                  <input
+                    id="ofis-eposta"
+                    className="desk-input"
+                    type="email"
+                    value={form.eposta}
+                    onChange={(e) => alanDegistir("eposta", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-vno">Vergi no</label>
+                  <input
+                    id="ofis-vno"
+                    className="desk-input"
+                    value={form.vergiNo}
+                    onChange={(e) => alanDegistir("vergiNo", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+              </div>
+              <div className="desk-office-form-row desk-office-form-row--3">
+                <div className="field">
+                  <label htmlFor="ofis-vd">Vergi dairesi</label>
+                  <input
+                    id="ofis-vd"
+                    className="desk-input"
+                    value={form.vergiDairesi}
+                    onChange={(e) => alanDegistir("vergiDairesi", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-baro">Baro adı</label>
+                  <input
+                    id="ofis-baro"
+                    className="desk-input"
+                    value={form.baroAdi}
+                    onChange={(e) => alanDegistir("baroAdi", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="ofis-sicil">Baro sicil no</label>
+                  <input
+                    id="ofis-sicil"
+                    className="desk-input"
+                    value={form.baroSicilNo}
+                    onChange={(e) => alanDegistir("baroSicilNo", e.target.value)}
+                    disabled={kaydediyor}
+                  />
+                </div>
+              </div>
+              <div className="field desk-office-form-full">
+                <label htmlFor="ofis-adres">Adres</label>
+                <textarea
+                  id="ofis-adres"
+                  className="desk-input"
+                  rows={2}
+                  value={form.adres}
+                  onChange={(e) => alanDegistir("adres", e.target.value)}
+                  disabled={kaydediyor}
+                />
+              </div>
+              <div className="desk-office-form-footer">
+                <div className="field desk-office-form-footer-logo">
+                  <label>Logo seç</label>
+                  <div className="logo-row">
+                    <button type="button" className="btn btn-sm" onClick={() => void logoSec()} disabled={kaydediyor}>
+                      Logo seç
+                    </button>
+                    <span className="logo-path desk-muted-compact" title={form.logoPath ?? undefined}>
+                      {logoEtiket}
+                    </span>
+                  </div>
+                  {logoSrc ? (
+                    <div className="logo-preview-wrap">
+                      <img src={logoSrc} alt="Ofis logosu" className="logo-preview" />
+                    </div>
+                  ) : null}
+                </div>
+                <div className="desk-office-form-footer-actions">
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => void kaydet()} disabled={kaydediyor}>
+                    {kaydediyor ? "Kaydediliyor…" : "Kaydet"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="desk-panel desk-office-settings-panel">
+        <div className="desk-panel-head">
+          <span>GÜVENLİK</span>
+        </div>
+        <div className="desk-panel-body desk-panel-body--pad-sm">
+          {guvenlikMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${guvenlikMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {guvenlikMesaj.metin}
+            </div>
+          ) : null}
+          <div className="desk-office-form-row desk-office-form-row--guvenlik">
+            <div className="field">
+              <label htmlFor="guvenlik-sifre">Mevcut şifre</label>
+              <input
+                id="guvenlik-sifre"
+                className="desk-input"
+                type="password"
+                autoComplete="current-password"
+                value={mevcutSifre}
+                onChange={(e) => setMevcutSifre(e.target.value)}
+                disabled={guvenlikKaydediyor}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="guvenlik-soru">Yeni güvenlik sorusu</label>
+              <select
+                id="guvenlik-soru"
+                className="desk-input"
+                value={guvenlikSorusuKodu}
+                onChange={(e) => setGuvenlikSorusuKodu(e.target.value)}
+                disabled={guvenlikKaydediyor}
+              >
+                {GUVENLIK_SORU_KODLARI.map((k) => (
+                  <option key={k} value={k}>
+                    {GUVENLIK_SORULARI[k]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="guvenlik-cevap">Yeni güvenlik cevabı</label>
+              <input
+                id="guvenlik-cevap"
+                className="desk-input"
+                value={guvenlikCevabi}
+                onChange={(e) => setGuvenlikCevabi(e.target.value)}
+                disabled={guvenlikKaydediyor}
+              />
+            </div>
+          </div>
+          <div className="desk-office-settings-actions">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => void guvenlikGuncelle()}
+              disabled={guvenlikKaydediyor}
+            >
+              {guvenlikKaydediyor ? "Güncelleniyor…" : "Güvenliği güncelle"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="desk-panel desk-office-settings-panel desk-office-settings-panel--backup">
+        <div className="desk-panel-head">
+          <span>YEDEKLEME VE GERİ YÜKLEME</span>
+        </div>
+        <div className="desk-panel-body desk-panel-body--pad-sm">
+          <p className="desk-muted-compact desk-office-backup-desc">
+            Yedekleme, programdaki müvekkil, dosya, kasa, makbuz, vekalet ve taksit kayıtlarını güvenli bir dosyaya
+            kopyalar.
+          </p>
+          {backupMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${backupMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {backupMesaj.metin}
+            </div>
+          ) : null}
+          <div className="desk-office-settings-actions desk-office-backup-actions">
+            <button type="button" className="btn btn-sm" onClick={() => void yedekAl()} disabled={backupBusy}>
+              Yedek Al
+            </button>
+            <button type="button" className="btn btn-sm" onClick={() => void yedektenGeriYukle()} disabled={backupBusy}>
+              Yedekten Geri Yükle
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="desk-panel desk-panel--about-app desk-office-settings-panel--about">
+        <div className="desk-panel-head">
+          <span>UYGULAMA HAKKINDA</span>
+          <span className="desk-panel-meta">Woontegra</span>
+        </div>
+        <div className="desk-panel-body desk-about-app-body">
+          <div className="desk-about-app-main">
+            <img src={programLogo} alt="" className="desk-office-app-logo" />
+            <div className="desk-about-app-text">
+              <h2 className="desk-about-app-name">Müvekkil Kasa Defteri</h2>
+              <p className="desk-about-app-meta">
+                <span className="desk-about-label">Geliştirici:</span> Woontegra
+              </p>
+              <p className="desk-about-app-meta">
+                <span className="desk-about-label">Sürüm:</span> {surum}
+              </p>
+              <p className="desk-about-app-desc">
+                Avukatlar için müvekkil bazlı avans, masraf ve vekalet takibi programı.
+              </p>
+            </div>
+            <img src={woontegraLogo} alt="Woontegra" className="desk-about-woontegra-mark desk-about-woontegra-mark--settings" />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
