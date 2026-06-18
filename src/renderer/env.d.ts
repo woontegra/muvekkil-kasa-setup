@@ -1,3 +1,12 @@
+import type {
+  HtmlToPdfRequest,
+  HtmlToPdfResult,
+  PrintDocumentRequest,
+  PrintDocumentResult,
+  PrintPdfRequest,
+  YaziciInfo,
+} from "@shared/types/print";
+import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
 import type { AuthUser, RememberedLogin } from "@shared/types/auth";
 import type { Dosya, DosyaInput, DosyaUpdateInput } from "@shared/types/dosya";
 import type {
@@ -50,10 +59,15 @@ export type Api = {
     guvenlikSorusuKodu: string;
     guvenlikCevabi: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  authSifreGuncelle: (input: {
+    mevcutSifre: string;
+    yeniSifre: string;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
   getAppVersion: () => Promise<string>;
   officeGet: () => Promise<OfficeSettings>;
   officeSave: (input: OfficeSettingsInput) => Promise<OfficeSettingsSaveSonuc>;
   officePickLogo: () => Promise<{ ok: true; path: string } | { ok: false; error: string }>;
+  officeLogoDataUrl: (filePath: string) => Promise<string | null>;
   backupAl: () => Promise<{ ok: true; path: string } | { ok: false; error: string }>;
   backupGeriYukle: () => Promise<{ ok: true; autoBackupPath: string } | { ok: false; error: string }>;
   ofisKasaList: (f: OfisKasaListFilter) => Promise<OfisKasaHareketListeSatir[]>;
@@ -74,6 +88,7 @@ export type Api = {
   dosyaGet: (id: number) => Promise<Dosya | null>;
   dosyaEkle: (input: DosyaInput) => Promise<Dosya>;
   dosyaGuncelle: (id: number, input: DosyaUpdateInput) => Promise<Dosya | null>;
+  dosyaHesapOzetPaketi: (dosyaId: number) => Promise<DosyaHesapOzetPaketi>;
   kasaList: (dosyaId: number) => Promise<KasaHareket[]>;
   kasaOzet: (dosyaId: number) => Promise<KasaOzet>;
   kasaEkle: (input: KasaEkleInput) => Promise<KasaIslemSonuc>;
@@ -97,6 +112,10 @@ export type Api = {
   vekaletSmmBekleyenler: (dosyaId?: number) => Promise<SmmBekleyenSatir[]>;
   vekaletSmmKesildi: (odemeId: number) => Promise<VekaletIslemSonuc<VekaletTaksitOdeme>>;
   makbuzYazdirmaPaketi: (hareketId: number) => Promise<KasaMakbuzPaketi>;
+  printGetPrinters: () => Promise<YaziciInfo[]>;
+  printDocument: (req: PrintDocumentRequest) => Promise<PrintDocumentResult>;
+  printHtmlToPdf: (req: HtmlToPdfRequest) => Promise<HtmlToPdfResult>;
+  printPdf: (req: PrintPdfRequest) => Promise<PrintDocumentResult>;
   ensureReceiptNumberForTransaction: (hareketId: number) => Promise<MakbuzEnsureSonuc>;
   getReceiptDataByTransactionId: (hareketId: number) => Promise<KasaMakbuzPaketi>;
   ensureVekaletReceiptNumberForInstallment: (taksitId: number) => Promise<MakbuzEnsureSonuc>;

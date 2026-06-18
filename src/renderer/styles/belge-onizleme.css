@@ -1,0 +1,196 @@
+.belge-onizleme-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: row;
+  background: #e8eaed;
+  overflow: hidden;
+}
+
+.belge-onizleme-sidebar {
+  width: min(300px, 32vw);
+  min-width: 260px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #d1d5db;
+  padding: 1.1rem 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(15, 23, 42, 0.06);
+}
+
+.belge-onizleme-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  line-height: 1.25;
+}
+
+.belge-onizleme-subtitle {
+  margin: -0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.35;
+}
+
+.belge-onizleme-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.belge-onizleme-btn-yazdir {
+  width: 100%;
+}
+
+.belge-onizleme-btn-kapat {
+  width: 100%;
+}
+
+.belge-onizleme-ok {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.belge-onizleme-status {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+}
+
+.belge-onizleme-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.belge-onizleme-field label,
+.belge-onizleme-fieldset legend {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+
+.belge-onizleme-field select,
+.belge-onizleme-field input[type="number"] {
+  width: 100%;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: var(--radius-sm, 4px);
+  background: #fff;
+}
+
+.belge-onizleme-fieldset {
+  margin: 0;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-sm, 4px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.belge-onizleme-fieldset:disabled {
+  opacity: 0.65;
+}
+
+.belge-onizleme-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.belge-onizleme-sayfa-info {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.belge-onizleme-sayfa-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+
+.belge-onizleme-sayfa-info strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.belge-onizleme-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  background: #525659;
+  padding: 2rem 2rem 3rem;
+}
+
+.belge-onizleme-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  min-height: 100%;
+}
+
+.belge-onizleme-page {
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.belge-onizleme-page-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.belge-onizleme-error {
+  color: #fecaca;
+  font-size: 0.9rem;
+  margin: 2rem auto;
+}
+
+.belge-onizleme-embed-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+}
+
+.belge-onizleme-embed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  border: 0;
+}
+
+.belge-pdf-build-host {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: visible;
+}

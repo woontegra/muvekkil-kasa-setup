@@ -18,7 +18,9 @@ import {
   type DuzeltmeTurEtiket,
 } from "@shared/ofisKasaDuzeltme";
 import type { OfisKasaHareketListeSatir } from "@shared/types/ofisKasa";
-import { formatTry } from "./format";
+import { formatSignedTry, formatTry } from "./format";
+
+export { formatSignedTry };
 
 export function ayBasiSonu(d = new Date()): { bas: string; bit: string } {
   const y = d.getFullYear();
@@ -104,11 +106,6 @@ export function satirAuditTitle(h: OfisKasaHareketListeSatir): string {
 
 export function parseTutar(raw: string): number {
   return Number(raw.replace(",", ".").trim());
-}
-
-export function formatSignedTry(n: number): string {
-  if (n > 0) return `+${formatTry(n)}`;
-  return formatTry(n);
 }
 
 export function duzeltmeTurEtiketForRow(h: OfisKasaHareketListeSatir): DuzeltmeTurEtiket | null {

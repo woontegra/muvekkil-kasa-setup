@@ -11,9 +11,8 @@ import { MuvekkilDetailPage } from "./pages/MuvekkilDetailPage";
 import { DosyaDetailPage } from "./pages/DosyaDetailPage";
 import { OfisKasaPage } from "./pages/OfisKasaPage";
 import { OfficeSettingsPage } from "./pages/settings/OfficeSettingsPage";
-import { MakbuzPrintPage } from "./pages/print/MakbuzPrintPage";
 import { OfisKasaRaporuPrintPage } from "./pages/print/OfisKasaRaporuPrintPage";
-import { VekaletMakbuzOdemePrintPage, VekaletMakbuzPrintPage } from "./pages/print/VekaletMakbuzPrintPage";
+import { BelgeYazdirmaOnizlemePage } from "./pages/print/BelgeYazdirmaOnizlemePage";
 
 export default function App() {
   return (
@@ -35,10 +34,10 @@ export default function App() {
               <Route path="/muvekkil/:muvekkilId/dosya/:dosyaId" element={<DosyaDetailPage />} />
               <Route path="/ofis-kasasi" element={<OfisKasaPage />} />
               <Route path="/ayarlar/ofis" element={<OfficeSettingsPage />} />
-              <Route path="/print/makbuz/:hareketId" element={<MakbuzPrintPage />} />
-              <Route path="/print/vekalet-makbuz/:taksitId" element={<VekaletMakbuzPrintPage />} />
-              <Route path="/print/vekalet-makbuz-odeme/:odemeId" element={<VekaletMakbuzOdemePrintPage />} />
               <Route path="/print/ofis-kasa-raporu" element={<OfisKasaRaporuPrintPage />} />
+              <Route path="/print/hesap-ozeti/:dosyaId" element={<BelgeYazdirmaOnizlemePage />} />
+              <Route path="/print/makbuz/kasa/:hareketId" element={<BelgeYazdirmaOnizlemePage />} />
+              <Route path="/print/makbuz/vekalet/:odemeId" element={<BelgeYazdirmaOnizlemePage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -7,8 +7,8 @@ export function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 1024,
-    minHeight: 640,
+    minWidth: 1100,
+    minHeight: 700,
     show: false,
     autoHideMenuBar: true,
     title: "Woontegra Müvekkil Kasa Defteri",
@@ -20,6 +20,8 @@ export function createMainWindow(): BrowserWindow {
       sandbox: false,
     },
   });
+
+  win.maximize();
 
   win.on("ready-to-show", () => win.show());
   win.webContents.setWindowOpenHandler(({ url }) => {

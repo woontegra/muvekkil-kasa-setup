@@ -171,7 +171,7 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
       alert(r.mesaj ?? r.error ?? "Makbuz açılamadı");
       return;
     }
-    navigate(`/print/makbuz/${hid}`);
+    navigate(`/print/makbuz/kasa/${hid}`);
   }
 
   function openIslemEkle() {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ODEME_YONTEMI_ETIKET, ODEME_YONTEMI_KODLARI } from "@shared/constants/kasa";
 import type { OdemeYontemiKodu } from "@shared/constants/kasa";
@@ -41,8 +41,11 @@ export function VekaletTaksitlerTab({ dosyaId, muvekkilId, onSmmChange, compact,
       alert(r.mesaj ?? r.error ?? "Makbuz açılamadı");
       return;
     }
-    navigate(`/print/vekalet-makbuz-odeme/${odemeId}`);
+    navigate(`/print/makbuz/vekalet/${odemeId}`);
   }
+
+  const onSmmChangeRef = useRef(onSmmChange);
+  onSmmChangeRef.current = onSmmChange;
 
   const yukle = useCallback(async () => {
     if (!window.api) return;
@@ -50,8 +53,8 @@ export function VekaletTaksitlerTab({ dosyaId, muvekkilId, onSmmChange, compact,
     setVekalet(v);
     const t = await window.api.vekaletTaksitList(v.id);
     setTaksitler(t);
-    onSmmChange?.();
-  }, [dosyaId, muvekkilId, onSmmChange]);
+    onSmmChangeRef.current?.();
+  }, [dosyaId, muvekkilId]);
 
   useEffect(() => {
     void yukle();
@@ -134,7 +137,6 @@ export function VekaletTaksitlerTab({ dosyaId, muvekkilId, onSmmChange, compact,
     odemeTarihi: string;
     odemeYontemi: OdemeYontemiKodu;
     aciklama: string | null;
-    smmKesildiMi: boolean;
   }) {
     if (!odemeTaksit) return;
     setFormErr(null);
@@ -178,67 +180,120 @@ export function VekaletTaksitlerTab({ dosyaId, muvekkilId, onSmmChange, compact,
     void yukle();
   }
 
+  function renderTaksitTableBody() {
+    return taksitler.map((t) => {
+      const smm = taksitSmmHucre(t.smmDurumu);
+      return (
+        <tr key={t.id}>
+          <td>{t.taksitNo}</td>
+          <td>{formatDateTr(t.vadeTarihi)}</td>
+          <td className="num">{formatTry(t.tutar)}</td>
+          <td className="num">{formatTry(t.odenenToplam)}</td>
+          <td className="num">{formatTry(t.kalanTutar)}</td>
+          <td>
+            <span className={taksitDurumBadgeClass(t.durum)}>{taksitDurumEtiket(t.durum)}</span>
+          </td>
+          <td>{formatDateTr(t.sonOdemeTarihi)}</td>
+          <td>
+            {t.sonOdemeId ? (
+              <button type="button" className="btn btn-sm" onClick={() => void vekaletMakbuzAc(t.sonOdemeId!)}>
+                {t.sonMakbuzNo ?? "Makbuz"}
+              </button>
+            ) : (
+              t.sonMakbuzNo ?? "—"
+            )}
+          </td>
+          <td className="desk-smm-warn-cell">
+            {smm.blink ? (
+              <span className={smm.className}>{smm.label}</span>
+            ) : t.smmDurumu === "KESILDI" ? (
+              <span className="desk-smm-ok-badge">{smm.label}</span>
+            ) : (
+              "—"
+            )}
+          </td>
+          <td>
+            <div className="row-actions">
+              {t.kalanTutar > 0 ? (
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => { setFormErr(null); setOdemeTaksit(t); }}>
+                  Ödeme al
+                </button>
+              ) : null}
+              {t.smmDurumu === "BEKLIYOR" && t.smmBekleyenOdemeId ? (
+                <button type="button" className="btn btn-sm" onClick={() => void smmKes(t.smmBekleyenOdemeId!)}>
+                  SMM Kesildi
+                </button>
+              ) : null}
+              <button type="button" className="btn btn-sm" onClick={() => void acGecmis(t)}>
+                Ödeme geçmişi
+              </button>
+              {t.odenenToplam <= 0 ? (
+                <button type="button" className="btn btn-sm btn-danger" onClick={() => void silTaksit(t.id)}>
+                  Sil
+                </button>
+              ) : null}
+            </div>
+          </td>
+        </tr>
+      );
+    });
+  }
+
+  function renderTaksitTable(showEmptyRow: boolean) {
+    return (
+      <div className={compact ? "desk-table-wrap desk-vekalet-taksit-wrap" : "desk-table-wrap"}>
+        <table className="desk-table desk-table--striped desk-table--compact">
+          <thead>
+            <tr>
+              <th>Taksit no</th>
+              <th>Vade tarihi</th>
+              <th className="num">Taksit tutarı</th>
+              <th className="num">Ödenen</th>
+              <th className="num">Kalan</th>
+              <th>Durum</th>
+              <th>Son ödeme</th>
+              <th>Makbuz son</th>
+              <th>SMM</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {showEmptyRow ? (
+              <tr>
+                <td colSpan={10} className="desk-muted-compact">
+                  Henüz taksit tanımlanmadı.
+                </td>
+              </tr>
+            ) : (
+              renderTaksitTableBody()
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   return (
     <div className={compact ? "desk-vekalet-compact" : "desk-vekalet-tab"}>
       {!compact ? (
-        <div className="desk-summary-bar">
-          <div className="desk-metric desk-metric--accent-vekalet">
-            <span className="l">Vekalet anlaşılmış toplam</span>
-            <span className="v">{formatTry(ozet.anlasilanTutar)}</span>
-          </div>
-          <div className="desk-metric desk-metric--accent-vekalet-odenen">
-            <span className="l">Ödenen toplam</span>
-            <span className="v">{formatTry(ozet.odenenToplam)}</span>
-          </div>
-          <div className="desk-metric desk-metric--accent-vekalet-kalan">
-            <span className="l">Kalan vekalet</span>
-            <span className="v">{formatTry(ozet.kalanVekalet)}</span>
-          </div>
-        </div>
-      ) : null}
-
-      {compact && vekalet && vekalet.anlasilanTutar <= 0 ? (
-        <div className="desk-vekalet-empty">
-          <p className="desk-muted-compact">Henüz vekalet ücreti tanımlanmadı.</p>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              setFormErr(null);
-              setUcretOpen(true);
-            }}
-          >
-            Vekalet ücreti tanımla
-          </button>
-        </div>
-      ) : (
         <>
-          {!compact ? (
-            <div className="desk-toolbar desk-toolbar--tight" style={{ marginBottom: 8 }}>
-              <div className="desk-toolbar-actions">
-                <button type="button" className="btn btn-sm" onClick={() => { setFormErr(null); setUcretOpen(true); }}>
-                  Vekalet ücreti düzenle
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={!vekalet || vekalet.anlasilanTutar <= 0}
-                  onClick={() => { setFormErr(null); setTaksitOpen(true); }}
-                >
-                  Taksit ekle
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={!vekalet || vekalet.anlasilanTutar <= 0}
-                  onClick={() => { setFormErr(null); setEsitOpen(true); }}
-                >
-                  Eşit taksit oluştur
-                </button>
-              </div>
+          <div className="desk-summary-bar">
+            <div className="desk-metric desk-metric--accent-vekalet">
+              <span className="l">Vekalet anlaşılmış toplam</span>
+              <span className="v">{formatTry(ozet.anlasilanTutar)}</span>
             </div>
-          ) : (
-            <div className="desk-vekalet-compact-toolbar">
+            <div className="desk-metric desk-metric--accent-vekalet-odenen">
+              <span className="l">Ödenen toplam</span>
+              <span className="v">{formatTry(ozet.odenenToplam)}</span>
+            </div>
+            <div className="desk-metric desk-metric--accent-vekalet-kalan">
+              <span className="l">Kalan vekalet</span>
+              <span className="v">{formatTry(ozet.kalanVekalet)}</span>
+            </div>
+          </div>
+
+          <div className="desk-toolbar desk-toolbar--tight" style={{ marginBottom: 8 }}>
+            <div className="desk-toolbar-actions">
               <button type="button" className="btn btn-sm" onClick={() => { setFormErr(null); setUcretOpen(true); }}>
                 Vekalet ücreti düzenle
               </button>
@@ -256,95 +311,75 @@ export function VekaletTaksitlerTab({ dosyaId, muvekkilId, onSmmChange, compact,
                 disabled={!vekalet || vekalet.anlasilanTutar <= 0}
                 onClick={() => { setFormErr(null); setEsitOpen(true); }}
               >
-                Eşit taksit
+                Eşit taksit oluştur
               </button>
             </div>
-          )}
-
-          <div className={compact ? "desk-table-wrap desk-panel-body--scroll" : "desk-table-wrap"}>
-            <table className="desk-table desk-table--striped desk-table--compact">
-          <thead>
-            <tr>
-              <th>Taksit no</th>
-              <th>Vade tarihi</th>
-              <th className="num">Taksit tutarı</th>
-              <th className="num">Ödenen</th>
-              <th className="num">Kalan</th>
-              <th>Durum</th>
-              <th>Son ödeme</th>
-              <th>Makbuz son</th>
-              <th>SMM</th>
-              <th>İşlem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {taksitler.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="desk-muted-compact">
-                  Henüz taksit tanımlanmadı.
-                </td>
-              </tr>
-            ) : (
-              taksitler.map((t) => {
-                const smm = taksitSmmHucre(t.smmDurumu);
-                return (
-                  <tr key={t.id}>
-                    <td>{t.taksitNo}</td>
-                    <td>{formatDateTr(t.vadeTarihi)}</td>
-                    <td className="num">{formatTry(t.tutar)}</td>
-                    <td className="num">{formatTry(t.odenenToplam)}</td>
-                    <td className="num">{formatTry(t.kalanTutar)}</td>
-                    <td>
-                      <span className={taksitDurumBadgeClass(t.durum)}>{taksitDurumEtiket(t.durum)}</span>
-                    </td>
-                    <td>{formatDateTr(t.sonOdemeTarihi)}</td>
-                    <td>
-                      {t.sonOdemeId ? (
-                        <button type="button" className="btn btn-sm" onClick={() => void vekaletMakbuzAc(t.sonOdemeId!)}>
-                          {t.sonMakbuzNo ?? "Makbuz"}
-                        </button>
-                      ) : (
-                        t.sonMakbuzNo ?? "—"
-                      )}
-                    </td>
-                    <td className="desk-smm-warn-cell">
-                      {smm.blink ? (
-                        <span className={smm.className}>{smm.label}</span>
-                      ) : t.smmDurumu === "KESILDI" ? (
-                        <span className="desk-smm-ok-badge">{smm.label}</span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        {t.kalanTutar > 0 ? (
-                          <button type="button" className="btn btn-sm btn-primary" onClick={() => { setFormErr(null); setOdemeTaksit(t); }}>
-                            Ödeme al
-                          </button>
-                        ) : null}
-                        <button type="button" className="btn btn-sm" onClick={() => void acGecmis(t)}>
-                          Ödeme geçmişi
-                        </button>
-                        {t.odenenToplam <= 0 ? (
-                          <button type="button" className="btn btn-sm btn-danger" onClick={() => void silTaksit(t.id)}>
-                            Sil
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
           </div>
-          {compact ? (
-            <p className="desk-muted-compact desk-vekalet-compact-note">
-              Vekalet ücreti kasa bakiyesini etkilemez; tahsilatlar taksitler üzerinden izlenir.
-            </p>
-          ) : null}
+
+          {renderTaksitTable(taksitler.length === 0)}
+        </>
+      ) : (
+        <>
+          <p className="desk-vekalet-compact-desc">
+            Vekalet ücreti avans kasasından ayrıdır; avans bakiyesini etkilemez.
+          </p>
+
+          {vekalet && vekalet.anlasilanTutar <= 0 ? (
+            <div className="desk-vekalet-empty">
+              <p className="desk-muted-compact">Henüz vekalet ücreti tanımlanmadı.</p>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setFormErr(null);
+                  setUcretOpen(true);
+                }}
+              >
+                Vekalet ücreti tanımla
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="desk-vekalet-ozet-wrap">
+                <table className="desk-vekalet-ozet-table">
+                  <thead>
+                    <tr>
+                      <th>ANLAŞILAN</th>
+                      <th>ÖDENEN TOPLAM</th>
+                      <th>KALAN VEKALET</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="num">{formatTry(ozet.anlasilanTutar)}</td>
+                      <td className="num">{formatTry(ozet.odenenToplam)}</td>
+                      <td className="num">{formatTry(ozet.kalanVekalet)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="desk-vekalet-compact-actions">
+                <button type="button" className="btn btn-sm" onClick={() => { setFormErr(null); setUcretOpen(true); }}>
+                  Düzenle
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={!vekalet || vekalet.anlasilanTutar <= 0}
+                  onClick={() => { setFormErr(null); setTaksitOpen(true); }}
+                >
+                  Taksit ekle
+                </button>
+              </div>
+
+              {taksitler.length === 0 ? (
+                <div className="desk-vekalet-empty-taksit">Henüz taksit yok. Taksit ekleyin.</div>
+              ) : (
+                renderTaksitTable(false)
+              )}
+            </>
+          )}
         </>
       )}
 
@@ -435,7 +470,7 @@ function VekaletUcretiModal({
     if (!open) return;
     setTutar(initial.anlasilanTutar > 0 ? String(initial.anlasilanTutar) : "");
     setAciklama(initial.aciklama ?? "");
-  }, [open, initial]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -619,14 +654,12 @@ function OdemeAlModal({
     odemeTarihi: string;
     odemeYontemi: OdemeYontemiKodu;
     aciklama: string | null;
-    smmKesildiMi: boolean;
   }) => Promise<void>;
 }) {
   const [tutar, setTutar] = useState("");
   const [tarih, setTarih] = useState(bugunYmd());
   const [odeme, setOdeme] = useState<OdemeYontemiKodu>("NAKIT");
   const [aciklama, setAciklama] = useState("");
-  const [smm, setSmm] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -634,7 +667,6 @@ function OdemeAlModal({
     setTarih(bugunYmd());
     setOdeme("NAKIT");
     setAciklama("");
-    setSmm(false);
   }, [open, taksit.id]);
 
   if (!open) return null;
@@ -648,7 +680,6 @@ function OdemeAlModal({
       odemeTarihi: tarih,
       odemeYontemi: odeme,
       aciklama: aciklama.trim() || null,
-      smmKesildiMi: smm,
     });
   }
 
@@ -704,12 +735,6 @@ function OdemeAlModal({
               <label htmlFor="oa-aciklama">Açıklama</label>
               <textarea id="oa-aciklama" className="desk-input" rows={2} value={aciklama} onChange={(e) => setAciklama(e.target.value)} />
             </div>
-            <div className="field">
-              <label className="desk-check-label">
-                <input type="checkbox" checked={smm} onChange={(e) => setSmm(e.target.checked)} />
-                SMM kesildi mi
-              </label>
-            </div>
           </form>
         </div>
         <div className="modal-actions">
@@ -742,7 +767,7 @@ function OdemeGecmisiModal({
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="modal modal-desk modal-desk--wide" role="dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="modal modal-desk modal-desk--wide modal-desk--odeme-gecmisi" role="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>Taksit #{taksit.taksitNo} — ödeme geçmişi</h2>
         </div>
@@ -752,7 +777,7 @@ function OdemeGecmisiModal({
               <thead>
                 <tr>
                   <th>Tarih</th>
-                  <th className="num">Tutar</th>
+                  <th className="desk-num">Tutar</th>
                   <th>Ödeme yöntemi</th>
                   <th>Açıklama</th>
                   <th>Makbuz no</th>
@@ -769,7 +794,7 @@ function OdemeGecmisiModal({
                   odemeler.map((o) => (
                     <tr key={o.id}>
                       <td>{formatDateTr(o.odemeTarihi)}</td>
-                      <td className="num">{formatTry(o.tutar)}</td>
+                      <td className="desk-num">{formatTry(o.tutar)}</td>
                       <td>{odemeEtiket(o.odemeYontemi)}</td>
                       <td>{o.aciklama ?? "—"}</td>
                       <td>{o.makbuzNo ?? "—"}</td>
@@ -787,7 +812,7 @@ function OdemeGecmisiModal({
                           </button>
                           {!o.smmKesildiMi ? (
                             <button type="button" className="btn btn-sm" onClick={() => onSmmKes(o.id)}>
-                              SMM kesildi
+                              SMM Kesildi
                             </button>
                           ) : null}
                         </div>

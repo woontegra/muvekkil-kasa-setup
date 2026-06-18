@@ -1,11 +1,45 @@
 import { app, dialog } from "electron";
-import { copyFileSync, mkdirSync } from "node:fs";
-import { extname, join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { extname, join, relative, resolve } from "node:path";
 import { getDb, nowIso } from "../db/connection";
 import type { OfficeSettings, OfficeSettingsInput, OfficeSettingsSaveSonuc } from "@shared/types/office";
 import { DEFAULT_OFIS_ADI } from "@shared/types/officeDefaults";
 
 export { DEFAULT_OFIS_ADI };
+
+const ALLOWED_LOGO_EXT = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+
+function logosDir(): string {
+  return join(app.getPath("userData"), "logos");
+}
+
+function logoMime(ext: string): string {
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
+  return "image/jpeg";
+}
+
+function isAllowedLogoPath(filePath: string): boolean {
+  const resolved = resolve(filePath);
+  const base = resolve(logosDir());
+  const rel = relative(base, resolved);
+  if (!rel || rel.startsWith("..") || rel.includes("..")) return false;
+  return ALLOWED_LOGO_EXT.has(extname(resolved).toLowerCase());
+}
+
+/** Güvenli logos klasöründeki dosyayı data URL olarak okur (önizleme / makbuz). */
+export function officeLogoDataUrl(filePath: string | null | undefined): string | null {
+  const p = (filePath ?? "").trim();
+  if (!p || !isAllowedLogoPath(p) || !existsSync(p)) return null;
+  try {
+    const ext = extname(p).toLowerCase();
+    const buf = readFileSync(p);
+    return `data:${logoMime(ext)};base64,${buf.toString("base64")}`;
+  } catch (e) {
+    console.error("[officeLogoDataUrl]", e);
+    return null;
+  }
+}
 
 function ensureOfficeRow(): OfficeSettings {
   const d = getDb();
@@ -104,6 +138,9 @@ export function officeSettingsSave(input: OfficeSettingsInput): OfficeSettingsSa
     t,
   ];
   if (logoPath !== undefined) {
+    if (logoPath && !isAllowedLogoPath(logoPath)) {
+      return { ok: false, error: "Logo dosyası geçersiz veya güvenli klasör dışında." };
+    }
     fields.push("logo_path = ?");
     vals.push(logoPath);
   }
@@ -115,7 +152,7 @@ export function officeSettingsSave(input: OfficeSettingsInput): OfficeSettingsSa
 export async function officePickLogo(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     title: "Ofis logosu seç",
-    filters: [{ name: "Resim", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp"] }],
+    filters: [{ name: "Resim", extensions: ["png", "jpg", "jpeg", "webp"] }],
     properties: ["openFile"],
   });
   if (canceled || !filePaths[0]?.trim()) {
@@ -123,10 +160,13 @@ export async function officePickLogo(): Promise<{ ok: true; path: string } | { o
   }
   try {
     const src = filePaths[0];
-    const logosDir = join(app.getPath("userData"), "logos");
-    mkdirSync(logosDir, { recursive: true });
-    const ext = extname(src).toLowerCase() || ".png";
-    const dest = join(logosDir, `office-logo${ext}`);
+    const dir = logosDir();
+    mkdirSync(dir, { recursive: true });
+    const ext = extname(src).toLowerCase();
+    if (!ALLOWED_LOGO_EXT.has(ext)) {
+      return { ok: false, error: "Desteklenmeyen dosya türü. PNG, JPG, JPEG veya WEBP seçin." };
+    }
+    const dest = join(dir, `office-logo${ext}`);
     copyFileSync(src, dest);
     return { ok: true, path: dest };
   } catch (e) {

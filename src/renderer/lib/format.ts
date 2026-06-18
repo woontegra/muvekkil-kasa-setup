@@ -1,5 +1,18 @@
+/** Türk lirası gösterimi: 1.500,00 ₺ (sembol sağda, TL yazısı yok) */
 export function formatTry(n: number): string {
-  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
+  if (!Number.isFinite(n)) return "—";
+  const sign = n < 0 ? "-" : "";
+  const formatted = Math.abs(n).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${sign}${formatted} ₺`;
+}
+
+/** İşaretli tutar: +1.500,00 ₺ / -3.000,00 ₺ */
+export function formatSignedTry(n: number): string {
+  if (n > 0) return `+${formatTry(n)}`;
+  return formatTry(n);
 }
 
 export function formatDateTr(iso: string | null | undefined): string {
@@ -20,8 +33,13 @@ export function bugunYmd(): string {
 }
 
 export function parsePosTutar(raw: string): number | null {
-  const t = raw.replace(",", ".").trim();
+  let t = raw.trim();
   if (!t) return null;
+  if (t.includes(",")) {
+    t = t.replace(/\./g, "").replace(",", ".");
+  } else if (/\.\d{3}(?:\.|$)/.test(t)) {
+    t = t.replace(/\./g, "");
+  }
   const n = Number(t);
   if (!Number.isFinite(n) || n <= 0) return null;
   return n;

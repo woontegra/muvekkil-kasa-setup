@@ -12,6 +12,7 @@ export const IPC = {
     clearRememberedLogin: "auth:clearRememberedLogin",
     guvenlikGuncelle: "auth:guvenlikGuncelle",
     guvenlikBilgisi: "auth:guvenlikBilgisi",
+    sifreGuncelle: "auth:sifreGuncelle",
   },
   app: {
     quit: "app:quit",
@@ -21,6 +22,7 @@ export const IPC = {
     get: "office:get",
     save: "office:save",
     pickLogo: "office:pickLogo",
+    logoDataUrl: "office:logoDataUrl",
   },
   backup: {
     al: "backup:al",
@@ -49,6 +51,7 @@ export const IPC = {
     get: "dosya:get",
     ekle: "dosya:ekle",
     guncelle: "dosya:guncelle",
+    hesapOzetPaketi: "dosya:hesapOzetPaketi",
   },
   kasa: {
     list: "kasa:list",
@@ -71,6 +74,12 @@ export const IPC = {
     taksitOdemeGecmisi: "vekalet:taksitOdemeGecmisi",
     smmBekleyenler: "vekalet:smmBekleyenler",
     smmKesildi: "vekalet:smmKesildi",
+  },
+  print: {
+    getPrinters: "print:getPrinters",
+    document: "print:document",
+    htmlToPdf: "print:htmlToPdf",
+    pdf: "print:pdf",
   },
   makbuz: {
     ensureReceiptNumber: "makbuz:ensureReceiptNumber",

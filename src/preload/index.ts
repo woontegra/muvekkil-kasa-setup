@@ -15,10 +15,12 @@ const api = {
   clearRememberedLogin: () => ipcRenderer.invoke(IPC.auth.clearRememberedLogin),
   authGuvenlikBilgisi: () => ipcRenderer.invoke(IPC.auth.guvenlikBilgisi),
   authGuvenlikGuncelle: (input: unknown) => ipcRenderer.invoke(IPC.auth.guvenlikGuncelle, input),
+  authSifreGuncelle: (input: unknown) => ipcRenderer.invoke(IPC.auth.sifreGuncelle, input),
   getAppVersion: () => ipcRenderer.invoke(IPC.app.getVersion),
   officeGet: () => ipcRenderer.invoke(IPC.office.get),
   officeSave: (input: unknown) => ipcRenderer.invoke(IPC.office.save, input),
   officePickLogo: () => ipcRenderer.invoke(IPC.office.pickLogo),
+  officeLogoDataUrl: (filePath: string) => ipcRenderer.invoke(IPC.office.logoDataUrl, filePath),
   backupAl: () => ipcRenderer.invoke(IPC.backup.al),
   backupGeriYukle: () => ipcRenderer.invoke(IPC.backup.geriYukle),
   ofisKasaList: (f: unknown) => ipcRenderer.invoke(IPC.ofisKasa.list, f),
@@ -41,6 +43,7 @@ const api = {
   dosyaGet: (id: number) => ipcRenderer.invoke(IPC.dosya.get, id),
   dosyaEkle: (input: unknown) => ipcRenderer.invoke(IPC.dosya.ekle, input),
   dosyaGuncelle: (id: number, input: unknown) => ipcRenderer.invoke(IPC.dosya.guncelle, id, input),
+  dosyaHesapOzetPaketi: (dosyaId: number) => ipcRenderer.invoke(IPC.dosya.hesapOzetPaketi, dosyaId),
   kasaList: (dosyaId: number) => ipcRenderer.invoke(IPC.kasa.list, dosyaId),
   kasaOzet: (dosyaId: number) => ipcRenderer.invoke(IPC.kasa.ozet, dosyaId),
   kasaEkle: (input: unknown) => ipcRenderer.invoke(IPC.kasa.ekle, input),
@@ -65,6 +68,12 @@ const api = {
   vekaletSmmBekleyenler: (dosyaId?: number) => ipcRenderer.invoke(IPC.vekalet.smmBekleyenler, dosyaId),
   vekaletSmmKesildi: (odemeId: number) => ipcRenderer.invoke(IPC.vekalet.smmKesildi, odemeId),
   makbuzYazdirmaPaketi: (hareketId: number) => ipcRenderer.invoke(IPC.makbuz.yazdirmaPaketi, hareketId),
+  printGetPrinters: () => ipcRenderer.invoke(IPC.print.getPrinters),
+  printDocument: (req: import("@shared/types/print").PrintDocumentRequest) =>
+    ipcRenderer.invoke(IPC.print.document, req),
+  printHtmlToPdf: (req: import("@shared/types/print").HtmlToPdfRequest) =>
+    ipcRenderer.invoke(IPC.print.htmlToPdf, req),
+  printPdf: (req: import("@shared/types/print").PrintPdfRequest) => ipcRenderer.invoke(IPC.print.pdf, req),
   ensureReceiptNumberForTransaction: (hareketId: number) =>
     ipcRenderer.invoke(IPC.makbuz.ensureReceiptNumber, hareketId),
   getReceiptDataByTransactionId: (hareketId: number) =>

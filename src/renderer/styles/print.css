@@ -228,8 +228,8 @@
 
 @media print {
   @page makbuzPage {
-    size: A4 portrait;
-    margin: 8mm;
+    size: A5 landscape;
+    margin: 4mm;
   }
 
   @page hesapOzetiPage {
@@ -248,35 +248,36 @@
   .app-shell,
   .app-main--print {
     background: #fff !important;
+    min-height: auto !important;
   }
 
   .makbuz-print-wrap {
     padding: 0 !important;
     margin: 0 !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: block;
     width: 100%;
     max-width: none;
+    background: #fff !important;
   }
 
   .makbuz-sheet,
   .makbuz-sheet--a5l {
     page: makbuzPage;
-    width: 180mm !important;
-    max-width: 180mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     aspect-ratio: auto !important;
     margin: 0 auto;
-    padding: 5mm 6mm !important;
-    border: 1px solid #333 !important;
+    padding: 4mm 5mm !important;
+    border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     overflow: visible !important;
     page-break-after: avoid;
     page-break-inside: avoid;
+    font-size: 8pt !important;
   }
 
   .hesap-ozeti-print-wrap {
@@ -305,6 +306,77 @@
 
   .hesap-ozeti-table {
     font-size: 8.5pt !important;
+  }
+
+  /* Makbuz modal — yalnızca makbuz formu basılır */
+  body * {
+    visibility: hidden;
+  }
+
+  .makbuz-sheet,
+  .makbuz-sheet * {
+    visibility: visible;
+  }
+
+  .hesap-ozeti-print-wrap,
+  .hesap-ozeti-print-wrap * {
+    visibility: visible;
+  }
+
+  .hesap-ozeti-print-wrap .no-print,
+  .hesap-ozeti-print-wrap .no-print * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  .makbuz-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .app-shell-header,
+  .app-sidebar,
+  .desk-toolbar,
+  .desk-page-head {
+    display: none !important;
+  }
+
+  .makbuz-modal-backdrop {
+    position: static !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .makbuz-modal-dialog .modal-head,
+  .makbuz-modal-dialog .modal-actions,
+  .makbuz-modal-body .desk-muted-compact,
+  .makbuz-modal-body .form-error {
+    display: none !important;
+  }
+
+  .makbuz-modal-dialog {
+    max-width: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .makbuz-modal-body {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .makbuz-modal-preview {
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 }
 

@@ -266,3 +266,25 @@ export function authGuvenlikGuncelle(
     .run(soruKodu, cevapHash, userId);
   return { ok: true };
 }
+
+export function authSifreGuncelle(
+  userId: number,
+  input: { mevcutSifre: string; yeniSifre: string }
+): { ok: true } | { ok: false; error: string } {
+  const r = getDb()
+    .prepare(`SELECT sifre_hash FROM uygulama_kullanici WHERE id = ? AND aktif_mi = 1`)
+    .get(userId) as { sifre_hash: string } | undefined;
+  if (!r) return { ok: false, error: "Kullanıcı bulunamadı." };
+  if (!input.mevcutSifre) return { ok: false, error: "Mevcut şifre zorunludur." };
+  if (!bcrypt.compareSync(input.mevcutSifre, r.sifre_hash)) {
+    return { ok: false, error: "Mevcut şifre hatalı." };
+  }
+  const yeniSifre = (input.yeniSifre ?? "").trim();
+  if (!yeniSifre) return { ok: false, error: "Yeni şifre boş olamaz." };
+  if (yeniSifre.length < 6) {
+    return { ok: false, error: "Yeni şifre en az 6 karakter olmalıdır." };
+  }
+  const yeniHash = bcrypt.hashSync(yeniSifre, 12);
+  getDb().prepare(`UPDATE uygulama_kullanici SET sifre_hash = ? WHERE id = ?`).run(yeniHash, userId);
+  return { ok: true };
+}

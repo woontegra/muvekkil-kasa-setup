@@ -6,6 +6,8 @@ import {
   getReceiptDataByTransactionId,
   makbuzYazdirmaPaketiGetir,
 } from "../services/makbuz.service";
+import { getSystemPrinters, htmlToPdf, silentPrintDocument, silentPrintPdf } from "../services/makbuzPrint.service";
+import { dosyaHesapOzetPaketiGetir } from "../services/hesapOzet.service";
 import {
   ensureVekaletReceiptNumberForInstallment,
   ensureVekaletReceiptNumberForOdeme,
@@ -52,6 +54,7 @@ import {
   authGetSession,
   authGuvenlikBilgisi,
   authGuvenlikGuncelle,
+  authSifreGuncelle,
   authLoginSuccess,
   authLogout,
   authRestoreRemembered,
@@ -76,7 +79,7 @@ import {
   ofisKasaUstOzet,
 } from "../services/ofisKasa.service";
 import { backupDatabase, restoreDatabase } from "../services/backup.service";
-import { officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
+import { officeLogoDataUrl, officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
 
 function oturumKullaniciEtiketi(): { id: number | null; ad: string | null } {
   const s = authGetSession();
@@ -117,6 +120,11 @@ export function registerIpcHandlers(): void {
     if (!s) return { ok: false as const, error: "Oturum bulunamadı." };
     return authGuvenlikGuncelle(s.id, input);
   });
+  ipcMain.handle(IPC.auth.sifreGuncelle, (_e, input) => {
+    const s = authGetSession();
+    if (!s) return { ok: false as const, error: "Oturum bulunamadı." };
+    return authSifreGuncelle(s.id, input);
+  });
   ipcMain.handle(IPC.app.quit, () => {
     app.quit();
     return { ok: true };
@@ -126,6 +134,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.office.get, () => officeSettingsGet());
   ipcMain.handle(IPC.office.save, (_e, input) => officeSettingsSave(input));
   ipcMain.handle(IPC.office.pickLogo, () => officePickLogo());
+  ipcMain.handle(IPC.office.logoDataUrl, (_e, filePath: string) => officeLogoDataUrl(filePath));
   ipcMain.handle(IPC.backup.al, () => backupDatabase());
   ipcMain.handle(IPC.backup.geriYukle, () => restoreDatabase());
 
@@ -172,6 +181,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.dosya.get, (_e, id: number) => dosyaGet(id));
   ipcMain.handle(IPC.dosya.ekle, (_e, input) => dosyaEkle(input));
   ipcMain.handle(IPC.dosya.guncelle, (_e, id: number, input) => dosyaGuncelle(id, input));
+  ipcMain.handle(IPC.dosya.hesapOzetPaketi, (_e, dosyaId: number) => dosyaHesapOzetPaketiGetir(dosyaId));
 
   ipcMain.handle(IPC.kasa.list, (_e, dosyaId: number) => kasaHareketList(dosyaId));
   ipcMain.handle(IPC.kasa.ozet, (_e, dosyaId: number) => hesaplaAvansBakiye(dosyaId));
@@ -210,6 +220,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.makbuz.yazdirmaPaketi, (_e, hareketId: number) =>
     makbuzYazdirmaPaketiGetir(hareketId)
   );
+
+  ipcMain.handle(IPC.print.getPrinters, () => getSystemPrinters());
+  ipcMain.handle(IPC.print.document, (_e, req: import("@shared/types/print").PrintDocumentRequest) =>
+    silentPrintDocument(req)
+  );
+  ipcMain.handle(IPC.print.htmlToPdf, (_e, req: import("@shared/types/print").HtmlToPdfRequest) => htmlToPdf(req));
+  ipcMain.handle(IPC.print.pdf, (_e, req: import("@shared/types/print").PrintPdfRequest) => silentPrintPdf(req));
 
   ipcMain.handle(IPC.vekaletMakbuz.ensureReceiptNumber, (_e, id: number, tip?: string) => {
     if (tip === "odeme") return ensureVekaletReceiptNumberForOdeme(id);

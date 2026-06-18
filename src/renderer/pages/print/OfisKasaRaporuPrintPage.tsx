@@ -42,7 +42,7 @@ export function OfisKasaRaporuPrintPage() {
       try {
         const lp = r.office.logoPath?.trim();
         if (lp) {
-          const u = await window.api.pathToFileUrl(lp);
+          const u = await window.api.officeLogoDataUrl(lp);
           setLogoUrl(u);
         } else {
           setLogoUrl(null);

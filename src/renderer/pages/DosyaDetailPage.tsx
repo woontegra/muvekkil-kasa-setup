@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Dosya, DosyaUpdateInput } from "@shared/types/dosya";
 import type { Muvekkil } from "@shared/types/muvekkil";
 import type { SmmBekleyenSatir } from "@shared/types/vekalet";
@@ -17,6 +17,7 @@ import { muvekkilGorunenAd } from "../lib/muvekkil";
 import { vekaletOzetFromTaksitler } from "../lib/vekalet";
 
 export function DosyaDetailPage() {
+  const navigate = useNavigate();
   const { muvekkilId, dosyaId } = useParams();
   const mid = Number(muvekkilId);
   const did = Number(dosyaId);
@@ -84,7 +85,7 @@ export function DosyaDetailPage() {
   }
 
   function hesapOzetiYazdir() {
-    alert("Hesap özeti yazdırma bu sürümde henüz bağlanmadı.");
+    navigate(`/print/hesap-ozeti/${did}`);
   }
 
   function vekaletDegisti() {

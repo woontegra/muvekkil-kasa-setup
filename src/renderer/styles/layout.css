@@ -278,22 +278,33 @@ a:hover {
   transition: background 0.08s ease, border-color 0.08s ease, color 0.08s ease;
 }
 
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.92);
+.nav-link:not(.nav-link--active):hover {
+  background: rgba(219, 234, 254, 0.95);
   border-color: var(--color-primary-muted);
   color: var(--color-primary-hover);
+  text-decoration: none !important;
 }
 
-.nav-link--active {
+.nav-link--active,
+.nav-link--active:hover,
+.nav-link--active:focus,
+.nav-link--active:focus-visible {
   color: #fff !important;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  border-color: rgba(15, 23, 42, 0.12);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  text-decoration: none !important;
 }
 
-.nav-link--active:hover {
-  color: #fff !important;
+.nav-link--active:hover,
+.nav-link--active:focus {
   filter: brightness(1.04);
+}
+
+.nav-link--active:focus-visible {
+  filter: brightness(1.04);
+  outline: 2px solid rgba(255, 255, 255, 0.88);
+  outline-offset: 2px;
 }
 
 @media (max-width: 720px) {
@@ -341,7 +352,15 @@ a:hover {
 .app-main--print {
   max-width: none;
   padding: 0;
-  background: #fff;
+  background: #e2e8f0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 100%;
+}
+
+.app-shell:has(.app-main--print) {
+  min-height: auto;
+  background: #e2e8f0;
 }
 
 .page-nav {
@@ -862,7 +881,7 @@ table.simple tbody tr:hover {
   color: #1e2430;
 }
 
-/* Dosya detay: pencere yüksekliğini doldur; orta blok esner, tablo scroll alanı büyür */
+/* Dosya detay: kompakt viewport; genel scroll yok, paneller iç scroll alır */
 html:has(.desk-page--dosya-detail) {
   height: 100%;
   overflow: hidden;
@@ -944,11 +963,21 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
 
 .desk-dosya-scroll-stack .desk-subpanels > .desk-panel {
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .desk-dosya-scroll-stack .desk-dosya-layout > .desk-panel {
   min-height: 0;
   align-self: stretch;
+}
+
+.desk-dosya-scroll-stack .desk-subpanels > .desk-panel .desk-panel-body--pad-sm {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .desk-page--dosya-detail > .desk-summary-bar {
@@ -1221,22 +1250,101 @@ a.desk-btn-block {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 4px;
+  flex: 1 1 auto;
+  overflow: hidden;
+  gap: 0;
+}
+
+.desk-vekalet-compact-desc {
+  margin: 0;
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
 }
 
 .desk-vekalet-empty {
-  padding: 10px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
 }
 
-.desk-vekalet-compact-toolbar {
+.desk-vekalet-ozet-wrap {
+  padding: 6px 8px 0;
+}
+
+.desk-vekalet-ozet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  border: 1px solid var(--table-cell-border);
+}
+
+.desk-vekalet-ozet-table th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--table-header-fg);
+  background: var(--table-header-bg);
+  border-bottom: 1px solid var(--table-header-border);
+  border-right: 1px solid var(--table-cell-border);
+}
+
+.desk-vekalet-ozet-table th:last-child {
+  border-right: none;
+}
+
+.desk-vekalet-ozet-table td {
+  padding: 5px 8px;
+  font-weight: 700;
+  color: var(--primary-deep);
+  border-bottom: 1px solid var(--table-cell-border);
+  border-right: 1px solid #f1f5f9;
+  background: #fff;
+}
+
+.desk-vekalet-ozet-table td:last-child {
+  border-right: none;
+}
+
+.desk-vekalet-ozet-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-vekalet-compact-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 6px 0;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.desk-vekalet-empty-taksit {
+  margin: 6px 8px 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 2px;
+  background: #fafbfc;
+}
+
+.desk-vekalet-taksit-wrap {
+  flex: 0 0 auto;
+  margin: 0 8px 6px;
+  max-height: 200px;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
 }
 
 .desk-vekalet-compact-note {

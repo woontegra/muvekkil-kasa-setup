@@ -55,6 +55,12 @@ export function OfficeSettingsPage() {
   const [kayitMesaj, setKayitMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
 
   const [mevcutSifre, setMevcutSifre] = useState("");
+  const [yeniSifre, setYeniSifre] = useState("");
+  const [yeniSifreTekrar, setYeniSifreTekrar] = useState("");
+  const [sifreKaydediyor, setSifreKaydediyor] = useState(false);
+  const [sifreMesaj, setSifreMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
+
+  const [guvenlikMevcutSifre, setGuvenlikMevcutSifre] = useState("");
   const [guvenlikSorusuKodu, setGuvenlikSorusuKodu] = useState("G1");
   const [guvenlikCevabi, setGuvenlikCevabi] = useState("");
   const [guvenlikKaydediyor, setGuvenlikKaydediyor] = useState(false);
@@ -70,7 +76,7 @@ export function OfficeSettingsPage() {
       return;
     }
     try {
-      const url = await window.api.pathToFileUrl(p);
+      const url = await window.api.officeLogoDataUrl(p);
       setLogoSrc(url);
     } catch {
       setLogoSrc(null);
@@ -159,12 +165,46 @@ export function OfficeSettingsPage() {
     }
   }
 
+  async function sifreGuncelle() {
+    setSifreKaydediyor(true);
+    setSifreMesaj(null);
+    if (!yeniSifre.trim()) {
+      setSifreMesaj({ tip: "err", metin: "Yeni şifre boş olamaz." });
+      setSifreKaydediyor(false);
+      return;
+    }
+    if (yeniSifre !== yeniSifreTekrar) {
+      setSifreMesaj({ tip: "err", metin: "Yeni şifre ve tekrarı aynı değil." });
+      setSifreKaydediyor(false);
+      return;
+    }
+    try {
+      const r = await window.api.authSifreGuncelle({
+        mevcutSifre,
+        yeniSifre,
+      });
+      if (!r.ok) {
+        setSifreMesaj({ tip: "err", metin: r.error });
+        return;
+      }
+      setMevcutSifre("");
+      setYeniSifre("");
+      setYeniSifreTekrar("");
+      setSifreMesaj({ tip: "ok", metin: "Şifreniz güncellendi." });
+    } catch (e) {
+      console.error("[authSifreGuncelle]", e);
+      setSifreMesaj({ tip: "err", metin: "Şifre güncellenemedi." });
+    } finally {
+      setSifreKaydediyor(false);
+    }
+  }
+
   async function guvenlikGuncelle() {
     setGuvenlikKaydediyor(true);
     setGuvenlikMesaj(null);
     try {
       const r = await window.api.authGuvenlikGuncelle({
-        mevcutSifre,
+        mevcutSifre: guvenlikMevcutSifre,
         guvenlikSorusuKodu,
         guvenlikCevabi,
       });
@@ -172,7 +212,7 @@ export function OfficeSettingsPage() {
         setGuvenlikMesaj({ tip: "err", metin: r.error });
         return;
       }
-      setMevcutSifre("");
+      setGuvenlikMevcutSifre("");
       setGuvenlikCevabi("");
       setGuvenlikMesaj({ tip: "ok", metin: "Güvenlik bilgileri güncellendi." });
     } catch (e) {
@@ -379,7 +419,9 @@ export function OfficeSettingsPage() {
                     <div className="logo-preview-wrap">
                       <img src={logoSrc} alt="Ofis logosu" className="logo-preview" />
                     </div>
-                  ) : null}
+                  ) : (
+                    <p className="desk-muted-compact desk-office-logo-empty">Logo seçilmedi</p>
+                  )}
                 </div>
                 <div className="desk-office-form-footer-actions">
                   <button type="button" className="btn btn-primary btn-sm" onClick={() => void kaydet()} disabled={kaydediyor}>
@@ -397,60 +439,120 @@ export function OfficeSettingsPage() {
           <span>GÜVENLİK</span>
         </div>
         <div className="desk-panel-body desk-panel-body--pad-sm">
-          {guvenlikMesaj ? (
-            <div className={`desk-backup-notice desk-backup-notice--${guvenlikMesaj.tip === "ok" ? "ok" : "err"}`}>
-              {guvenlikMesaj.metin}
+          {sifreMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${sifreMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {sifreMesaj.metin}
             </div>
           ) : null}
-          <div className="desk-office-form-row desk-office-form-row--guvenlik">
-            <div className="field">
-              <label htmlFor="guvenlik-sifre">Mevcut şifre</label>
-              <input
-                id="guvenlik-sifre"
-                className="desk-input"
-                type="password"
-                autoComplete="current-password"
-                value={mevcutSifre}
-                onChange={(e) => setMevcutSifre(e.target.value)}
-                disabled={guvenlikKaydediyor}
-              />
+          <div className="desk-office-guvenlik-block">
+            <div className="desk-office-guvenlik-block-title">Şifre Değiştir</div>
+            <div className="desk-office-form-row desk-office-form-row--guvenlik">
+              <div className="field">
+                <label htmlFor="sifre-mevcut">Mevcut şifre</label>
+                <input
+                  id="sifre-mevcut"
+                  className="desk-input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={mevcutSifre}
+                  onChange={(e) => setMevcutSifre(e.target.value)}
+                  disabled={sifreKaydediyor}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="sifre-yeni">Yeni şifre</label>
+                <input
+                  id="sifre-yeni"
+                  className="desk-input"
+                  type="password"
+                  autoComplete="new-password"
+                  value={yeniSifre}
+                  onChange={(e) => setYeniSifre(e.target.value)}
+                  disabled={sifreKaydediyor}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="sifre-yeni-tekrar">Yeni şifre tekrar</label>
+                <input
+                  id="sifre-yeni-tekrar"
+                  className="desk-input"
+                  type="password"
+                  autoComplete="new-password"
+                  value={yeniSifreTekrar}
+                  onChange={(e) => setYeniSifreTekrar(e.target.value)}
+                  disabled={sifreKaydediyor}
+                />
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="guvenlik-soru">Yeni güvenlik sorusu</label>
-              <select
-                id="guvenlik-soru"
-                className="desk-input"
-                value={guvenlikSorusuKodu}
-                onChange={(e) => setGuvenlikSorusuKodu(e.target.value)}
-                disabled={guvenlikKaydediyor}
+            <div className="desk-office-settings-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => void sifreGuncelle()}
+                disabled={sifreKaydediyor}
               >
-                {GUVENLIK_SORU_KODLARI.map((k) => (
-                  <option key={k} value={k}>
-                    {GUVENLIK_SORULARI[k]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="guvenlik-cevap">Yeni güvenlik cevabı</label>
-              <input
-                id="guvenlik-cevap"
-                className="desk-input"
-                value={guvenlikCevabi}
-                onChange={(e) => setGuvenlikCevabi(e.target.value)}
-                disabled={guvenlikKaydediyor}
-              />
+                {sifreKaydediyor ? "Güncelleniyor…" : "Şifreyi güncelle"}
+              </button>
             </div>
           </div>
-          <div className="desk-office-settings-actions">
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => void guvenlikGuncelle()}
-              disabled={guvenlikKaydediyor}
-            >
-              {guvenlikKaydediyor ? "Güncelleniyor…" : "Güvenliği güncelle"}
-            </button>
+
+          <div className="desk-office-guvenlik-block desk-office-guvenlik-block--alt">
+            <div className="desk-office-guvenlik-block-title">Güvenlik Sorusu</div>
+            {guvenlikMesaj ? (
+              <div className={`desk-backup-notice desk-backup-notice--${guvenlikMesaj.tip === "ok" ? "ok" : "err"}`}>
+                {guvenlikMesaj.metin}
+              </div>
+            ) : null}
+            <div className="desk-office-form-row desk-office-form-row--guvenlik">
+              <div className="field">
+                <label htmlFor="guvenlik-sifre">Mevcut şifre</label>
+                <input
+                  id="guvenlik-sifre"
+                  className="desk-input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={guvenlikMevcutSifre}
+                  onChange={(e) => setGuvenlikMevcutSifre(e.target.value)}
+                  disabled={guvenlikKaydediyor}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="guvenlik-soru">Yeni güvenlik sorusu</label>
+                <select
+                  id="guvenlik-soru"
+                  className="desk-input"
+                  value={guvenlikSorusuKodu}
+                  onChange={(e) => setGuvenlikSorusuKodu(e.target.value)}
+                  disabled={guvenlikKaydediyor}
+                >
+                  {GUVENLIK_SORU_KODLARI.map((k) => (
+                    <option key={k} value={k}>
+                      {GUVENLIK_SORULARI[k]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="guvenlik-cevap">Yeni güvenlik cevabı</label>
+                <input
+                  id="guvenlik-cevap"
+                  className="desk-input"
+                  value={guvenlikCevabi}
+                  onChange={(e) => setGuvenlikCevabi(e.target.value)}
+                  disabled={guvenlikKaydediyor}
+                />
+              </div>
+            </div>
+            <div className="desk-office-settings-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => void guvenlikGuncelle()}
+                disabled={guvenlikKaydediyor}
+              >
+                {guvenlikKaydediyor ? "Güncelleniyor…" : "Güvenliği güncelle"}
+              </button>
+            </div>
           </div>
         </div>
       </section>

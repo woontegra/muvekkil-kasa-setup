@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { MuvekkilInput, MuvekkilListItem, MuvekkilPagedResult } from "@shared/types/muvekkil";
 import { MuvekkilFormModal } from "../components/MuvekkilFormModal";
+import { formatTry } from "../lib/format";
 import {
   MUVEKKIL_PAGE_SIZES,
   muvekkilGorunenAd,
@@ -10,10 +11,6 @@ import {
   muvekkilListeTelefonu,
   muvekkilTurEtiket,
 } from "../lib/muvekkil";
-
-function formatTry(n: number): string {
-  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
-}
 
 async function muvekkilListesiniSayfaliYukle(
   arama: string,

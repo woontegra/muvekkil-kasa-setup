@@ -698,6 +698,29 @@ select.desk-input--tiny {
   gap: 8px;
 }
 
+.desk-office-guvenlik-block {
+  margin-bottom: 4px;
+}
+
+.desk-office-guvenlik-block--alt {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.desk-office-guvenlik-block-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--panel-head-text, #1e40af);
+  letter-spacing: 0.02em;
+}
+
+.desk-office-logo-empty {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
 .desk-office-backup-actions {
   margin-top: 6px;
 }

@@ -11,11 +11,11 @@ export function MakbuzOfficeHeader({ office }: Props) {
 
   useEffect(() => {
     const p = (office.logoPath ?? "").trim();
-    if (!p || !window.api?.pathToFileUrl) {
+    if (!p || !window.api?.officeLogoDataUrl) {
       setLogoSrc(null);
       return;
     }
-    void window.api.pathToFileUrl(p).then((url) => setLogoSrc(url));
+    void window.api.officeLogoDataUrl(p).then((url) => setLogoSrc(url));
   }, [office.logoPath]);
 
   const firma = ofisAdiGoster(office);
@@ -128,13 +128,25 @@ export function MakbuzSignFooter() {
   );
 }
 
-export function MakbuzPrintToolbar({ onPrint, onClose }: { onPrint: () => void; onClose: () => void }) {
+export function MakbuzPrintToolbar({
+  onPrint,
+  onClose,
+  printDisabled,
+  closeDisabled,
+  printLabel = "Yazdır",
+}: {
+  onPrint: () => void;
+  onClose: () => void;
+  printDisabled?: boolean;
+  closeDisabled?: boolean;
+  printLabel?: string;
+}) {
   return (
     <div className="makbuz-toolbar no-print">
-      <button type="button" className="btn btn-primary btn-sm" onClick={onPrint}>
-        Yazdır
+      <button type="button" className="btn btn-primary btn-sm" onClick={onPrint} disabled={printDisabled}>
+        {printLabel}
       </button>
-      <button type="button" className="btn btn-sm" onClick={onClose}>
+      <button type="button" className="btn btn-sm" onClick={onClose} disabled={closeDisabled}>
         Kapat
       </button>
     </div>
