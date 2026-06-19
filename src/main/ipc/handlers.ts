@@ -80,6 +80,12 @@ import {
 } from "../services/ofisKasa.service";
 import { backupDatabase, restoreDatabase } from "../services/backup.service";
 import { officeLogoDataUrl, officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
+import {
+  licenseActivate,
+  licenseGetState,
+  licenseValidate,
+  licenseValidateOnStartup,
+} from "../services/license.service";
 
 function oturumKullaniciEtiketi(): { id: number | null; ad: string | null } {
   const s = authGetSession();
@@ -246,6 +252,18 @@ export function registerIpcHandlers(): void {
     } catch {
       return null;
     }
+  });
+
+  ipcMain.handle(IPC.license.getState, () => licenseGetState());
+  ipcMain.handle(IPC.license.activate, (_e, input: import("@shared/types/license").LicenseActivateInput) =>
+    licenseActivate(input),
+  );
+  ipcMain.handle(IPC.license.validate, () => licenseValidate());
+}
+
+export function initLicenseOnReady(): void {
+  void licenseValidateOnStartup().catch((e) => {
+    console.error("[license] startup validate", e);
   });
 }
 

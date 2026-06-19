@@ -87,6 +87,10 @@ const api = {
   getVekaletPrintPackageByOdemeId: (odemeId: number) =>
     ipcRenderer.invoke(IPC.vekaletMakbuz.getPrintPackageByOdemeId, odemeId),
   pathToFileUrl: (filePath: string) => ipcRenderer.invoke(IPC.util.pathToFileUrl, filePath),
+  licenseGetState: () => ipcRenderer.invoke(IPC.license.getState),
+  licenseActivate: (input: import("@shared/types/license").LicenseActivateInput) =>
+    ipcRenderer.invoke(IPC.license.activate, input),
+  licenseValidate: () => ipcRenderer.invoke(IPC.license.validate),
 };
 
 contextBridge.exposeInMainWorld("api", api);

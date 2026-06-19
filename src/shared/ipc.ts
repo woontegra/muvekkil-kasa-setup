@@ -94,5 +94,10 @@ export const IPC = {
   util: {
     pathToFileUrl: "util:pathToFileUrl",
   },
+  license: {
+    getState: "license:getState",
+    activate: "license:activate",
+    validate: "license:validate",
+  },
   masrafTurleri: "masrafTurleri",
 } as const;

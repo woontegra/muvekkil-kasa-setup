@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { getDb, nowIso } from "./db/connection";
 import { runMigrations } from "./db/migrate";
 import { allMigrations } from "./migrations";
-import { registerIpcHandlers, initAuthOnReady } from "./ipc/handlers";
+import { registerIpcHandlers, initAuthOnReady, initLicenseOnReady } from "./ipc/handlers";
 import { approveAllPendingOfisKasaOnExit } from "./services/ofisKasa.service";
 import { createMainWindow } from "./window";
 
@@ -22,6 +22,7 @@ app.whenReady().then(() => {
   initDatabase();
   registerIpcHandlers();
   initAuthOnReady();
+  initLicenseOnReady();
   mainWindow = createMainWindow();
 
   app.on("activate", () => {

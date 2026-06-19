@@ -123,6 +123,11 @@ export type Api = {
   getVekaletReceiptDataByInstallmentId: (taksitId: number) => Promise<VekaletMakbuzPaketi>;
   getVekaletPrintPackageByOdemeId: (odemeId: number) => Promise<VekaletMakbuzPaketi>;
   pathToFileUrl: (filePath: string) => Promise<string | null>;
+  licenseGetState: () => Promise<import("@shared/types/license").LicenseState>;
+  licenseActivate: (
+    input: import("@shared/types/license").LicenseActivateInput,
+  ) => Promise<import("@shared/types/license").LicenseActivateResult>;
+  licenseValidate: () => Promise<import("@shared/types/license").LicenseValidateResult>;
 };
 
 declare global {
