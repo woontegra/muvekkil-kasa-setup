@@ -78,12 +78,11 @@ export type OfisKasaDuzeltmeInput = {
 export type OfisKasaIslemSonuc = { ok: true; row: OfisKasaHareket } | { ok: false; error: string };
 
 export type OfisKasaUstOzet = {
-  toplamGelir: number;
-  toplamGider: number;
-  duzeltmeEtkisi: number;
-  kasaBakiyesi: number;
+  devredenBakiye: number;
   buAyGelir: number;
   buAyGider: number;
+  buAyDuzeltmeEtkisi: number;
+  kasaBakiyesi: number;
 };
 
 export type OfisKasaAnaSayfaOzet = {
@@ -99,9 +98,10 @@ export type OfisKasaRaporPaketi =
       tarihBit: string;
       yazdirmaTarihi: string;
       office: OfficeSettings;
-      toplamGelir: number;
-      toplamGider: number;
-      duzeltmeEtkisi: number;
+      devredenBakiye: number;
+      donemGelir: number;
+      donemGider: number;
+      donemDuzeltmeEtkisi: number;
       kasaBakiyesi: number;
       hareketler: OfisKasaHareketListeSatir[];
     }

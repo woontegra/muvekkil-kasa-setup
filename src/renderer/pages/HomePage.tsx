@@ -37,6 +37,9 @@ export function HomePage() {
   const [ofisOzet, setOfisOzet] = useState({ bugunGider: 0, buAyGider: 0, kasaBakiyesi: 0 });
   const [smmBekleyenSayisi, setSmmBekleyenSayisi] = useState(0);
 
+  const ilkKullanim = listeTotal === 0 && !listeYukleniyor && !q.trim();
+  const aramaSonucuBos = listeTotal === 0 && !listeYukleniyor && q.trim().length > 0;
+
   const yukleKayitListesi = useCallback(async () => {
     setListeYukleniyor(true);
     try {
@@ -104,7 +107,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="desk-page desk-page--home-simple">
+    <div className={`desk-page desk-page-shell desk-page--home-simple${ilkKullanim ? " desk-page--home-empty" : ""}`}>
       <h1 className="desk-page-title">Ana sayfa</h1>
       <p className="desk-page-sub">Müvekkil arama ve taksit takibi.</p>
 
@@ -134,6 +137,36 @@ export function HomePage() {
           </div>
         </div>
       </div>
+
+      {ilkKullanim ? (
+        <div className="desk-panel desk-panel--home-hizli">
+          <div className="desk-panel-head">
+            <span>Hızlı başlangıç</span>
+          </div>
+          <div className="desk-panel-body desk-panel-body--pad-sm">
+            <div className="desk-home-hizli-grid">
+              <button type="button" className="desk-home-hizli-item" onClick={() => setModal(true)}>
+                <span className="desk-home-hizli-num" aria-hidden>
+                  1
+                </span>
+                <span className="desk-home-hizli-label">İlk müvekkili ekle</span>
+              </button>
+              <Link to="/ayarlar/ofis" className="desk-home-hizli-item">
+                <span className="desk-home-hizli-num" aria-hidden>
+                  2
+                </span>
+                <span className="desk-home-hizli-label">Ofis bilgilerini doldur</span>
+              </Link>
+              <Link to="/ofis-kasasi" className="desk-home-hizli-item">
+                <span className="desk-home-hizli-num" aria-hidden>
+                  3
+                </span>
+                <span className="desk-home-hizli-label">Ofis kasasına ilk kayıt gir</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="desk-toolbar desk-toolbar--tight desk-home-toolbar">
         <div className="desk-field-inline" style={{ flex: "1 1 280px" }}>
@@ -182,8 +215,8 @@ export function HomePage() {
           <div className="desk-home-taksit-list-bar">
             <p className="desk-home-taksit-list-caption">Vadesi geçmiş taksitler</p>
           </div>
-          <div className="desk-table-wrap desk-home-taksit-table-wrap">
-            <p className="desk-muted-compact desk-home-taksit-empty">Vadesi geçmiş taksit yok.</p>
+          <div className={`desk-table-wrap desk-home-taksit-table-wrap${ilkKullanim ? " desk-home-taksit-table-wrap--bos" : ""}`}>
+            <p className="desk-muted-compact desk-home-taksit-empty">Henüz vadesi geçmiş taksit yok.</p>
           </div>
         </div>
       </div>
@@ -196,9 +229,25 @@ export function HomePage() {
           </span>
         </div>
         <div className="desk-panel-body desk-panel-body--pad-0 desk-home-mvk-liste-body">
-          <div className="desk-table-wrap desk-home-muvekkil-table-wrap">
+          <div
+            className={`desk-table-wrap desk-home-muvekkil-table-wrap${ilkKullanim || aramaSonucuBos ? " desk-home-muvekkil-table-wrap--bos" : ""}`}
+          >
             {sonuc.length === 0 && !listeYukleniyor ? (
-              <p className="desk-muted-compact desk-home-mvk-liste-empty">Kayıt bulunamadı.</p>
+              ilkKullanim ? (
+                <div className="desk-home-mvk-empty-state">
+                  <h3 className="desk-home-mvk-empty-title">Henüz müvekkil kaydı yok</h3>
+                  <p className="desk-home-mvk-empty-desc">
+                    İlk müvekkilinizi ekleyerek dosya, kasa ve taksit takibine başlayabilirsiniz.
+                  </p>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => setModal(true)}>
+                    + İlk müvekkili ekle
+                  </button>
+                </div>
+              ) : aramaSonucuBos ? (
+                <p className="desk-muted-compact desk-home-mvk-liste-empty">Aramanızla eşleşen kayıt bulunamadı.</p>
+              ) : (
+                <p className="desk-muted-compact desk-home-mvk-liste-empty">Kayıt bulunamadı.</p>
+              )
             ) : sonuc.length === 0 && listeYukleniyor ? (
               <p className="desk-muted-compact desk-home-mvk-liste-empty">Yükleniyor…</p>
             ) : (

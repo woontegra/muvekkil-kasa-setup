@@ -66,6 +66,102 @@ function ofisKasaSatirKasaEtkisi(x: OfisKasaOzetSatir): number {
   return 0;
 }
 
+type OfisKasaSatirKatki = { gelir: number; gider: number; duzeltme: number };
+
+function ofisKasaSatirKatki(r: OfisKasaOzetSatir): OfisKasaSatirKatki {
+  if (r.islem_tipi === "GELIR" && !r.duzeltme_mi) return { gelir: r.tutar, gider: 0, duzeltme: 0 };
+  if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) return { gelir: 0, gider: r.tutar, duzeltme: 0 };
+  if (r.islem_tipi === "DUZELTME" && r.duzeltme_mi) {
+    return { gelir: 0, gider: 0, duzeltme: ofisKasaSatirKasaEtkisi(r) };
+  }
+  return { gelir: 0, gider: 0, duzeltme: 0 };
+}
+
+function ofisKasaNetFromKatki(k: OfisKasaSatirKatki): number {
+  return k.gelir - k.gider + k.duzeltme;
+}
+
+function ofisKasaLifetimeBakiye(rows: OfisKasaOzetSatir[]): number {
+  let gelir = 0;
+  let gider = 0;
+  let duzeltme = 0;
+  for (const r of rows) {
+    const k = ofisKasaSatirKatki(r);
+    gelir += k.gelir;
+    gider += k.gider;
+    duzeltme += k.duzeltme;
+  }
+  return gelir - gider + duzeltme;
+}
+
+function ayBasiSonuYmd(d = new Date()): { bas: string; bit: string } {
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const bas = `${y}-${pad(m + 1)}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const bit = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+  return { bas, bit };
+}
+
+function hesaplaOfisKasaDonemOzet(
+  rows: OfisKasaOzetSatir[],
+  donemBas: string,
+  donemBit: string
+): {
+  devredenBakiye: number;
+  donemGelir: number;
+  donemGider: number;
+  donemDuzeltmeEtkisi: number;
+  kasaBakiyesi: number;
+} {
+  let devredenGelir = 0;
+  let devredenGider = 0;
+  let devredenDuzeltme = 0;
+  let donemGelir = 0;
+  let donemGider = 0;
+  let donemDuzeltme = 0;
+
+  for (const r of rows) {
+    const t = String(r.tarih ?? "").slice(0, 10);
+    const k = ofisKasaSatirKatki(r);
+    if (t < donemBas) {
+      devredenGelir += k.gelir;
+      devredenGider += k.gider;
+      devredenDuzeltme += k.duzeltme;
+    } else if (t <= donemBit) {
+      donemGelir += k.gelir;
+      donemGider += k.gider;
+      donemDuzeltme += k.duzeltme;
+    }
+  }
+
+  const devredenBakiye = ofisKasaNetFromKatki({
+    gelir: devredenGelir,
+    gider: devredenGider,
+    duzeltme: devredenDuzeltme,
+  });
+  const kasaBakiyesi =
+    devredenBakiye + ofisKasaNetFromKatki({ gelir: donemGelir, gider: donemGider, duzeltme: donemDuzeltme });
+
+  return {
+    devredenBakiye,
+    donemGelir,
+    donemGider,
+    donemDuzeltmeEtkisi: donemDuzeltme,
+    kasaBakiyesi,
+  };
+}
+
+function ofisKasaOzetSatirlari(d: ReturnType<typeof getDb>): OfisKasaOzetSatir[] {
+  return d
+    .prepare(
+      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi
+       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI')`
+    )
+    .all() as OfisKasaOzetSatir[];
+}
+
 function allocateDztBelgeNo(d: ReturnType<typeof getDb>): string {
   const grup = "DZT";
   const yil = new Date().getFullYear();
@@ -193,55 +289,31 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
 
 export function ofisKasaUstOzet(): OfisKasaUstOzet {
   const d = getDb();
-  const rows = d
-    .prepare(
-      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi
-       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI')`
-    )
-    .all() as OfisKasaOzetSatir[];
-  const now = new Date();
-  const ayPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  let toplamGelir = 0;
-  let toplamGider = 0;
-  let buAyGelir = 0;
-  let buAyGider = 0;
-  let duzeltmeEtkisi = 0;
-  for (const r of rows) {
-    const t = String(r.tarih ?? "").slice(0, 10);
-    const inAy = t.startsWith(ayPrefix);
-    if (r.islem_tipi === "GELIR" && !r.duzeltme_mi) {
-      toplamGelir += r.tutar;
-      if (inAy) buAyGelir += r.tutar;
-    } else if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) {
-      toplamGider += r.tutar;
-      if (inAy) buAyGider += r.tutar;
-    } else if (r.islem_tipi === "DUZELTME" && r.duzeltme_mi) {
-      duzeltmeEtkisi += ofisKasaSatirKasaEtkisi(r);
-    }
-  }
-  const kasaBakiyesi = toplamGelir - toplamGider + duzeltmeEtkisi;
-  return { toplamGelir, toplamGider, duzeltmeEtkisi, kasaBakiyesi, buAyGelir, buAyGider };
+  const rows = ofisKasaOzetSatirlari(d);
+  const { bas, bit } = ayBasiSonuYmd();
+  const donem = hesaplaOfisKasaDonemOzet(rows, bas, bit);
+  return {
+    devredenBakiye: donem.devredenBakiye,
+    buAyGelir: donem.donemGelir,
+    buAyGider: donem.donemGider,
+    buAyDuzeltmeEtkisi: donem.donemDuzeltmeEtkisi,
+    kasaBakiyesi: ofisKasaLifetimeBakiye(rows),
+  };
 }
 
 export function ofisKasaAnaSayfaOzet(): OfisKasaAnaSayfaOzet {
   const ust = ofisKasaUstOzet();
   const d = getDb();
   const bugun = bugunYerelIso();
-  const now = new Date();
-  const ayPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const rows = d
-    .prepare(
-      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi
-       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI')`
-    )
-    .all() as OfisKasaOzetSatir[];
+  const { bas, bit } = ayBasiSonuYmd();
+  const rows = ofisKasaOzetSatirlari(d);
   let bugunGider = 0;
   let buAyGider = 0;
   for (const r of rows) {
     const t = String(r.tarih ?? "").slice(0, 10);
     if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) {
       if (t === bugun) bugunGider += r.tutar;
-      if (t.startsWith(ayPrefix)) buAyGider += r.tutar;
+      if (t >= bas && t <= bit) buAyGider += r.tutar;
     }
   }
   return { bugunGider, buAyGider, kasaBakiyesi: ust.kasaBakiyesi };
@@ -517,31 +589,19 @@ export function getOfisKasaRaporPaketi(tarihBas: string, tarihBit: string): Ofis
   const office = officeSettingsGetForMakbuz();
   const liste = ofisKasaHareketList({ tarihBas: tb, tarihBit: te, islemTipi: "TUMU", kategori: "", q: "" });
   const d = getDb();
-  const rows = d
-    .prepare(
-      `SELECT islem_tipi, tutar, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi
-       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI') AND tarih >= ? AND tarih <= ?`
-    )
-    .all(tb, te) as OfisKasaOzetSatir[];
-  let toplamGelir = 0;
-  let toplamGider = 0;
-  let duzeltmeEtkisi = 0;
-  for (const r of rows) {
-    if (r.islem_tipi === "GELIR" && !r.duzeltme_mi) toplamGelir += r.tutar;
-    else if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) toplamGider += r.tutar;
-    else if (r.islem_tipi === "DUZELTME" && r.duzeltme_mi) duzeltmeEtkisi += ofisKasaSatirKasaEtkisi(r);
-  }
-  const kasaBakiyesi = toplamGelir - toplamGider + duzeltmeEtkisi;
+  const rows = ofisKasaOzetSatirlari(d);
+  const ozet = hesaplaOfisKasaDonemOzet(rows, tb, te);
   return {
     ok: true,
     tarihBas: tb,
     tarihBit: te,
     yazdirmaTarihi: nowIso(),
     office,
-    toplamGelir,
-    toplamGider,
-    duzeltmeEtkisi,
-    kasaBakiyesi,
+    devredenBakiye: ozet.devredenBakiye,
+    donemGelir: ozet.donemGelir,
+    donemGider: ozet.donemGider,
+    donemDuzeltmeEtkisi: ozet.donemDuzeltmeEtkisi,
+    kasaBakiyesi: ozet.kasaBakiyesi,
     hareketler: liste,
   };
 }

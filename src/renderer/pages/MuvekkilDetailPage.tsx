@@ -74,7 +74,7 @@ export function MuvekkilDetailPage() {
   }
 
   return (
-    <div className="desk-page">
+    <div className="desk-page desk-page-shell">
       <div className="desk-toolbar desk-toolbar--tight">
         <div className="desk-toolbar-left">
           <Link className="desk-link-back" to="/">

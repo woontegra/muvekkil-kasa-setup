@@ -24,7 +24,7 @@
 
 /* --- Vekalet taksit uyarıları (ana sayfa + rozetler) --- */
 .desk-panel--home-taksit-uyari {
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 .desk-panel-body--pad-sm {
@@ -70,10 +70,10 @@
   flex: 1 1 100px;
   min-width: 88px;
   padding: 6px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--metric-neutral-border);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  background: var(--metric-neutral-bg);
+  box-shadow: none;
 }
 
 .desk-taksit-alert-metric .l {
@@ -94,18 +94,30 @@
 }
 
 .desk-taksit-alert-metric--gecmis {
-  border-color: #f87171;
-  background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+  border-color: var(--metric-danger-border);
+  background: var(--metric-danger-bg);
+}
+
+.desk-taksit-alert-metric--gecmis .v {
+  color: var(--metric-danger-fg);
 }
 
 .desk-taksit-alert-metric--bugun {
-  border-color: #fb923c;
-  background: linear-gradient(180deg, #fffbeb 0%, #ffedd5 100%);
+  border-color: var(--metric-warning-border);
+  background: var(--metric-warning-bg);
+}
+
+.desk-taksit-alert-metric--bugun .v {
+  color: var(--metric-warning-fg);
 }
 
 .desk-taksit-alert-metric--yakin {
-  border-color: var(--color-primary-muted);
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: var(--metric-info-border);
+  background: var(--metric-info-bg);
+}
+
+.desk-taksit-alert-metric--yakin .v {
+  color: var(--metric-info-fg);
 }
 
 .desk-backup-notice {
@@ -184,13 +196,13 @@
 }
 
 .desk-page--home-simple .desk-page-sub {
-  margin-bottom: 4px;
+  margin-bottom: var(--page-block-gap);
   color: var(--text-muted);
   font-weight: 500;
 }
 
 .desk-home-toolbar {
-  margin-bottom: 6px;
+  margin-bottom: var(--page-block-gap);
 }
 
 .desk-taksit-alert-metrics--three .desk-taksit-alert-metric {
@@ -198,8 +210,12 @@
 }
 
 .desk-taksit-alert-metric--odenmemis {
-  border-color: var(--color-secondary);
-  background: linear-gradient(180deg, #ffffff 0%, #ecfeff 100%);
+  border-color: var(--metric-info-border);
+  background: var(--metric-info-bg);
+}
+
+.desk-taksit-alert-metric--odenmemis .v {
+  color: var(--metric-info-fg);
 }
 
 /* Ana sayfa: taksit uyarıları — düz masaüstü panel */
@@ -238,7 +254,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #4b5563;
+  color: var(--text-muted);
 }
 
 .desk-home-taksit-table-wrap {
@@ -248,6 +264,8 @@
 
 .desk-home-taksit-empty {
   margin: 4px 0;
+  padding: 6px 2px;
+  font-size: 12px;
 }
 
 .desk-home-muvekkil-table-wrap {
@@ -258,7 +276,7 @@
 .desk-panel-head--mvk-liste .desk-panel-meta {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--panel-head-meta);
 }
 
 .desk-panel--about-app {
@@ -336,11 +354,126 @@
   margin: 0;
 }
 
+/* Ana sayfa — ilk kullanım / boş durum */
+.desk-page--home-empty .desk-home-ofis-ozet {
+  padding: 8px 12px 10px;
+  margin-bottom: 8px;
+}
+
+.desk-page--home-empty .desk-home-ofis-kv {
+  padding: 4px 16px 4px 0;
+  gap: 4px;
+}
+
+.desk-page--home-empty .desk-home-ofis-kv .v {
+  font-size: 15px;
+}
+
+.desk-panel--home-hizli {
+  margin-bottom: 0;
+}
+
+.desk-home-hizli-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.desk-home-hizli-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--metric-neutral-bg);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+button.desk-home-hizli-item {
+  width: 100%;
+}
+
+.desk-home-hizli-item:hover {
+  border-color: var(--color-primary-muted);
+  background: linear-gradient(180deg, #ffffff 0%, var(--color-primary-soft) 100%);
+}
+
+.desk-home-hizli-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.desk-home-hizli-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+.desk-home-hizli-label {
+  min-width: 0;
+}
+
+.desk-home-muvekkil-table-wrap--bos {
+  max-height: none;
+  overflow: visible;
+}
+
+.desk-home-taksit-table-wrap--bos {
+  max-height: none;
+  overflow: visible;
+}
+
+.desk-home-mvk-empty-state {
+  padding: 18px 14px 20px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--bg-panel-subtle) 0%, var(--bg-card) 100%);
+  border-top: 1px solid var(--border-soft);
+}
+
+.desk-home-mvk-empty-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.desk-home-mvk-empty-desc {
+  margin: 0 auto 12px;
+  max-width: 40ch;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  .desk-home-hizli-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .desk-mvk-pagination {
   flex-shrink: 0;
   padding: 6px 10px 8px;
   border-top: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel-subtle) 100%);
 }
 
 .desk-mvk-pagination-top {
@@ -409,10 +542,10 @@ select.desk-input--tiny {
 }
 
 .desk-mvk-page-num--aktif {
-  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: var(--color-primary);
   color: #fff !important;
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 1px 2px rgba(59, 111, 201, 0.2);
 }
 
 .desk-mvk-page-num--aktif:hover {
@@ -508,9 +641,9 @@ select.desk-input--tiny {
   margin: 6px 0 4px;
   padding: 5px 8px;
   border-radius: 2px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #991b1b;
+  border: 1px solid var(--metric-danger-border);
+  background: var(--metric-danger-bg);
+  color: var(--metric-danger-fg);
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -520,13 +653,13 @@ select.desk-input--tiny {
 }
 
 .desk-home-smm-compact:hover {
-  border-color: #f87171;
-  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.25);
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px rgba(196, 92, 92, 0.18);
 }
 
 .desk-home-smm-compact--aktif {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px rgba(196, 92, 92, 0.16);
 }
 
 .desk-home-smm-compact-title {
@@ -608,10 +741,6 @@ select.desk-input--tiny {
 
 /* --- Ofis bilgileri (ayarlar) --- */
 .desk-page--office-settings {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-  padding: 16px 20px;
   overflow-y: auto;
 }
 
@@ -628,12 +757,12 @@ select.desk-input--tiny {
 }
 
 .desk-office-settings-desc {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 12px;
 }
 
 .desk-office-settings-panel {
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .desk-office-settings-panel--backup {
@@ -664,6 +793,7 @@ select.desk-input--tiny {
   margin-bottom: 6px;
 }
 
+.desk-office-form-row .field .desk-input,
 .desk-office-form-full .desk-input {
   width: 100%;
   box-sizing: border-box;

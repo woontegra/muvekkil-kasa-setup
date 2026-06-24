@@ -215,11 +215,14 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  font-size: 0.72rem;
-  font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary-deep) 100%);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.auth-feature-ico svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .auth-hero-woontegra-footer {

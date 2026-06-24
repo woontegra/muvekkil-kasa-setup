@@ -1,10 +1,10 @@
-/* Ofis Kasası — ana sayfa özet paneli (eski masaüstü görünüm) */
+/* Ofis Kasası — ana sayfa özet paneli */
 .desk-home-ofis-ozet {
-  margin-bottom: 6px;
-  padding: 6px 10px 8px;
-  border: 1px solid #9fd4e8;
+  margin-bottom: 0;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--border);
   border-radius: 2px;
-  background: linear-gradient(180deg, #f0fdf9 0%, #ecfeff 45%, #e0f2fe 100%);
+  background: var(--surface-panel-accent);
 }
 
 .desk-home-ofis-ozet-head {
@@ -56,7 +56,7 @@
 .desk-home-ofis-kv .k {
   font-size: 10px;
   font-weight: 700;
-  color: #374151;
+  color: var(--text-muted);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -74,12 +74,33 @@
 }
 
 /* Ofis kasası sayfa */
-.desk-page--ofis-kasa {
-  padding: 16px 20px;
+.desk-ofis-ust-ozet .desk-file-kvgrid--ofis-ozet {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .desk-ofis-ust-ozet .desk-file-kvgrid--ofis-ozet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.desk-kv--emphasis {
+  background: linear-gradient(180deg, var(--color-primary-soft) 0%, #ffffff 100%);
+  border-left: 2px solid var(--color-primary);
+}
+
+.desk-kv--emphasis .desk-kv-k {
+  color: var(--primary-deep);
+  font-weight: 800;
+}
+
+.desk-kv--emphasis .desk-kv-v {
+  color: var(--color-primary-hover);
+  font-size: 14px;
 }
 
 .desk-ofis-ust-ozet {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .desk-ofis-filtre-grid {

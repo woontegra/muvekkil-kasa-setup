@@ -720,25 +720,25 @@
 
 .desk-metric--accent-avans {
   border-left-color: var(--color-primary);
-  background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+  background: var(--metric-info-bg);
 }
 
 .desk-metric--accent-avans .v {
-  color: #1d4ed8;
+  color: var(--metric-info-fg);
 }
 
 .desk-metric--accent-masraf {
   border-left-color: var(--color-warning);
-  background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+  background: var(--metric-warning-bg);
 }
 
 .desk-metric--accent-masraf .v {
-  color: #c2410c;
+  color: var(--metric-warning-fg);
 }
 
 .desk-metric--accent-kalan-avans {
   border-left-color: var(--color-secondary);
-  background: linear-gradient(180deg, #ffffff 0%, #ecfeff 100%);
+  background: var(--metric-info-bg);
 }
 
 .desk-metric--accent-kalan-avans .v {
@@ -786,7 +786,7 @@
   padding: 8px;
   font-size: 12px;
   color: var(--text-muted);
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel-subtle) 100%);
   border-radius: 2px;
   border: 1px solid var(--border-soft);
 }
@@ -795,10 +795,7 @@
   margin: 0 0 2px;
   font-size: 15px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary-deep) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--primary-deep);
 }
 
 .desk-page-sub {
@@ -837,13 +834,22 @@
 }
 
 .desk-input {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 4px 6px;
   font-size: 12px;
   border: 1px solid var(--input-border);
   border-radius: 2px;
   background: #fff;
+  pointer-events: auto;
+}
+
+.desk-field-inline .desk-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
 }
 
 .desk-input:focus {
@@ -928,7 +934,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--modal-desk-head-fg);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+  text-shadow: var(--panel-head-text-shadow);
 }
 
 .modal-desk .modal-body {
@@ -959,11 +965,15 @@
 .modal-desk .modal-body input,
 .modal-desk .modal-body select,
 .modal-desk .modal-body textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 4px 6px;
   font-size: 12px;
   border: 1px solid var(--input-border);
   border-radius: 2px;
   background: #fff;
+  pointer-events: auto;
 }
 
 .modal-desk .modal-body textarea {
@@ -1119,10 +1129,10 @@
   flex: 1 1 100px;
   min-width: 88px;
   padding: 6px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--metric-neutral-border);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  background: var(--metric-neutral-bg);
+  box-shadow: none;
 }
 
 .desk-taksit-alert-metric .l {
@@ -1143,18 +1153,30 @@
 }
 
 .desk-taksit-alert-metric--gecmis {
-  border-color: #f87171;
-  background: linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%);
+  border-color: var(--metric-danger-border);
+  background: var(--metric-danger-bg);
+}
+
+.desk-taksit-alert-metric--gecmis .v {
+  color: var(--metric-danger-fg);
 }
 
 .desk-taksit-alert-metric--bugun {
-  border-color: #fb923c;
-  background: linear-gradient(180deg, #fffbeb 0%, #ffedd5 100%);
+  border-color: var(--metric-warning-border);
+  background: var(--metric-warning-bg);
+}
+
+.desk-taksit-alert-metric--bugun .v {
+  color: var(--metric-warning-fg);
 }
 
 .desk-taksit-alert-metric--yakin {
-  border-color: var(--color-primary-muted);
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: var(--metric-info-border);
+  background: var(--metric-info-bg);
+}
+
+.desk-taksit-alert-metric--yakin .v {
+  color: var(--metric-info-fg);
 }
 
 .desk-backup-notice {

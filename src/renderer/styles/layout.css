@@ -1,80 +1,104 @@
 :root {
-  /* Canlı ama profesyonel palet */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-soft: #dbeafe;
-  --color-primary-muted: #93c5fd;
-  --color-primary-ring: rgba(37, 99, 235, 0.32);
+  /* Tek ana mavi ailesi — sakin masaüstü palet */
+  --color-primary: #3b6fc9;
+  --color-primary-hover: #315fab;
+  --color-primary-soft: #e9f0f9;
+  --color-primary-muted: #b4c9e4;
+  --color-primary-ring: rgba(59, 111, 201, 0.24);
 
-  --color-secondary: #0891b2;
-  --color-secondary-soft: #cffafe;
-  --color-secondary-deep: #0e7490;
+  --color-secondary: #5a8fbf;
+  --color-secondary-soft: #e8f1f8;
+  --color-secondary-deep: #2d5f8f;
 
-  --color-success: #16a34a;
-  --color-success-soft: #dcfce7;
+  --color-success: #2f8f57;
+  --color-success-soft: #e8f6ee;
 
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fef3c7;
+  --color-warning: #c98a2e;
+  --color-warning-soft: #faf3e6;
 
-  --color-danger: #dc2626;
-  --color-danger-soft: #fee2e2;
+  --color-danger: #c45c5c;
+  --color-danger-soft: #faf0f0;
+
+  /* Uyarı / özet kutuları — pastel tonlar */
+  --metric-danger-border: #e5c4c4;
+  --metric-danger-bg: linear-gradient(180deg, #fdf8f8 0%, #f8ecec 100%);
+  --metric-danger-fg: #9b4444;
+
+  --metric-warning-border: #e8d4b8;
+  --metric-warning-bg: linear-gradient(180deg, #fdfaf6 0%, #f8f0e8 100%);
+  --metric-warning-fg: #9a6530;
+
+  --metric-info-border: #c5d8eb;
+  --metric-info-bg: linear-gradient(180deg, #f7fafd 0%, #ecf2f9 100%);
+  --metric-info-fg: #315fab;
+
+  --metric-neutral-border: #cdd6e4;
+  --metric-neutral-bg: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%);
 
   /* Eski isimlerle uyumluluk */
   --primary: var(--color-primary);
   --primary-hover: var(--color-primary-hover);
   --primary-soft: var(--color-primary-soft);
-  --primary-deep: #0c1222;
+  --primary-deep: #1e3a5f;
 
-  --bg-page: #eef4ff;
-  --bg-page-tint: linear-gradient(165deg, #f4f8ff 0%, #e8f0fc 42%, #e2ebfa 100%);
+  --bg-page: #f3f5f8;
+  --bg-page-tint: linear-gradient(165deg, #f6f8fb 0%, #eef2f7 50%, #e9eef5 100%);
   --bg-card: #ffffff;
-  --bg-elevated: #eff6ff;
+  --bg-elevated: #f5f8fc;
+  --bg-panel: #fafbfd;
+  --bg-panel-subtle: #f4f7fb;
 
-  --border: #c5d0e8;
-  --border-soft: #dce6f8;
-  --text: #0f172a;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
+  --border: #cdd6e4;
+  --border-soft: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #5a6b82;
+  --text-subtle: #7b8ba0;
 
   --danger: var(--color-danger);
 
-  --accent-line: rgba(37, 99, 235, 0.14);
+  --accent-line: rgba(59, 111, 201, 0.12);
 
-  /* Panel başlık şeridi — mavi → turkuaz */
-  --panel-head-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 38%, #0e7490 100%);
-  --panel-head-text: #ffffff;
-  --panel-head-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
-  --panel-head-meta: rgba(255, 255, 255, 0.92);
-  --panel-head-border: rgba(15, 23, 42, 0.14);
+  /* Panel başlık şeridi — sakin açık mavi */
+  --panel-head-bg: linear-gradient(180deg, #e8eef6 0%, #dfe8f3 100%);
+  --panel-head-text: #1e3a5f;
+  --panel-head-text-shadow: none;
+  --panel-head-meta: #5a7089;
+  --panel-head-border: #c8d6e8;
 
   /* Tablo üst satırı */
-  --table-header-bg: linear-gradient(180deg, #e8f1ff 0%, #dbeafe 55%, #d2e4fd 100%);
-  --table-header-fg: #0f172a;
-  --table-header-border: #93c5fd;
-  --table-row-stripe: #f0f7ff;
-  --table-row-hover: #e8f4fc;
+  --table-header-bg: linear-gradient(180deg, #eef3f9 0%, #e6edf6 100%);
+  --table-header-fg: #1e3a5f;
+  --table-header-border: #c5d2e4;
+  --table-row-stripe: #f6f9fc;
+  --table-row-hover: #edf3fa;
   --table-cell-border: #e2e8f0;
 
   /* Araç çubuğu / modal (masaüstü) */
-  --toolbar-bg: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 45%, #f0fdfa 100%);
+  --toolbar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   --toolbar-border: var(--border);
 
-  --modal-desk-border: #64748b;
-  --modal-desk-head-bg: linear-gradient(135deg, #3b82f6 0%, #2563eb 40%, #0e7490 100%);
-  --modal-desk-head-fg: #ffffff;
-  --modal-desk-head-border: rgba(15, 23, 42, 0.12);
-  --modal-desk-body-bg: #f0f7ff;
-  --modal-desk-footer-bg: linear-gradient(180deg, #e0f2fe 0%, #dbeafe 100%);
+  --modal-desk-border: #a8b8cc;
+  --modal-desk-head-bg: var(--panel-head-bg);
+  --modal-desk-head-fg: var(--panel-head-text);
+  --modal-desk-head-border: var(--panel-head-border);
+  --modal-desk-body-bg: #f8fafc;
+  --modal-desk-footer-bg: linear-gradient(180deg, #f1f5f9 0%, #e9eef5 100%);
   --modal-desk-footer-border: var(--border);
 
-  --input-border: #93c5fd;
-  --surface-placeholder: #f1f5f9;
-  --kv-value-bg: #f8fbff;
+  --input-border: #c5d2e4;
+  --surface-placeholder: #f4f7fb;
+  --kv-value-bg: #f8fafc;
+  --surface-panel-accent: linear-gradient(180deg, var(--bg-panel) 0%, var(--color-primary-soft) 100%);
+
+  /* Sayfa iskeleti — tüm ana ekranlarda aynı boşluk */
+  --page-gutter-x: 14px;
+  --page-gutter-y: 10px;
+  --page-block-gap: 10px;
 
   --radius-lg: 14px;
   --radius-md: 9px;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 14px rgba(37, 99, 235, 0.08);
-  --shadow-card-hover: 0 4px 12px rgba(15, 23, 42, 0.08), 0 12px 28px rgba(37, 99, 235, 0.12);
+  --shadow-card: 0 1px 2px rgba(30, 58, 95, 0.05), 0 3px 10px rgba(59, 111, 201, 0.06);
+  --shadow-card-hover: 0 3px 10px rgba(30, 58, 95, 0.07), 0 8px 20px rgba(59, 111, 201, 0.08);
 
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-family: var(--font);
@@ -119,12 +143,12 @@ a:hover {
 
 /* Üst bar — masaüstü program şeridi */
 .app-header {
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 55%, #cffafe 100%);
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f4f8 100%);
   border-bottom: 1px solid var(--border);
   padding: 0.22rem 0.4rem;
   display: flex;
   align-items: center;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 2px 8px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.92) inset, 0 1px 3px rgba(30, 58, 95, 0.06);
 }
 
 .app-header h1 {
@@ -159,7 +183,7 @@ a:hover {
 
 .app-header .tagline {
   font-size: 0.65rem;
-  color: var(--color-secondary-deep);
+  color: var(--text-muted);
   margin: 0.05rem 0 0;
   letter-spacing: 0.01em;
 }
@@ -174,7 +198,7 @@ a:hover {
   align-items: center;
   column-gap: 0.75rem;
   row-gap: 0.25rem;
-  padding: 0 4px;
+  padding: 0 var(--page-gutter-x);
   min-height: 2.2rem;
 }
 
@@ -290,9 +314,9 @@ a:hover {
 .nav-link--active:focus,
 .nav-link--active:focus-visible {
   color: #fff !important;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%) !important;
-  border-color: rgba(15, 23, 42, 0.12) !important;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary-hover) !important;
+  box-shadow: 0 1px 4px rgba(59, 111, 201, 0.22);
   text-decoration: none !important;
 }
 
@@ -343,7 +367,7 @@ a:hover {
 /* Ana içerik */
 .app-main {
   flex: 1;
-  padding: 4px 6px 6px;
+  padding: 0;
   max-width: 100%;
   margin: 0;
   width: 100%;
@@ -404,11 +428,11 @@ a:hover {
 
 .card--panel {
   border-left: 3px solid var(--primary);
-  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, var(--bg-elevated) 100%);
 }
 
 .card--stat-panel {
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 55%);
+  background: linear-gradient(180deg, var(--color-primary-soft) 0%, #ffffff 55%);
   border-color: var(--border);
   box-shadow: var(--shadow-card), 0 0 0 1px var(--accent-line);
 }
@@ -598,12 +622,12 @@ a:hover {
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
-  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 1px 6px rgba(59, 111, 201, 0.28);
 }
 
 .btn-primary:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--primary-soft), 0 2px 10px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 0 0 3px var(--primary-soft), 0 1px 6px rgba(59, 111, 201, 0.22);
 }
 
 .btn-outline-primary {
@@ -706,8 +730,13 @@ a:hover {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 50;
-  backdrop-filter: blur(2px);
+  z-index: 1000;
+}
+
+.modal-backdrop > .modal {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .modal {
@@ -729,7 +758,7 @@ a:hover {
 .modal-head {
   padding: 1.15rem 1.5rem 0.75rem;
   border-bottom: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--color-primary-soft) 0%, #ffffff 100%);
 }
 
 .modal-head h2 {
@@ -752,7 +781,7 @@ a:hover {
   gap: 10px;
   padding: 10px 14px 12px;
   border-top: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel-subtle) 100%);
   flex-shrink: 0;
 }
 
@@ -870,7 +899,7 @@ table.simple tbody tr:hover {
 
 .badge-otomatik-onay {
   background: var(--primary-soft);
-  color: #1d4ed8;
+  color: var(--color-primary-hover);
   border: 1px solid var(--color-primary-muted);
 }
 
@@ -878,7 +907,47 @@ table.simple tbody tr:hover {
 .desk-page {
   font-size: 13px;
   line-height: 1.35;
-  color: #1e2430;
+  color: var(--text);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ortak sayfa iskeleti — header altı içerik hizası */
+.desk-page-shell {
+  padding: var(--page-gutter-y) var(--page-gutter-x);
+}
+
+.desk-page-shell > .desk-toolbar {
+  margin-bottom: var(--page-block-gap);
+}
+
+.desk-page-shell > .desk-home-ofis-ozet + .desk-panel--home-hizli,
+.desk-page-shell > .desk-home-ofis-ozet + .desk-home-toolbar,
+.desk-page-shell > .desk-panel--home-hizli + .desk-home-toolbar,
+.desk-page-shell > .desk-home-toolbar + .desk-panel,
+.desk-page-shell > .desk-panel--home-taksit-uyari + .desk-panel,
+.desk-page-shell > .desk-page-intro + .desk-file-strip,
+.desk-page-shell > .desk-page-intro + .desk-panel,
+.desk-page-shell > .desk-file-strip + .desk-panel,
+.desk-page-shell > .desk-panel + .desk-panel,
+.desk-page-shell > .desk-office-settings-desc + .desk-panel,
+.desk-page-shell > .desk-office-settings-panel + .desk-office-settings-panel {
+  margin-top: var(--page-block-gap);
+}
+
+.desk-page-intro,
+.desk-office-settings-desc {
+  margin: 0;
+  font-size: 12px;
+}
+
+.desk-page-shell > .desk-page-title:first-child {
+  margin-top: 0;
+}
+
+.desk-page-shell > .desk-page-title + .desk-page-sub {
+  margin-bottom: var(--page-block-gap);
 }
 
 /* Dosya detay: kompakt viewport; genel scroll yok, paneller iç scroll alır */
@@ -923,6 +992,7 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
   flex-direction: column;
   overflow: hidden;
   gap: 4px;
+  padding: var(--page-gutter-y) var(--page-gutter-x);
 }
 
 .desk-page--dosya-detail > .desk-toolbar {
@@ -1081,9 +1151,9 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
 .desk-panel-head {
   padding: 6px 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: var(--panel-head-text);
   text-shadow: var(--panel-head-text-shadow);
   background: var(--panel-head-bg);
@@ -1119,7 +1189,7 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
   font-size: 11px;
   color: var(--text-muted);
   border-top: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel-subtle) 100%);
 }
 
 .desk-dosya-layout {
@@ -1160,11 +1230,11 @@ a.desk-btn-block {
 }
 
 .desk-file-strip {
-  background: linear-gradient(180deg, #ffffff 0%, #eff6ff 55%, #e0f2fe 100%);
-  border: 1px solid var(--color-primary-muted);
+  background: var(--surface-panel-accent);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   margin-bottom: 6px;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08), 0 0 0 1px rgba(37, 99, 235, 0.04);
+  box-shadow: 0 1px 3px rgba(30, 58, 95, 0.05);
 }
 
 .desk-file-kvgrid {

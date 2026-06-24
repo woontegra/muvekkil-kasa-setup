@@ -115,19 +115,23 @@ export function OfisKasaRaporuPrintPage() {
           <table className="hesap-ozeti-kv hesap-ozeti-kv--ozet">
             <tbody>
               <tr>
-                <th>Toplam gelir</th>
-                <td className="hesap-ozeti-num">{formatTry(paket.toplamGelir)}</td>
+                <th>Devreden bakiye</th>
+                <td className="hesap-ozeti-num">{formatTry(paket.devredenBakiye)}</td>
               </tr>
               <tr>
-                <th>Toplam gider</th>
-                <td className="hesap-ozeti-num">{formatTry(paket.toplamGider)}</td>
+                <th>Dönem geliri</th>
+                <td className="hesap-ozeti-num">{formatTry(paket.donemGelir)}</td>
               </tr>
               <tr>
-                <th>Düzeltme etkisi</th>
-                <td className="hesap-ozeti-num">{formatSignedTry(paket.duzeltmeEtkisi)}</td>
+                <th>Dönem gideri</th>
+                <td className="hesap-ozeti-num">{formatTry(paket.donemGider)}</td>
               </tr>
               <tr>
-                <th>Kasa bakiyesi</th>
+                <th>Dönem düzeltme etkisi</th>
+                <td className="hesap-ozeti-num">{formatSignedTry(paket.donemDuzeltmeEtkisi)}</td>
+              </tr>
+              <tr>
+                <th>Dönem sonu kasa bakiyesi</th>
                 <td className="hesap-ozeti-num hesap-ozeti-num--strong">{formatTry(paket.kasaBakiyesi)}</td>
               </tr>
             </tbody>

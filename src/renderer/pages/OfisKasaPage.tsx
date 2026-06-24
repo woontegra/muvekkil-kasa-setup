@@ -28,6 +28,7 @@ import {
   satirAuditTitle,
   tumKategoriSecenekleri,
 } from "../lib/ofisKasa";
+import { DeskModalPortal } from "../components/DeskModalPortal";
 
 export function OfisKasaPage() {
   const navigate = useNavigate();
@@ -351,7 +352,7 @@ export function OfisKasaPage() {
   }
 
   return (
-    <div className="desk-page desk-page--ofis-kasa">
+    <div className="desk-page desk-page-shell desk-page--ofis-kasa">
       <div className="desk-toolbar desk-toolbar--tight">
         <div className="desk-toolbar-left">
           <Link className="desk-link-back" to="/">
@@ -369,28 +370,16 @@ export function OfisKasaPage() {
         </div>
       </div>
 
-      <p className="desk-muted-compact" style={{ marginTop: 0, marginBottom: 10, fontSize: 12 }}>
+      <p className="desk-muted-compact desk-page-intro">
         Bu modül müvekkil dosya kasasından tamamen ayrıdır; vekalet taksit tahsilatı buraya otomatik düşmez.
       </p>
 
       {ust ? (
         <div className="desk-file-strip desk-ofis-ust-ozet">
-          <div className="desk-file-kvgrid">
+          <div className="desk-file-kvgrid desk-file-kvgrid--ofis-ozet">
             <div className="desk-kv">
-              <span className="desk-kv-k">Toplam gelir</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.toplamGelir)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Toplam gider</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.toplamGider)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Düzeltme etkisi</span>
-              <span className="desk-kv-v desk-num">{formatSignedTry(ust.duzeltmeEtkisi)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Kasa bakiyesi</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.kasaBakiyesi)}</span>
+              <span className="desk-kv-k">Devreden bakiye</span>
+              <span className="desk-kv-v desk-num">{formatTry(ust.devredenBakiye)}</span>
             </div>
             <div className="desk-kv">
               <span className="desk-kv-k">Bu ay gelir</span>
@@ -400,11 +389,19 @@ export function OfisKasaPage() {
               <span className="desk-kv-k">Bu ay gider</span>
               <span className="desk-kv-v desk-num">{formatTry(ust.buAyGider)}</span>
             </div>
+            <div className="desk-kv">
+              <span className="desk-kv-k">Bu ay düzeltme etkisi</span>
+              <span className="desk-kv-v desk-num">{formatSignedTry(ust.buAyDuzeltmeEtkisi)}</span>
+            </div>
+            <div className="desk-kv desk-kv--emphasis">
+              <span className="desk-kv-k">Güncel kasa bakiyesi</span>
+              <span className="desk-kv-v desk-num">{formatTry(ust.kasaBakiyesi)}</span>
+            </div>
           </div>
         </div>
       ) : null}
 
-      <section className="desk-panel" style={{ marginTop: 12 }}>
+      <section className="desk-panel">
         <div className="desk-panel-head">
           <span>Filtreler</span>
           <span className="desk-panel-meta">
@@ -455,7 +452,7 @@ export function OfisKasaPage() {
         </div>
       </section>
 
-      <section className="desk-panel desk-panel--grow desk-panel--ofis-liste" style={{ marginTop: 12 }}>
+      <section className="desk-panel desk-panel--grow desk-panel--ofis-liste">
         <div className="desk-panel-head">
           <span>İşlem listesi</span>
           <span className="desk-panel-meta">
@@ -511,120 +508,143 @@ export function OfisKasaPage() {
       </section>
 
       {modalAcik ? (
-        <div className="modal-backdrop" onClick={() => modalKapat()} role="presentation">
-          <div className="modal modal-desk modal-desk--wide" onClick={(e) => e.stopPropagation()} role="dialog">
-            <div className="modal-head">
-              <h2>{duzenleId != null ? "Ofis kasa hareketini düzenle" : "Yeni Ofis Kasa Hareketi"}</h2>
-            </div>
-            <div className="modal-body">
-              {formErr ? <p className="form-error modal-form-error">{formErr}</p> : null}
-              <div className="desk-form-grid">
-                <div className="field">
-                  <label htmlFor="ofk-ftip">İşlem tipi</label>
-                  <select
-                    id="ofk-ftip"
-                    value={fTip}
-                    disabled={duzenleId != null}
-                    onChange={(e) => {
-                      const t = e.target.value as "GELIR" | "GIDER";
-                      setFTip(t);
-                      if (t === "GELIR") {
-                        setFKat(OFIS_GELIR_KATEGORI_KODLARI[0]);
-                      } else {
-                        setFKat(OFIS_GIDER_KATEGORI_KODLARI[0]);
-                      }
-                      setFOzelKat("");
-                    }}
-                  >
-                    <option value="GELIR">Gelir</option>
-                    <option value="GIDER">Gider</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="ofk-ftar">Tarih</label>
-                  <input id="ofk-ftar" type="date" value={fTarih} onChange={(e) => setFTarih(e.target.value)} />
-                </div>
-                <div className="field desk-form-span2">
-                  <label htmlFor="ofk-fkat">Kategori</label>
-                  <select
-                    id="ofk-fkat"
-                    value={fKat}
-                    onChange={(e) => {
-                      setFKat(e.target.value);
-                      if (e.target.value !== DIGER_GELIR_KOD && e.target.value !== DIGER_GIDER_KOD) {
-                        setFOzelKat("");
-                      }
-                    }}
-                  >
-                    {fTip === "GELIR"
-                      ? OFIS_GELIR_KATEGORI_KODLARI.map((k) => (
-                          <option key={k} value={k}>
-                            {OFIS_GELIR_KATEGORI_ETIKET[k]}
-                          </option>
-                        ))
-                      : OFIS_GIDER_KATEGORI_KODLARI.map((k) => (
-                          <option key={k} value={k}>
-                            {OFIS_GIDER_KATEGORI_ETIKET[k]}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-                {digerSecili ? (
-                  <div className="field desk-form-span2">
-                    <label htmlFor="ofk-fozel">Özel kategori adı</label>
-                    <input
-                      id="ofk-fozel"
+        <DeskModalPortal>
+          <div className="modal-backdrop" onClick={() => modalKapat()} role="presentation">
+            <div className="modal modal-desk modal-desk--wide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+              <div className="modal-head">
+                <h2>{duzenleId != null ? "Ofis kasa hareketini düzenle" : "Yeni Ofis Kasa Hareketi"}</h2>
+              </div>
+              <div className="modal-body">
+                {formErr ? <p className="form-error modal-form-error">{formErr}</p> : null}
+                <div className="desk-form-grid">
+                  <div className="field">
+                    <label htmlFor="ofk-ftip">İşlem tipi</label>
+                    <select
+                      id="ofk-ftip"
                       className="desk-input"
-                      value={fOzelKat}
-                      onChange={(e) => setFOzelKat(e.target.value)}
-                      placeholder="Listede görünecek ad"
-                      maxLength={200}
+                      value={fTip}
+                      disabled={duzenleId != null}
+                      onChange={(e) => {
+                        const t = e.target.value as "GELIR" | "GIDER";
+                        setFTip(t);
+                        if (t === "GELIR") {
+                          setFKat(OFIS_GELIR_KATEGORI_KODLARI[0]);
+                        } else {
+                          setFKat(OFIS_GIDER_KATEGORI_KODLARI[0]);
+                        }
+                        setFOzelKat("");
+                      }}
+                    >
+                      <option value="GELIR">Gelir</option>
+                      <option value="GIDER">Gider</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="ofk-ftar">Tarih</label>
+                    <input
+                      id="ofk-ftar"
+                      className="desk-input"
+                      type="date"
+                      value={fTarih}
+                      onChange={(e) => setFTarih(e.target.value)}
                     />
                   </div>
-                ) : null}
-                <div className="field desk-form-span2">
-                  <label htmlFor="ofk-fac">Açıklama</label>
-                  <textarea id="ofk-fac" value={fAciklama} onChange={(e) => setFAciklama(e.target.value)} rows={2} />
-                </div>
-                <div className="field">
-                  <label htmlFor="ofk-ftut">Tutar</label>
-                  <input id="ofk-ftut" value={fTutar} onChange={(e) => setFTutar(e.target.value)} />
-                </div>
-                <div className="field">
-                  <label htmlFor="ofk-fod">Ödeme yöntemi</label>
-                  <select id="ofk-fod" value={fOdeme} onChange={(e) => setFOdeme(e.target.value)}>
-                    {OFIS_ODEME_YONTEMI_KODLARI.map((k) => (
-                      <option key={k} value={k}>
-                        {OFIS_ODEME_YONTEMI_ETIKET[k]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field desk-form-span2">
-                  <label htmlFor="ofk-fbel">Belge no / fiş no / dekont no</label>
-                  <input id="ofk-fbel" className="desk-input" value={fBelge} onChange={(e) => setFBelge(e.target.value)} />
-                </div>
-                <div className="field desk-form-span2">
-                  <label htmlFor="ofk-fnot">Not</label>
-                  <textarea id="ofk-fnot" value={fNot} onChange={(e) => setFNot(e.target.value)} rows={2} />
+                  <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fkat">Kategori</label>
+                    <select
+                      id="ofk-fkat"
+                      className="desk-input"
+                      value={fKat}
+                      onChange={(e) => {
+                        setFKat(e.target.value);
+                        if (e.target.value !== DIGER_GELIR_KOD && e.target.value !== DIGER_GIDER_KOD) {
+                          setFOzelKat("");
+                        }
+                      }}
+                    >
+                      {fTip === "GELIR"
+                        ? OFIS_GELIR_KATEGORI_KODLARI.map((k) => (
+                            <option key={k} value={k}>
+                              {OFIS_GELIR_KATEGORI_ETIKET[k]}
+                            </option>
+                          ))
+                        : OFIS_GIDER_KATEGORI_KODLARI.map((k) => (
+                            <option key={k} value={k}>
+                              {OFIS_GIDER_KATEGORI_ETIKET[k]}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
+                  {digerSecili ? (
+                    <div className="field desk-form-span2">
+                      <label htmlFor="ofk-fozel">Özel kategori adı</label>
+                      <input
+                        id="ofk-fozel"
+                        className="desk-input"
+                        value={fOzelKat}
+                        onChange={(e) => setFOzelKat(e.target.value)}
+                        placeholder="Listede görünecek ad"
+                        maxLength={200}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fac">Açıklama</label>
+                    <textarea
+                      id="ofk-fac"
+                      className="desk-input"
+                      value={fAciklama}
+                      onChange={(e) => setFAciklama(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="ofk-ftut">Tutar</label>
+                    <input
+                      id="ofk-ftut"
+                      className="desk-input desk-num"
+                      value={fTutar}
+                      onChange={(e) => setFTutar(e.target.value)}
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="ofk-fod">Ödeme yöntemi</label>
+                    <select id="ofk-fod" className="desk-input" value={fOdeme} onChange={(e) => setFOdeme(e.target.value)}>
+                      {OFIS_ODEME_YONTEMI_KODLARI.map((k) => (
+                        <option key={k} value={k}>
+                          {OFIS_ODEME_YONTEMI_ETIKET[k]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fbel">Belge no / fiş no / dekont no</label>
+                    <input id="ofk-fbel" className="desk-input" value={fBelge} onChange={(e) => setFBelge(e.target.value)} />
+                  </div>
+                  <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fnot">Not</label>
+                    <textarea id="ofk-fnot" className="desk-input" value={fNot} onChange={(e) => setFNot(e.target.value)} rows={2} />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="modal-actions">
-              <button type="button" className="btn" onClick={() => modalKapat()}>
-                Vazgeç
-              </button>
-              <button type="button" className="btn btn-primary" disabled={formKaydediyor} onClick={() => void formKaydet()}>
-                Kaydet
-              </button>
+              <div className="modal-actions">
+                <button type="button" className="btn" onClick={() => modalKapat()}>
+                  Vazgeç
+                </button>
+                <button type="button" className="btn btn-primary" disabled={formKaydediyor} onClick={() => void formKaydet()}>
+                  Kaydet
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </DeskModalPortal>
       ) : null}
 
       {duzeltmeHedef ? (
-        <div className="modal-backdrop" role="presentation" onClick={() => kapatDuzeltme()}>
-          <div className="modal modal-desk modal-desk--wide" role="dialog" onClick={(e) => e.stopPropagation()}>
+        <DeskModalPortal>
+          <div className="modal-backdrop" role="presentation" onClick={() => kapatDuzeltme()}>
+            <div className="modal modal-desk modal-desk--wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <h2>Düzeltme ekle</h2>
             </div>
@@ -661,15 +681,21 @@ export function OfisKasaPage() {
               <div className="desk-form-grid" style={{ marginTop: 12 }}>
                 <div className="field">
                   <label>Düzeltme tarihi</label>
-                  <input type="date" value={dTarih} onChange={(e) => setDTarih(e.target.value)} />
+                  <input className="desk-input" type="date" value={dTarih} onChange={(e) => setDTarih(e.target.value)} />
                 </div>
                 <div className="field">
                   <label>Doğru tutar</label>
-                  <input value={dDogruTutar} onChange={(e) => setDDogruTutar(e.target.value)} placeholder="Orijinal tutardan farklı tutar" />
+                  <input
+                    className="desk-input desk-num"
+                    value={dDogruTutar}
+                    onChange={(e) => setDDogruTutar(e.target.value)}
+                    placeholder="Orijinal tutardan farklı tutar"
+                    inputMode="decimal"
+                  />
                 </div>
                 <div className="field desk-form-span2">
                   <label>Not</label>
-                  <textarea value={dNot} onChange={(e) => setDNot(e.target.value)} rows={2} />
+                  <textarea className="desk-input" value={dNot} onChange={(e) => setDNot(e.target.value)} rows={2} />
                 </div>
                 {duzeltmeOnizleme?.ok ? (
                   <div className="field desk-form-span2 desk-duzeltme-onizleme">
@@ -697,6 +723,7 @@ export function OfisKasaPage() {
             </div>
           </div>
         </div>
+        </DeskModalPortal>
       ) : null}
     </div>
   );

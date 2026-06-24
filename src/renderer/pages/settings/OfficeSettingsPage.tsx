@@ -278,7 +278,7 @@ export function OfficeSettingsPage() {
     : "Seçilmedi";
 
   return (
-    <div className="desk-page desk-page--office-settings">
+    <div className="desk-page desk-page-shell desk-page--office-settings">
       <div className="desk-toolbar desk-toolbar--tight">
         <div className="desk-toolbar-left">
           <Link className="desk-link-back" to="/">

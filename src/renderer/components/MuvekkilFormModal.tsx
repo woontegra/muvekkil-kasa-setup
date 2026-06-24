@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Muvekkil, MuvekkilInput, MuvekkilTuru } from "@shared/types/muvekkil";
+import { DeskModalPortal } from "./DeskModalPortal";
 
 type Props = {
   title: string;
@@ -101,8 +102,9 @@ export function MuvekkilFormModal({ title, open, saving, error, initial, onClose
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={() => !saving && onClose()}>
-      <div className="modal modal-desk modal-desk--wide" role="dialog" onClick={(e) => e.stopPropagation()}>
+    <DeskModalPortal>
+      <div className="modal-backdrop" role="presentation" onClick={() => !saving && onClose()}>
+        <div className="modal modal-desk modal-desk--wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{title}</h2>
         </div>
@@ -224,5 +226,6 @@ export function MuvekkilFormModal({ title, open, saving, error, initial, onClose
         </div>
       </div>
     </div>
+    </DeskModalPortal>
   );
 }
