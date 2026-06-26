@@ -1,6 +1,7 @@
 import { getDb, nowIso } from "../db/connection";
 import { authGetSession } from "./auth.service";
-import { kasaAvansEkleInTx } from "./kasa.service";
+import { ofisKasaVekaletTahsilatEkleInTx } from "./ofisKasa.service";
+import { migration009VekaletOfisKasa } from "../migrations/009_vekalet_ofis_kasa";
 import { isOdemeYontemiGecerli } from "@shared/constants/kasa";
 import type {
   SmmBekleyenSatir,
@@ -17,10 +18,33 @@ import type {
   VekaletUcreti,
 } from "@shared/types/vekalet";
 
+function ensureVekaletOfisKasaSchema(d: ReturnType<typeof getDb>): void {
+  migration009VekaletOfisKasa.up(d);
+}
+
 function olusturanBilgisi(): { id: number | null; adi: string | null } {
   const u = authGetSession();
   if (!u) return { id: null, adi: null };
   return { id: u.id, adi: u.adSoyad?.trim() || u.kullaniciAdi };
+}
+
+function muvekkilGorunenAdInTx(d: ReturnType<typeof getDb>, muvekkilId: number): string {
+  const r = d
+    .prepare(`SELECT muvekkil_turu, ad_soyad, sirket_unvani FROM muvekkil WHERE id = ?`)
+    .get(muvekkilId) as { muvekkil_turu: string; ad_soyad: string; sirket_unvani: string | null } | undefined;
+  if (!r) return "—";
+  if (r.muvekkil_turu === "TUZEL_KISI") {
+    const unvan = (r.sirket_unvani ?? "").trim();
+    if (unvan) return unvan;
+  }
+  const ad = (r.ad_soyad ?? "").trim();
+  return ad || "—";
+}
+
+function dosyaKonuBasligiInTx(d: ReturnType<typeof getDb>, dosyaId: number): string {
+  const r = d.prepare(`SELECT konu_basligi FROM dosya WHERE id = ?`).get(dosyaId) as { konu_basligi: string | null } | undefined;
+  const konu = (r?.konu_basligi ?? "").trim();
+  return konu || "—";
 }
 
 function rowVekalet(r: Record<string, unknown>): VekaletUcreti {
@@ -49,6 +73,7 @@ function rowOdeme(r: Record<string, unknown>): VekaletTaksitOdeme {
     makbuzNo: r.makbuz_no == null ? null : String(r.makbuz_no),
     smmKesildiMi: Number(r.smm_kesildi_mi) === 1,
     kasaHareketId: r.kasa_hareket_id == null ? null : Number(r.kasa_hareket_id),
+    ofisKasaHareketId: r.ofis_kasa_hareket_id == null ? null : Number(r.ofis_kasa_hareket_id),
     olusturanKullaniciId: r.olusturan_kullanici_id == null ? null : Number(r.olusturan_kullanici_id),
     olusturanKullaniciAdi: r.olusturan_kullanici_adi == null ? null : String(r.olusturan_kullanici_adi),
     kayitTarihi: String(r.kayit_tarihi ?? ""),
@@ -306,6 +331,7 @@ export function vekaletTaksitOdemeAl(
     return { ok: false, error: "Geçersiz ödeme yöntemi" };
   }
   const d = getDb();
+  ensureVekaletOfisKasaSchema(d);
   const cur = d.prepare(`SELECT * FROM vekalet_ucreti_taksit WHERE id = ?`).get(taksitId) as Record<string, unknown> | undefined;
   if (!cur) return { ok: false, error: "Taksit bulunamadı" };
   const tutar = Number(cur.tutar);
@@ -322,22 +348,15 @@ export function vekaletTaksitOdemeAl(
   const vekaletId = Number(cur.vekalet_ucreti_id);
   const smmKes = input.smmKesildiMi === true ? 1 : 0;
   const aciklama = (input.aciklama ?? "").trim() || null;
+  const muvekkilAd = muvekkilGorunenAdInTx(d, muvekkilId);
+  const dosyaKonu = dosyaKonuBasligiInTx(d, dosyaId);
+  const ofisAciklama = `Vekalet tahsilatı - ${muvekkilAd} - ${dosyaKonu} - Taksit No: ${taksitNo}`;
   try {
     const result = d.transaction(() => {
-      const kasa = kasaAvansEkleInTx(d, {
-        dosyaId,
-        muvekkilId,
-        tutar: input.tutar,
-        tarih: od,
-        odemeYontemi: input.odemeYontemi,
-        aciklama: `Vekalet taksit #${taksitNo} tahsilatı`,
-        t,
-        olusturan,
-      });
       const rIns = d
         .prepare(
-          `INSERT INTO vekalet_taksit_odeme (taksit_id, vekalet_id, dosya_id, muvekkil_id, odeme_tarihi, tutar, odeme_yontemi, aciklama, makbuz_no, smm_kesildi_mi, kasa_hareket_id, olusturan_kullanici_id, olusturan_kullanici_adi, kayit_tarihi, guncelleme_tarihi)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          `INSERT INTO vekalet_taksit_odeme (taksit_id, vekalet_id, dosya_id, muvekkil_id, odeme_tarihi, tutar, odeme_yontemi, aciklama, makbuz_no, smm_kesildi_mi, kasa_hareket_id, ofis_kasa_hareket_id, olusturan_kullanici_id, olusturan_kullanici_adi, kayit_tarihi, guncelleme_tarihi)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         )
         .run(
           taksitId,
@@ -350,17 +369,36 @@ export function vekaletTaksitOdemeAl(
           aciklama,
           null,
           smmKes,
-          kasa.id,
+          null,
+          null,
           olusturan.id,
           olusturan.adi,
           t,
           t
         );
       const odemeId = Number(rIns.lastInsertRowid);
+      const ofisKasaId = ofisKasaVekaletTahsilatEkleInTx(d, {
+        vekaletOdemeId: odemeId,
+        tutar: input.tutar,
+        tarih: od,
+        odemeYontemi: input.odemeYontemi,
+        aciklama: ofisAciklama,
+        not: aciklama,
+        olusturanKullaniciId: olusturan.id,
+        olusturanKullaniciAdi: olusturan.adi,
+        t,
+      });
+      d.prepare(`UPDATE vekalet_taksit_odeme SET ofis_kasa_hareket_id = ? WHERE id = ?`).run(ofisKasaId, odemeId);
       d.prepare(`UPDATE vekalet_ucreti_taksit SET guncelleme_tarihi = ? WHERE id = ?`).run(t, taksitId);
       const odemeRow = d.prepare(`SELECT * FROM vekalet_taksit_odeme WHERE id = ?`).get(odemeId) as Record<string, unknown>;
+      if (odemeRow.kasa_hareket_id != null) {
+        throw new Error("Vekalet tahsilatı dosya kasasına yazılamaz");
+      }
+      if (odemeRow.ofis_kasa_hareket_id == null) {
+        throw new Error("Vekalet tahsilatı Ofis Kasası kaydı oluşturulamadı");
+      }
       const taksitRow = d.prepare(`SELECT * FROM vekalet_ucreti_taksit WHERE id = ?`).get(taksitId) as Record<string, unknown>;
-      return { odeme: rowOdeme(odemeRow), taksit: enrichTaksit(taksitRow), belgeNo: kasa.belgeNo };
+      return { odeme: rowOdeme(odemeRow), taksit: enrichTaksit(taksitRow) };
     })();
     return { ok: true, row: { taksit: result.taksit, odeme: result.odeme } };
   } catch (e) {

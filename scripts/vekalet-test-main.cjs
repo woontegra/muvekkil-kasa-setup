@@ -29,6 +29,25 @@ function runMigrations() {
     CREATE TABLE belge_no_sayac (id INTEGER PRIMARY KEY, yil INTEGER, onEk TEXT, son_no INTEGER);
   `);
   db.exec(m[1]);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ofis_kasa_hareketleri (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      islem_tipi TEXT NOT NULL,
+      tarih TEXT NOT NULL,
+      kategori TEXT NOT NULL,
+      aciklama TEXT,
+      tutar REAL NOT NULL,
+      odeme_yontemi TEXT NOT NULL,
+      onay_durumu TEXT NOT NULL DEFAULT 'ONAYSIZ',
+      duzeltme_mi INTEGER NOT NULL DEFAULT 0,
+      otomatik_onay_mi INTEGER NOT NULL DEFAULT 0,
+      olusturma_tarihi TEXT NOT NULL,
+      guncelleme_tarihi TEXT NOT NULL,
+      kaynak_tipi TEXT,
+      kaynak_id INTEGER
+    );
+    ALTER TABLE vekalet_taksit_odeme ADD COLUMN ofis_kasa_hareket_id INTEGER;
+  `);
   db.prepare(`INSERT INTO muvekkil (id, ad_soyad) VALUES (1, 'Test')`).run();
   db.prepare(`INSERT INTO dosya (id, muvekkil_id) VALUES (1, 1)`).run();
 }
@@ -54,22 +73,26 @@ for (let i = 0; i < 3; i++) {
 const taksit1 = Number(db.prepare(`SELECT id FROM vekalet_ucreti_taksit WHERE taksit_no=1`).get().id);
 
 db.prepare(
-  `INSERT INTO dosya_kasa_hareket (dosya_id, muvekkil_id, islem_tipi, tutar, tarih, aciklama, belge_no, odeme_yontemi, onay_durumu, duzeltme_mi, kayit_tarihi, guncelleme_tarihi)
-   VALUES (1,1,'AVANS_GIRISI',30000,'2026-06-16','Vekalet taksit #1 tahsilatı','AVN-2026-000001','NAKIT','ONAYSIZ',0,?,?)`
-).run(t, t);
-const kasaId = Number(db.prepare(`SELECT last_insert_rowid() AS id`).get().id);
-
-db.prepare(
   `INSERT INTO vekalet_taksit_odeme (taksit_id, vekalet_id, dosya_id, muvekkil_id, odeme_tarihi, tutar, odeme_yontemi, smm_kesildi_mi, kasa_hareket_id, kayit_tarihi, guncelleme_tarihi)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?)`
-).run(taksit1, vekaletId, 1, 1, "2026-06-16", 30000, "NAKIT", 0, kasaId, t, t);
+   VALUES (?,?,?,?,?,?,?,?,NULL,?,?)`
+).run(taksit1, vekaletId, 1, 1, "2026-06-16", 30000, "NAKIT", 0, t, t);
 const odeme1 = Number(db.prepare(`SELECT id FROM vekalet_taksit_odeme`).get().id);
+db.prepare(
+  `INSERT INTO ofis_kasa_hareketleri (islem_tipi, tarih, kategori, aciklama, tutar, odeme_yontemi, onay_durumu, duzeltme_mi, otomatik_onay_mi, olusturma_tarihi, guncelleme_tarihi, kaynak_tipi, kaynak_id)
+   VALUES ('GELIR','2026-06-16','VEKALET_TAHSILATI','Vekalet tahsilatı',30000,'NAKIT','ONAYSIZ',0,0,?,?,'VEKALET_TAHSILATI',?)`
+).run(t, t, odeme1);
+const ofisId1 = Number(db.prepare(`SELECT last_insert_rowid() AS id`).get().id);
+db.prepare(`UPDATE vekalet_taksit_odeme SET ofis_kasa_hareket_id = ? WHERE id=?`).run(ofisId1, odeme1);
 
 const odenen1 = Number(db.prepare(`SELECT COALESCE(SUM(tutar),0) s FROM vekalet_taksit_odeme WHERE taksit_id=?`).get(taksit1).s);
 assert(odenen1 === 30000, "1. ödeme 30000 olmalı");
 assert(
   Number(db.prepare(`SELECT COUNT(*) c FROM vekalet_taksit_odeme WHERE smm_kesildi_mi=0`).get().c) === 1,
   "SMM bekleyen 1 olmalı"
+);
+assert(
+  Number(db.prepare(`SELECT COUNT(*) c FROM dosya_kasa_hareket`).get().c) === 0,
+  "Vekalet tahsilatı avans kasasına yazılmamalı"
 );
 
 db.prepare(`UPDATE vekalet_taksit_odeme SET smm_kesildi_mi=1 WHERE id=?`).run(odeme1);
@@ -79,13 +102,14 @@ assert(
 );
 
 db.prepare(
-  `INSERT INTO dosya_kasa_hareket (dosya_id, muvekkil_id, islem_tipi, tutar, tarih, aciklama, belge_no, odeme_yontemi, onay_durumu, duzeltme_mi, kayit_tarihi, guncelleme_tarihi)
-   VALUES (1,1,'AVANS_GIRISI',20000,'2026-06-17','Vekalet taksit #1 tahsilatı','AVN-2026-000002','NAKIT','ONAYSIZ',0,?,?)`
-).run(t, t);
-db.prepare(
   `INSERT INTO vekalet_taksit_odeme (taksit_id, vekalet_id, dosya_id, muvekkil_id, odeme_tarihi, tutar, odeme_yontemi, smm_kesildi_mi, kasa_hareket_id, kayit_tarihi, guncelleme_tarihi)
-   VALUES (?,?,?,?,?,?,?,0,?,?,?)`
-).run(taksit1, vekaletId, 1, 1, "2026-06-17", 20000, "NAKIT", kasaId + 1, t, t);
+   VALUES (?,?,?,?,?,?,?,0,NULL,?,?)`
+).run(taksit1, vekaletId, 1, 1, "2026-06-17", 20000, "NAKIT", t, t);
+const odeme2 = Number(db.prepare(`SELECT id FROM vekalet_taksit_odeme ORDER BY id DESC`).get().id);
+db.prepare(
+  `INSERT INTO ofis_kasa_hareketleri (islem_tipi, tarih, kategori, aciklama, tutar, odeme_yontemi, onay_durumu, duzeltme_mi, otomatik_onay_mi, olusturma_tarihi, guncelleme_tarihi, kaynak_tipi, kaynak_id)
+   VALUES ('GELIR','2026-06-17','VEKALET_TAHSILATI','Vekalet tahsilatı',20000,'NAKIT','ONAYSIZ',0,0,?,?,'VEKALET_TAHSILATI',?)`
+).run(t, t, odeme2);
 
 const odenenTop = Number(db.prepare(`SELECT COALESCE(SUM(tutar),0) s FROM vekalet_taksit_odeme WHERE taksit_id=?`).get(taksit1).s);
 assert(odenenTop === 50000, "Taksit tam ödendi");
@@ -94,8 +118,8 @@ assert(
   "2. ödeme için SMM bekliyor"
 );
 assert(
-  Number(db.prepare(`SELECT COUNT(*) c FROM dosya_kasa_hareket WHERE aciklama LIKE 'Vekalet taksit #1%'`).get().c) === 2,
-  "2 kasa hareketi"
+  Number(db.prepare(`SELECT COALESCE(SUM(tutar),0) s FROM ofis_kasa_hareketleri WHERE islem_tipi='GELIR'`).get().s) === 50000,
+  "Ofis kasası toplam gelir 50000"
 );
 
 console.log("OK — vekalet test senaryosu geçti");

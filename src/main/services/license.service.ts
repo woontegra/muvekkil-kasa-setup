@@ -2,11 +2,19 @@ import { app } from "electron";
 import { getDb, nowIso } from "../db/connection";
 import { computeDeviceHash, getDeviceName, getPlatformLabel } from "./deviceHash.service";
 import {
+  computeDaysRemaining,
+  formatLicenseExpiryDate,
+  isLicenseExpiredByDate,
+  pickWarningThreshold,
+  shouldRunAutomaticValidate,
+} from "@shared/lib/licenseExpiry";
+import {
   APP_CODE_MUVEKKIL_KASA_DESKTOP,
   OFFLINE_GRACE_DAYS,
   type LicenseActivateInput,
   type LicenseActivateResult,
   type LicenseState,
+  type LicenseValidateOptions,
   type LicenseValidateResult,
   type LocalLicenseRecord,
   type LocalLicenseStatus,
@@ -16,6 +24,9 @@ const LICENSE_API_BASE = (
   process.env.LICENSE_API_BASE ??
   "https://lisans-server-backend-production.up.railway.app/api/public/license"
 ).replace(/\/$/, "");
+
+/** Son doğrulama çevrimdışı toleransla mı tamamlandı (DB şeması değiştirmeden). */
+let lastOfflineDegraded = false;
 
 function addDaysIso(iso: string, days: number): string {
   const d = new Date(iso);
@@ -104,67 +115,80 @@ function saveLocalLicense(input: {
     );
 }
 
+function enrichState(
+  record: LocalLicenseRecord | null,
+  base: Omit<LicenseState, "daysRemaining" | "expiresAt" | "expiryLabel" | "warningThreshold" | "isExpired" | "offlineDegraded">,
+  offlineDegraded = false,
+): LicenseState {
+  const expiresAt = record?.expiresAt ?? null;
+  const daysRemaining = computeDaysRemaining(expiresAt);
+  const isExpired = isLicenseExpiredByDate(expiresAt);
+  return {
+    ...base,
+    isExpired,
+    offlineDegraded: base.valid && offlineDegraded,
+    daysRemaining,
+    expiresAt,
+    expiryLabel: formatLicenseExpiryDate(expiresAt),
+    warningThreshold: pickWarningThreshold(daysRemaining),
+    record,
+  };
+}
+
 function evaluateLocal(record: LocalLicenseRecord | null): LicenseState {
   if (!record || record.status === "NONE") {
-    return {
+    return enrichState(null, {
       valid: false,
       needsActivation: true,
       locked: false,
       message: "Lisans aktivasyonu gerekli.",
       record: null,
-    };
+    });
   }
 
   const now = Date.now();
-  const expiresMs = record.expiresAt ? new Date(record.expiresAt).getTime() : null;
+  const expired = isLicenseExpiredByDate(record.expiresAt, now);
   const graceMs = record.offlineGraceUntil ? new Date(record.offlineGraceUntil).getTime() : null;
 
   if (record.status === "LOCKED") {
-    return {
+    return enrichState(record, {
       valid: false,
       needsActivation: false,
       locked: true,
-      message: "Lisans süresi dolmuş. Yenileme için Woontegra destek ile iletişime geçin.",
+      message: expired
+        ? "Lisans süreniz sona erdi. Yenileme için lisansınızı kontrol edin."
+        : "Lisans geçerli değil. Lisansı Kontrol Et ile tekrar deneyin.",
       record,
-    };
+    });
   }
 
-  if (expiresMs != null && expiresMs < now) {
-    if (graceMs != null && graceMs >= now) {
-      return {
-        valid: true,
-        needsActivation: false,
-        locked: false,
-        message: "Lisans süresi dolmuş; çevrimdışı kullanım süresi devam ediyor.",
-        record,
-      };
-    }
-    return {
+  if (expired) {
+    return enrichState(record, {
       valid: false,
       needsActivation: false,
       locked: true,
-      message: "Lisans süresi dolmuş. Program kilitlendi.",
+      message: "Lisans süreniz sona erdi. Programı kullanmaya devam etmek için lisansınızı yenileyin.",
       record,
-    };
+    });
   }
 
   if (graceMs != null && graceMs < now) {
-    return {
+    return enrichState(record, {
       valid: false,
       needsActivation: false,
       locked: true,
       message: "Lisans doğrulaması yapılamadı. İnternet bağlantınızı kontrol edin.",
       record,
-    };
+    });
   }
 
-  return {
+  return enrichState(record, {
     valid: true,
     needsActivation: false,
     locked: false,
     message: null,
     record,
-  };
+  });
 }
 
 async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
@@ -183,6 +207,11 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
 
 export function licenseGetState(): LicenseState {
   return evaluateLocal(readLocalLicense());
+}
+
+function stateWithOfflineFlag(state: LicenseState): LicenseState {
+  if (!lastOfflineDegraded || !state.valid) return state;
+  return { ...state, offlineDegraded: true };
 }
 
 export async function licenseActivate(input: LicenseActivateInput): Promise<LicenseActivateResult> {
@@ -224,6 +253,7 @@ export async function licenseActivate(input: LicenseActivateInput): Promise<Lice
       lastValidatedAt: validatedAt,
       status: "ACTIVE",
     });
+    lastOfflineDegraded = false;
 
     return {
       ok: true,
@@ -239,18 +269,32 @@ export async function licenseActivate(input: LicenseActivateInput): Promise<Lice
   }
 }
 
-export async function licenseValidate(): Promise<LicenseValidateResult> {
+export async function licenseValidate(options?: LicenseValidateOptions): Promise<LicenseValidateResult> {
   const record = readLocalLicense();
   if (!record) {
     return { ok: false, error: "Lisans kaydı bulunamadı.", locked: false };
   }
 
+  if (!options?.force && !shouldRunAutomaticValidate(record.lastValidatedAt)) {
+    const local = evaluateLocal(record);
+    if (local.valid) {
+      return {
+        ok: true,
+        message: lastOfflineDegraded
+          ? "Lisans sunucusuna ulaşılamadı. Son doğrulama bilgisiyle devam ediyorsunuz."
+          : "Son lisans doğrulaması bugün yapıldı.",
+        expiresAt: record.expiresAt,
+        offlineDegraded: lastOfflineDegraded || undefined,
+      };
+    }
+  }
+
   const localState = evaluateLocal(record);
-  if (localState.locked) {
+  if (localState.locked && localState.isExpired) {
     getDb()
       .prepare(`UPDATE yerel_lisans SET status = 'LOCKED', guncelleme_tarihi = ? WHERE id = 1`)
       .run(nowIso());
-    return { ok: false, error: localState.message ?? "Lisans kilitli.", locked: true };
+    return { ok: false, error: localState.message ?? "Lisans süreniz sona erdi.", locked: true };
   }
 
   try {
@@ -259,6 +303,7 @@ export async function licenseValidate(): Promise<LicenseValidateResult> {
       message?: string;
       expiresAt?: string | null;
       offlineGraceDays?: number;
+      status?: string;
     }>("/validate", {
       licenseKey: record.licenseKey,
       deviceHash: record.deviceHash,
@@ -282,6 +327,7 @@ export async function licenseValidate(): Promise<LicenseValidateResult> {
       status: "ACTIVE",
       offlineGraceDays: out.offlineGraceDays,
     });
+    lastOfflineDegraded = false;
 
     return {
       ok: true,
@@ -289,18 +335,34 @@ export async function licenseValidate(): Promise<LicenseValidateResult> {
       expiresAt: out.expiresAt ?? record.expiresAt,
     };
   } catch (e) {
-    const graceMs = record.offlineGraceUntil ? new Date(record.offlineGraceUntil).getTime() : 0;
-    if (graceMs >= Date.now()) {
+    const unreachable = e instanceof Error && e.message === "SERVER_UNREACHABLE";
+    const expired = isLicenseExpiredByDate(record.expiresAt);
+
+    if (expired) {
+      getDb()
+        .prepare(`UPDATE yerel_lisans SET status = 'LOCKED', guncelleme_tarihi = ? WHERE id = 1`)
+        .run(nowIso());
       return {
-        ok: true,
-        message: "Çevrimdışı kullanım süresi devam ediyor.",
-        expiresAt: record.expiresAt,
+        ok: false,
+        error: "Lisans süreniz sona erdi. Yenileme sonrası Lisansı Kontrol Et ile tekrar deneyin.",
+        locked: true,
       };
     }
+
+    const graceMs = record.offlineGraceUntil ? new Date(record.offlineGraceUntil).getTime() : 0;
+    if (graceMs >= Date.now()) {
+      lastOfflineDegraded = true;
+      return {
+        ok: true,
+        message: "Lisans sunucusuna ulaşılamadı. Son doğrulama bilgisiyle devam ediyorsunuz.",
+        expiresAt: record.expiresAt,
+        offlineDegraded: true,
+      };
+    }
+
     getDb()
       .prepare(`UPDATE yerel_lisans SET status = 'LOCKED', guncelleme_tarihi = ? WHERE id = 1`)
       .run(nowIso());
-    const unreachable = e instanceof Error && e.message === "SERVER_UNREACHABLE";
     return {
       ok: false,
       error: unreachable
@@ -311,10 +373,14 @@ export async function licenseValidate(): Promise<LicenseValidateResult> {
   }
 }
 
-/** Uygulama açılışında arka planda çağrılır. */
+/** Uygulama açılışında arka planda çağrılır (günde en fazla 1 otomatik validate). */
 export async function licenseValidateOnStartup(): Promise<LicenseState> {
   const state = licenseGetState();
   if (state.needsActivation) return state;
   await licenseValidate();
-  return licenseGetState();
+  return stateWithOfflineFlag(licenseGetState());
+}
+
+export function licenseGetStateForRenderer(): LicenseState {
+  return stateWithOfflineFlag(licenseGetState());
 }

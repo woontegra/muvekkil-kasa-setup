@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { LicenseStatusBadge } from "./license/LicenseStatusBadge";
 import appIcon from "../assets/app-icon-DS-8UBWS.png";
 import woontegraLogo from "../assets/woontegra-logo-C922wZYn.png";
 
@@ -47,6 +48,7 @@ export function AppShell() {
               </Link>
             </nav>
             <div className="app-header-user-col" aria-label="Oturum">
+              <LicenseStatusBadge />
               <span className="app-header-user-label" title={user?.kullaniciAdi ?? ""}>
                 {user?.adSoyad?.trim() || user?.kullaniciAdi}
               </span>

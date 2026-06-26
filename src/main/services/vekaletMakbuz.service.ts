@@ -121,6 +121,7 @@ function buildVekaletPaket(odemeId: number): VekaletMakbuzPaketi {
     makbuzNo: ens.makbuzNo,
     smmKesildiMi: odeme.smmKesildiMi,
     kasaHareketId: raw.kasa_hareket_id == null ? null : Number(raw.kasa_hareket_id),
+    ofisKasaHareketId: raw.ofis_kasa_hareket_id == null ? null : Number(raw.ofis_kasa_hareket_id),
     olusturanKullaniciId: raw.olusturan_kullanici_id == null ? null : Number(raw.olusturan_kullanici_id),
     olusturanKullaniciAdi: raw.olusturan_kullanici_adi == null ? null : String(raw.olusturan_kullanici_adi),
     kayitTarihi: String(raw.kayit_tarihi ?? ""),

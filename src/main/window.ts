@@ -1,6 +1,7 @@
 import { BrowserWindow, shell, app } from "electron";
 import { join } from "node:path";
 import { getAppIconPath } from "./appIcon";
+import { registerEditableContextMenu } from "./contextMenu";
 
 export function createMainWindow(): BrowserWindow {
   const iconPath = getAppIconPath();
@@ -22,6 +23,8 @@ export function createMainWindow(): BrowserWindow {
   });
 
   win.maximize();
+
+  registerEditableContextMenu(win);
 
   win.on("ready-to-show", () => win.show());
   win.webContents.setWindowOpenHandler(({ url }) => {

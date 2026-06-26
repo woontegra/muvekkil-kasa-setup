@@ -48,6 +48,7 @@ export type VekaletTaksitOdeme = {
   makbuzNo: string | null;
   smmKesildiMi: boolean;
   kasaHareketId: number | null;
+  ofisKasaHareketId: number | null;
   olusturanKullaniciId: number | null;
   olusturanKullaniciAdi: string | null;
   kayitTarihi: string;

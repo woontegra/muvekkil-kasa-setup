@@ -6,8 +6,16 @@ import { allMigrations } from "./migrations";
 import { registerIpcHandlers, initAuthOnReady, initLicenseOnReady } from "./ipc/handlers";
 import { approveAllPendingOfisKasaOnExit } from "./services/ofisKasa.service";
 import { createMainWindow } from "./window";
+import { runVekaletOfisSmoke } from "./e2e/vekaletOfisSmoke";
 
-if (process.platform === "win32") {
+if (process.env.MKD_E2E_VEKALET_OFIS === "1") {
+  void runVekaletOfisSmoke()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+} else if (process.platform === "win32") {
   app.setAppUserModelId("com.woontegra.muvekkilkasadefteri");
 }
 
@@ -18,28 +26,30 @@ function initDatabase(): void {
   runMigrations(db, allMigrations, nowIso);
 }
 
-app.whenReady().then(() => {
-  initDatabase();
-  registerIpcHandlers();
-  initAuthOnReady();
-  initLicenseOnReady();
-  mainWindow = createMainWindow();
+if (process.env.MKD_E2E_VEKALET_OFIS !== "1") {
+  app.whenReady().then(() => {
+    initDatabase();
+    registerIpcHandlers();
+    initAuthOnReady();
+    initLicenseOnReady();
+    mainWindow = createMainWindow();
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createMainWindow();
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow();
+      }
+    });
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+
+  app.on("before-quit", () => {
+    try {
+      approveAllPendingOfisKasaOnExit();
+    } catch (e) {
+      console.error("[main] approveAllPendingOfisKasaOnExit", e);
     }
   });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
-
-app.on("before-quit", () => {
-  try {
-    approveAllPendingOfisKasaOnExit();
-  } catch (e) {
-    console.error("[main] approveAllPendingOfisKasaOnExit", e);
-  }
-});
+}

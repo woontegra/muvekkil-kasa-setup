@@ -5,6 +5,7 @@ import { migration005Vekalet } from "./005_vekalet_taksit_odeme";
 import { migration006MakbuzOffice } from "./006_makbuz_office";
 import { migration007OfisKasaDuzeltme } from "./007_ofis_kasa_duzeltme";
 import { migration008License } from "./008_license";
+import { migration009VekaletOfisKasa } from "./009_vekalet_ofis_kasa";
 
 /** v0.1.0 asar-extract ile uyumlu kullanıcı tablosu */
 export const migration001UygulamaKullanici: Migration = {
@@ -79,4 +80,5 @@ export const allMigrations: Migration[] = [
   migration006MakbuzOffice,
   migration007OfisKasaDuzeltme,
   migration008License,
+  migration009VekaletOfisKasa,
 ];

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useParams } from "react-router-dom";
 import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
 import type { KasaMakbuzPaketi, VekaletMakbuzPaketi } from "@shared/types/makbuz";
-import programLogo from "../../assets/logo-M6Wo_PDM.png";
 import { BelgeOnizlemeCanvas, type OnizlemeOlcek } from "../../components/print/BelgeOnizlemeCanvas";
 import { KasaMakbuzSheet, VekaletMakbuzSheet } from "../../components/makbuz/MakbuzSheets";
 import { HesapOzetSheet } from "../../components/hesapOzet/HesapOzetSheet";
@@ -203,7 +202,7 @@ export function BelgeYazdirmaOnizlemePage() {
   }
 
   const baslik = BASLIK[route.kind];
-  const logoSrc = logoUrl ?? programLogo;
+  const logoSrc = logoUrl;
   const hazir = !yukleniyor && !pdfOlusturuluyor && !!pdfBase64 && !hata;
 
   return (

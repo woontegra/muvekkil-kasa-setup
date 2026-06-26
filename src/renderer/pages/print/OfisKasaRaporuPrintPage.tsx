@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { OfisKasaRaporPaketi } from "@shared/types/ofisKasa";
-import programLogo from "../../assets/logo-M6Wo_PDM.png";
+import { PrintOfficeHeaderLeft } from "../../components/print/PrintOfficeHeaderLeft";
 import { formatDateTr, formatTry } from "../../lib/format";
 import {
   ayBasiSonu,
@@ -76,7 +76,6 @@ export function OfisKasaRaporuPrintPage() {
 
   const office = paket.office;
   const hareketler = paket.hareketler;
-  const receiptLogoSrc = logoUrl ?? programLogo;
 
   return (
     <div className="hesap-ozeti-print-wrap">
@@ -91,17 +90,7 @@ export function OfisKasaRaporuPrintPage() {
 
       <article className="hesap-ozeti-doc">
         <header className="hesap-ozeti-header">
-          <div className="hesap-ozeti-header-left">
-            <div className="hesap-ozeti-logo">
-              <img src={receiptLogoSrc} alt="" />
-            </div>
-            <div className="hesap-ozeti-office">
-              {(office.ofisAdi ?? "").trim() ? <div className="hesap-ozeti-firma">{office.ofisAdi}</div> : null}
-              {(office.avukatAdiSoyadi ?? "").trim() ? (
-                <div className="hesap-ozeti-avukat">{office.avukatAdiSoyadi}</div>
-              ) : null}
-            </div>
-          </div>
+          <PrintOfficeHeaderLeft office={office} logoSrc={logoUrl} />
           <div className="hesap-ozeti-header-right">
             <h1 className="hesap-ozeti-title">OFİS KASA RAPORU</h1>
             <p className="hesap-ozeti-meta">

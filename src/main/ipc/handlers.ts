@@ -1,4 +1,4 @@
-import { ipcMain, app } from "electron";
+import { ipcMain, app, shell } from "electron";
 import { pathToFileURL } from "node:url";
 import { IPC } from "@shared/ipc";
 import {
@@ -80,9 +80,10 @@ import {
 } from "../services/ofisKasa.service";
 import { backupDatabase, restoreDatabase } from "../services/backup.service";
 import { officeLogoDataUrl, officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
+import { LICENSE_RENEWAL_URL } from "@shared/constants/licenseRenewal";
 import {
   licenseActivate,
-  licenseGetState,
+  licenseGetStateForRenderer,
   licenseValidate,
   licenseValidateOnStartup,
 } from "../services/license.service";
@@ -254,11 +255,18 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle(IPC.license.getState, () => licenseGetState());
+  ipcMain.handle(IPC.license.getState, () => licenseGetStateForRenderer());
   ipcMain.handle(IPC.license.activate, (_e, input: import("@shared/types/license").LicenseActivateInput) =>
     licenseActivate(input),
   );
-  ipcMain.handle(IPC.license.validate, () => licenseValidate());
+  ipcMain.handle(
+    IPC.license.validate,
+    (_e, options?: import("@shared/types/license").LicenseValidateOptions) => licenseValidate(options),
+  );
+  ipcMain.handle(IPC.license.openRenewalUrl, async () => {
+    await shell.openExternal(LICENSE_RENEWAL_URL);
+    return { ok: true as const };
+  });
 }
 
 export function initLicenseOnReady(): void {

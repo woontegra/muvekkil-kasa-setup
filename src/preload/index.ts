@@ -90,7 +90,10 @@ const api = {
   licenseGetState: () => ipcRenderer.invoke(IPC.license.getState),
   licenseActivate: (input: import("@shared/types/license").LicenseActivateInput) =>
     ipcRenderer.invoke(IPC.license.activate, input),
-  licenseValidate: () => ipcRenderer.invoke(IPC.license.validate),
+  licenseValidate: (options?: import("@shared/types/license").LicenseValidateOptions) =>
+    ipcRenderer.invoke(IPC.license.validate, options),
+  licenseOpenRenewalUrl: () => ipcRenderer.invoke(IPC.license.openRenewalUrl),
+  appQuit: () => ipcRenderer.invoke(IPC.app.quit),
 };
 
 contextBridge.exposeInMainWorld("api", api);

@@ -107,7 +107,7 @@ function olusturanBilgisi(): { id: number | null; adi: string | null } {
 
 const KASA_INSERT_COLS = `dosya_id, muvekkil_id, islem_tipi, masraf_turu, tutar, tarih, masrafi_yapan_kisi, aciklama, belge_no, odeme_yontemi, onay_durumu, duzeltme_mi, duzeltilen_islem_id, kayit_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi`;
 
-/** Vekalet tahsilatı — mevcut transaction içinde AVANS girişi */
+/** Transaction içinde dosya avans girişi (vekalet tahsilatı bu yolu kullanmaz). */
 export function kasaAvansEkleInTx(
   d: ReturnType<typeof getDb>,
   input: {

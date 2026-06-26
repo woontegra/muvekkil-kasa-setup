@@ -1,11 +1,14 @@
 import {
   DIGER_GELIR_KOD,
   DIGER_GIDER_KOD,
+  PERSONEL_MAAS_KOD,
   isGecerliOfisGelirKategori,
   isGecerliOfisGiderKategori,
   isOfisOdemeYontemiGecerli,
   OFIS_GELIR_KATEGORI_ETIKET,
   OFIS_GIDER_KATEGORI_ETIKET,
+  OFIS_KASA_KAYNAK_VEKALET_TAHSILATI,
+  ofisKategoriOzelAdDb,
 } from "@shared/constants/ofisKasa";
 import {
   duzeltmeKasaEtkisiFromRow,
@@ -41,6 +44,10 @@ function kategoriEtiketi(kategori: string, ozelKategoriAdi: string | null): stri
   const ozel = (ozelKategoriAdi ?? "").trim();
   if (kategori === DIGER_GELIR_KOD || kategori === DIGER_GIDER_KOD) {
     return ozel || (kategori === DIGER_GELIR_KOD ? OFIS_GELIR_KATEGORI_ETIKET[DIGER_GELIR_KOD] : OFIS_GIDER_KATEGORI_ETIKET[DIGER_GIDER_KOD]);
+  }
+  if (kategori === PERSONEL_MAAS_KOD) {
+    const base = OFIS_GIDER_KATEGORI_ETIKET[PERSONEL_MAAS_KOD];
+    return ozel ? `${base} · ${ozel}` : base;
   }
   return OFIS_GELIR_KATEGORI_ETIKET[kategori] ?? OFIS_GIDER_KATEGORI_ETIKET[kategori] ?? kategori;
 }
@@ -343,6 +350,9 @@ export function ofisKasaHareketEkle(
   if (kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD) {
     if (!ozel) return { ok: false, error: "Özel kategori adı zorunludur." };
   }
+  if (kat === PERSONEL_MAAS_KOD) {
+    if (!ozel) return { ok: false, error: "Personel ismi zorunludur." };
+  }
   if (!Number.isFinite(input.tutar) || input.tutar <= 0) {
     return { ok: false, error: "Tutar sıfırdan büyük olmalıdır." };
   }
@@ -350,7 +360,7 @@ export function ofisKasaHareketEkle(
   if (!isOfisOdemeYontemiGecerli(od)) return { ok: false, error: "Geçerli ödeme yöntemi seçin." };
   const d = getDb();
   const t = nowIso();
-  const ozelDb = kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD ? ozel : null;
+  const ozelDb = ofisKategoriOzelAdDb(kat, ozel);
   try {
     const rIns = d
       .prepare(
@@ -392,6 +402,64 @@ export function ofisKasaHareketEkle(
   }
 }
 
+type VekaletTahsilatOfisKasaInput = {
+  vekaletOdemeId: number;
+  tutar: number;
+  tarih: string;
+  odemeYontemi: string;
+  aciklama: string;
+  not?: string | null;
+  olusturanKullaniciId: number | null;
+  olusturanKullaniciAdi: string | null;
+  t: string;
+};
+
+/** Vekalet taksit ödemesi için Ofis Kasası gelir kaydı — aynı ödeme için tek kayıt (idempotent). */
+export function ofisKasaVekaletTahsilatEkleInTx(
+  d: ReturnType<typeof getDb>,
+  input: VekaletTahsilatOfisKasaInput
+): number {
+  const existing = d
+    .prepare(`SELECT id FROM ofis_kasa_hareketleri WHERE kaynak_tipi = ? AND kaynak_id = ?`)
+    .get(OFIS_KASA_KAYNAK_VEKALET_TAHSILATI, input.vekaletOdemeId) as { id: number } | undefined;
+  if (existing) return existing.id;
+
+  const rIns = d
+    .prepare(
+      `INSERT INTO ofis_kasa_hareketleri (
+        islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, odeme_yontemi, belge_no, not_metni,
+        onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi, onay_tarihi,
+        olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
+        onaylayan_kullanici_id, onaylayan_kullanici_adi, kaynak_tipi, kaynak_id
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    )
+    .run(
+      "GELIR",
+      input.tarih,
+      "VEKALET_TAHSILATI",
+      null,
+      input.aciklama,
+      input.tutar,
+      input.odemeYontemi,
+      null,
+      (input.not ?? "").trim() || null,
+      "ONAYSIZ",
+      0,
+      null,
+      0,
+      null,
+      input.t,
+      input.t,
+      input.olusturanKullaniciId,
+      input.olusturanKullaniciAdi,
+      null,
+      null,
+      OFIS_KASA_KAYNAK_VEKALET_TAHSILATI,
+      input.vekaletOdemeId
+    );
+  return Number(rIns.lastInsertRowid);
+}
+
 export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch): OfisKasaIslemSonuc {
   const cur = ofisKasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı." };
@@ -414,6 +482,9 @@ export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch
   if (kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD) {
     if (!ozel) return { ok: false, error: "Özel kategori adı zorunludur." };
   }
+  if (kat === PERSONEL_MAAS_KOD) {
+    if (!ozel) return { ok: false, error: "Personel ismi zorunludur." };
+  }
   if (patch.tutar !== undefined && (!Number.isFinite(patch.tutar) || patch.tutar <= 0)) {
     return { ok: false, error: "Tutar sıfırdan büyük olmalıdır." };
   }
@@ -434,7 +505,7 @@ export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch
   }
   if (patch.ozelKategoriAdi !== undefined) {
     fields.push("ozel_kategori_adi = ?");
-    vals.push(kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD ? ozel : null);
+    vals.push(ofisKategoriOzelAdDb(kat, ozel));
   }
   if (patch.aciklama !== undefined) {
     fields.push("aciklama = ?");

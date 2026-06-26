@@ -1,69 +1,23 @@
 import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
-import type { OfficeSettings } from "@shared/types/office";
 import { formatDateTr, formatSignedTry, formatTry } from "../../lib/format";
 import { kasaIslemTipiEtiket, kasaTurEk, muvekkilHesapOzetSatirlari } from "../../lib/hesapOzet";
 import { hareketAciklamaMasraf, odemeEtiket, onayBadgeMetni } from "../../lib/kasa";
-import { ofisAdiGoster, ofisDeger } from "../../lib/makbuz";
 import { taksitDurumEtiket } from "../../lib/vekalet";
-
-function HesapOzetOfficeBlock({ office, logoSrc }: { office: OfficeSettings; logoSrc: string }) {
-  const firma = ofisAdiGoster(office);
-  const avukat = (office.avukatAdiSoyadi ?? "").trim();
-
-  return (
-    <div className="hesap-ozeti-header-left">
-      <div className="hesap-ozeti-logo">
-        <img src={logoSrc} alt="" />
-      </div>
-      <div>
-        <div className="hesap-ozeti-firma">{firma}</div>
-        {avukat ? <div className="hesap-ozeti-avukat">{avukat}</div> : null}
-        <table className="hesap-ozeti-mini">
-          <tbody>
-            {office.telefon?.trim() ? (
-              <tr>
-                <th>Tel</th>
-                <td>{ofisDeger(office.telefon)}</td>
-              </tr>
-            ) : null}
-            {office.eposta?.trim() ? (
-              <tr>
-                <th>E-posta</th>
-                <td>{ofisDeger(office.eposta)}</td>
-              </tr>
-            ) : null}
-            {office.adres?.trim() ? (
-              <tr>
-                <th>Adres</th>
-                <td>{ofisDeger(office.adres)}</td>
-              </tr>
-            ) : null}
-            {office.baroAdi?.trim() ? (
-              <tr>
-                <th>Baro</th>
-                <td>{ofisDeger(office.baroAdi)}</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+import { PrintOfficeHeaderLeft } from "../print/PrintOfficeHeaderLeft";
 
 export function HesapOzetSheet({
   paket,
   logoSrc,
 }: {
   paket: Extract<DosyaHesapOzetPaketi, { ok: true }>;
-  logoSrc: string;
+  logoSrc?: string | null;
 }) {
   const { muvekkil, dosya, kasaOzet, hareketler, vekalet, taksitler, vekaletOzet, office } = paket;
 
   return (
     <article className="hesap-ozeti-doc">
       <header className="hesap-ozeti-header">
-        <HesapOzetOfficeBlock office={office} logoSrc={logoSrc} />
+        <PrintOfficeHeaderLeft office={office} logoSrc={logoSrc} />
         <div className="hesap-ozeti-header-right">
           <h1 className="hesap-ozeti-title">DOSYA HESAP ÖZETİ / EKSTRE</h1>
           <p className="hesap-ozeti-meta">Düzenleme tarihi: {formatDateTr(paket.duzenlemeTarihi)}</p>

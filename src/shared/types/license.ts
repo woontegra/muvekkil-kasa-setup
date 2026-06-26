@@ -1,3 +1,5 @@
+import type { LicenseWarningThreshold } from "../lib/licenseExpiry";
+
 export const APP_CODE_MUVEKKIL_KASA_DESKTOP = "MUVEKKIL_KASA_DESKTOP";
 
 export const OFFLINE_GRACE_DAYS = 7;
@@ -18,6 +20,14 @@ export type LicenseState = {
   valid: boolean;
   needsActivation: boolean;
   locked: boolean;
+  /** Lisans bitiş tarihi geçmiş (sunucu yenilemesi gerekir). */
+  isExpired: boolean;
+  /** Sunucuya ulaşılamadı; son başarılı doğrulama ile devam. */
+  offlineDegraded: boolean;
+  daysRemaining: number | null;
+  expiresAt: string | null;
+  expiryLabel: string | null;
+  warningThreshold: LicenseWarningThreshold | null;
   message: string | null;
   record: LocalLicenseRecord | null;
 };
@@ -32,5 +42,15 @@ export type LicenseActivateResult =
   | { ok: false; error: string };
 
 export type LicenseValidateResult =
-  | { ok: true; message: string; expiresAt: string | null }
+  | {
+      ok: true;
+      message: string;
+      expiresAt: string | null;
+      offlineDegraded?: boolean;
+    }
   | { ok: false; error: string; locked?: boolean };
+
+export type LicenseValidateOptions = {
+  /** Manuel “Lisansı Kontrol Et” — günlük sınırı atlar. */
+  force?: boolean;
+};

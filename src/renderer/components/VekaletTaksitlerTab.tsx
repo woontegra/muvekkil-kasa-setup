@@ -796,7 +796,15 @@ function OdemeGecmisiModal({
                       <td>{formatDateTr(o.odemeTarihi)}</td>
                       <td className="desk-num">{formatTry(o.tutar)}</td>
                       <td>{odemeEtiket(o.odemeYontemi)}</td>
-                      <td>{o.aciklama ?? "—"}</td>
+                      <td>
+                        {o.aciklama ?? "—"}
+                        {o.ofisKasaHareketId ? (
+                          <span className="desk-muted-compact" title="Ofis Kasası'na gelir olarak işlendi">
+                            {" "}
+                            · Ofis kasası
+                          </span>
+                        ) : null}
+                      </td>
                       <td>{o.makbuzNo ?? "—"}</td>
                       <td>
                         {o.smmKesildiMi ? (

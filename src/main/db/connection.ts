@@ -11,6 +11,8 @@ export function nowIso(): string {
 }
 
 export function getDbPath(): string {
+  const testPath = process.env.MKD_TEST_DB?.trim();
+  if (testPath) return testPath;
   if (dbFilePath) return dbFilePath;
   const dir = app.getPath("userData");
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });

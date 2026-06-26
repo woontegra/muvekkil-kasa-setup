@@ -3,12 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   DIGER_GELIR_KOD,
   DIGER_GIDER_KOD,
+  PERSONEL_MAAS_KOD,
   OFIS_GELIR_KATEGORI_KODLARI,
   OFIS_GELIR_KATEGORI_ETIKET,
   OFIS_GIDER_KATEGORI_KODLARI,
   OFIS_GIDER_KATEGORI_ETIKET,
   OFIS_ODEME_YONTEMI_KODLARI,
   OFIS_ODEME_YONTEMI_ETIKET,
+  ofisKategoriOzelAdGerekli,
 } from "@shared/constants/ofisKasa";
 import type { OfisKasaHareketListeSatir, OfisKasaUstOzet } from "@shared/types/ofisKasa";
 import { bugunYmd, formatDateTr, formatTry } from "../lib/format";
@@ -100,10 +102,11 @@ export function OfisKasaPage() {
   const [fTutar, setFTutar] = useState("");
   const [fOdeme, setFOdeme] = useState<string>(OFIS_ODEME_YONTEMI_KODLARI[0]);
   const [fBelge, setFBelge] = useState("");
-  const [fNot, setFNot] = useState("");
   const [formErr, setFormErr] = useState<string | null>(null);
   const [formKaydediyor, setFormKaydediyor] = useState(false);
   const digerSecili = fKat === DIGER_GELIR_KOD || fKat === DIGER_GIDER_KOD;
+  const personelMaasSecili = fKat === PERSONEL_MAAS_KOD;
+  const ozelAlanGerekli = digerSecili || personelMaasSecili;
 
   function modalSifirlaYeni() {
     setDuzenleId(null);
@@ -116,7 +119,6 @@ export function OfisKasaPage() {
     setFTutar("");
     setFOdeme(OFIS_ODEME_YONTEMI_KODLARI[0]);
     setFBelge("");
-    setFNot("");
   }
 
   function modalAcYeni() {
@@ -138,11 +140,10 @@ export function OfisKasaPage() {
     setFTarih(h.tarih.slice(0, 10));
     setFKat(h.kategori);
     setFOzelKat(h.ozelKategoriAdi?.trim() ?? "");
-    setFAciklama(h.aciklama ?? "");
+    setFAciklama((h.aciklama ?? "").trim() || (h.not ?? "").trim() || "");
     setFTutar(String(h.tutar));
     setFOdeme(h.odemeYontemi);
     setFBelge(h.belgeNo ?? "");
-    setFNot(h.not ?? "");
     setModalAcik(true);
   }
 
@@ -151,6 +152,10 @@ export function OfisKasaPage() {
     const tutar = parseTutar(fTutar);
     if (!Number.isFinite(tutar) || tutar <= 0) {
       setFormErr("Tutar sıfırdan büyük ve geçerli olmalıdır.");
+      return;
+    }
+    if (personelMaasSecili && !fOzelKat.trim()) {
+      setFormErr("Personel ismi zorunludur.");
       return;
     }
     if (digerSecili && !fOzelKat.trim()) {
@@ -163,12 +168,12 @@ export function OfisKasaPage() {
         const res = await window.api.ofisKasaGuncelle(duzenleId, {
           tarih: fTarih,
           kategori: fKat,
-          ozelKategoriAdi: digerSecili ? fOzelKat.trim() : null,
+          ozelKategoriAdi: ozelAlanGerekli ? fOzelKat.trim() : null,
           aciklama: fAciklama.trim() || null,
           tutar,
           odemeYontemi: fOdeme,
           belgeNo: fBelge.trim() || null,
-          not: fNot.trim() || null,
+          not: null,
         });
         if (!res.ok) {
           setFormErr(res.error);
@@ -179,12 +184,12 @@ export function OfisKasaPage() {
           islemTipi: fTip,
           tarih: fTarih,
           kategori: fKat,
-          ozelKategoriAdi: digerSecili ? fOzelKat.trim() : null,
+          ozelKategoriAdi: ozelAlanGerekli ? fOzelKat.trim() : null,
           aciklama: fAciklama.trim() || null,
           tutar,
           odemeYontemi: fOdeme,
           belgeNo: fBelge.trim() || null,
-          not: fNot.trim() || null,
+          not: null,
         });
         if (!res.ok) {
           setFormErr(res.error);
@@ -371,7 +376,7 @@ export function OfisKasaPage() {
       </div>
 
       <p className="desk-muted-compact desk-page-intro">
-        Bu modül müvekkil dosya kasasından tamamen ayrıdır; vekalet taksit tahsilatı buraya otomatik düşmez.
+        Bu modül müvekkil dosya kasasından ayrıdır. Vekalet ücreti tahsilatları otomatik olarak Ofis Kasası gelirlerine işlenir.
       </p>
 
       {ust ? (
@@ -557,7 +562,7 @@ export function OfisKasaPage() {
                       value={fKat}
                       onChange={(e) => {
                         setFKat(e.target.value);
-                        if (e.target.value !== DIGER_GELIR_KOD && e.target.value !== DIGER_GIDER_KOD) {
+                        if (!ofisKategoriOzelAdGerekli(e.target.value)) {
                           setFOzelKat("");
                         }
                       }}
@@ -575,29 +580,19 @@ export function OfisKasaPage() {
                           ))}
                     </select>
                   </div>
-                  {digerSecili ? (
+                  {ozelAlanGerekli ? (
                     <div className="field desk-form-span2">
-                      <label htmlFor="ofk-fozel">Özel kategori adı</label>
+                      <label htmlFor="ofk-fozel">{personelMaasSecili ? "Personel ismi" : "Özel kategori adı"}</label>
                       <input
                         id="ofk-fozel"
                         className="desk-input"
                         value={fOzelKat}
                         onChange={(e) => setFOzelKat(e.target.value)}
-                        placeholder="Listede görünecek ad"
+                        placeholder={personelMaasSecili ? "Örn. Ayşe Demir" : "Listede görünecek ad"}
                         maxLength={200}
                       />
                     </div>
                   ) : null}
-                  <div className="field desk-form-span2">
-                    <label htmlFor="ofk-fac">Açıklama</label>
-                    <textarea
-                      id="ofk-fac"
-                      className="desk-input"
-                      value={fAciklama}
-                      onChange={(e) => setFAciklama(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
                   <div className="field">
                     <label htmlFor="ofk-ftut">Tutar</label>
                     <input
@@ -623,8 +618,14 @@ export function OfisKasaPage() {
                     <input id="ofk-fbel" className="desk-input" value={fBelge} onChange={(e) => setFBelge(e.target.value)} />
                   </div>
                   <div className="field desk-form-span2">
-                    <label htmlFor="ofk-fnot">Not</label>
-                    <textarea id="ofk-fnot" className="desk-input" value={fNot} onChange={(e) => setFNot(e.target.value)} rows={2} />
+                    <label htmlFor="ofk-fac">Açıklama</label>
+                    <textarea
+                      id="ofk-fac"
+                      className="desk-input"
+                      value={fAciklama}
+                      onChange={(e) => setFAciklama(e.target.value)}
+                      rows={2}
+                    />
                   </div>
                 </div>
               </div>

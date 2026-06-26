@@ -127,7 +127,11 @@ export type Api = {
   licenseActivate: (
     input: import("@shared/types/license").LicenseActivateInput,
   ) => Promise<import("@shared/types/license").LicenseActivateResult>;
-  licenseValidate: () => Promise<import("@shared/types/license").LicenseValidateResult>;
+  licenseValidate: (
+    options?: import("@shared/types/license").LicenseValidateOptions,
+  ) => Promise<import("@shared/types/license").LicenseValidateResult>;
+  licenseOpenRenewalUrl: () => Promise<{ ok: true }>;
+  appQuit: () => Promise<{ ok: boolean }>;
 };
 
 declare global {

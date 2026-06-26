@@ -1,6 +1,7 @@
 import {
   DIGER_GELIR_KOD,
   DIGER_GIDER_KOD,
+  PERSONEL_MAAS_KOD,
   isGecerliOfisGelirKategori,
   isGecerliOfisGiderKategori,
   OFIS_GELIR_KATEGORI_ETIKET,
@@ -42,6 +43,10 @@ export function ofisKasaKategoriListeEtiketi(kategoriKodu: string, ozelKategoriA
         ? OFIS_GELIR_KATEGORI_ETIKET[DIGER_GELIR_KOD]
         : OFIS_GIDER_KATEGORI_ETIKET[DIGER_GIDER_KOD])
     );
+  }
+  if (kategoriKodu === PERSONEL_MAAS_KOD) {
+    const base = OFIS_GIDER_KATEGORI_ETIKET[PERSONEL_MAAS_KOD];
+    return ozel ? `${base} · ${ozel}` : base;
   }
   if (isGecerliOfisGelirKategori(kategoriKodu)) return OFIS_GELIR_KATEGORI_ETIKET[kategoriKodu] ?? kategoriKodu;
   if (isGecerliOfisGiderKategori(kategoriKodu)) return OFIS_GIDER_KATEGORI_ETIKET[kategoriKodu] ?? kategoriKodu;
