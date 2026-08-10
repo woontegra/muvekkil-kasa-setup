@@ -1,25 +1,35 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import type { LicenseState } from "@shared/types/license";
-import { LicenseExpiredScreen } from "./license/LicenseExpiredScreen";
-import { LicenseStatusBootstrap } from "./license/LicenseStatusShell";
+import { PremiumLicenseExpiredScreen } from "../components/license/PremiumLicenseExpiredScreen";
+import { PremiumLicenseStatusBootstrap } from "../components/license/PremiumLicenseStatusShell";
+import { PremiumLoadingScreen } from "../components/auth/PremiumLoadingScreen";
 import { openLicenseRenewalPage } from "../services/licenseStatusService";
-import { LicenseStatusProvider } from "../hooks/useLicenseStatus";
+import { PremiumLicenseProvider } from "../context/PremiumLicenseContext";
 
-export function LicenseGateRoute() {
+export function PremiumLicenseGate() {
   const [state, setState] = useState<LicenseState | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [checkBusy, setCheckBusy] = useState(false);
 
-  useEffect(() => {
-    void (async () => {
+  const loadLicenseState = useCallback(async () => {
+    setLoadError(null);
+    try {
       try {
         await window.api.licenseValidate();
       } catch {
         /* offline grace handled in main */
       }
       setState(await window.api.licenseGetState());
-    })();
+    } catch {
+      setLoadError("Lisans durumu okunamadı.");
+      setState(null);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadLicenseState();
+  }, [loadLicenseState]);
 
   async function handleCheckLicense() {
     setCheckBusy(true);
@@ -32,15 +42,19 @@ export function LicenseGateRoute() {
   }
 
   if (!state) {
-    return (
-      <div className="auth-page" aria-busy="true" aria-live="polite">
-        <div className="auth-card auth-card--enter" style={{ maxWidth: 420, margin: "12vh auto", padding: 24, textAlign: "center" }}>
-          <p className="auth-subtitle" style={{ margin: 0 }}>
-            Lisans durumu kontrol ediliyor…
-          </p>
+    if (loadError) {
+      return (
+        <div className="pm-auth-page pm-auth-page--loading">
+          <div className="pm-auth-card" style={{ maxWidth: 420, padding: 24, textAlign: "center" }}>
+            <p style={{ margin: "0 0 16px", color: "var(--pm-text-secondary)" }}>{loadError}</p>
+            <button type="button" className="pm-btn pm-btn--primary" onClick={() => void loadLicenseState()}>
+              Yeniden dene
+            </button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    return <PremiumLoadingScreen message="Lisans durumu kontrol ediliyor…" />;
   }
 
   if (state.locked) {
@@ -50,10 +64,10 @@ export function LicenseGateRoute() {
       : (state.message ?? "Lisansınız geçerli değil. Lisansı Kontrol Et ile tekrar deneyin.");
 
     return (
-      <LicenseExpiredScreen
+      <PremiumLicenseExpiredScreen
         busy={checkBusy}
         title={expiredTitle}
-        message={state.isExpired ? state.message ?? expiredDefaultMessage : expiredDefaultMessage}
+        message={state.isExpired ? (state.message ?? expiredDefaultMessage) : expiredDefaultMessage}
         onRenew={() => void openLicenseRenewalPage()}
         onCheck={() => void handleCheckLicense()}
         onQuit={() => void window.api.appQuit()}
@@ -66,22 +80,22 @@ export function LicenseGateRoute() {
   }
 
   return (
-    <LicenseStatusProvider>
-      <LicenseStatusBootstrap>
+    <PremiumLicenseProvider>
+      <PremiumLicenseStatusBootstrap>
         <Outlet />
-      </LicenseStatusBootstrap>
-    </LicenseStatusProvider>
+      </PremiumLicenseStatusBootstrap>
+    </PremiumLicenseProvider>
   );
 }
 
-export function LicenseGuestRoute() {
+export function PremiumLicenseGuestRoute() {
   const [state, setState] = useState<LicenseState | null>(null);
 
   useEffect(() => {
     void window.api.licenseGetState().then(setState);
   }, []);
 
-  if (!state) return null;
+  if (!state) return <PremiumLoadingScreen message="Lisans durumu kontrol ediliyor…" />;
 
   if (state.valid && !state.needsActivation) {
     return <Navigate to="/login" replace />;

@@ -8,6 +8,7 @@ import {
   pickWarningThreshold,
   shouldRunAutomaticValidate,
 } from "@shared/lib/licenseExpiry";
+import { DESKTOP_LICENSE_RENEWAL_LINK_URL } from "@shared/constants/licenseRenewal";
 import {
   APP_CODE_MUVEKKIL_KASA_DESKTOP,
   OFFLINE_GRACE_DAYS,
@@ -203,6 +204,41 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
     throw new Error("SERVER_UNREACHABLE");
   }
   return (await res.json()) as T;
+}
+
+export async function licenseRequestRenewalLink(): Promise<
+  { ok: true; purchaseUrl: string } | { ok: false; error: string }
+> {
+  const record = readLocalLicense();
+  if (!record?.licenseKey) {
+    return { ok: false, error: "Lisans kaydı bulunamadı. Önce lisansınızı aktifleştirin." };
+  }
+
+  try {
+    const res = await fetch(DESKTOP_LICENSE_RENEWAL_LINK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        licenseKey: record.licenseKey,
+        deviceHash: record.deviceHash,
+        appCode: APP_CODE_MUVEKKIL_KASA_DESKTOP,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      purchaseUrl?: string;
+      message?: string;
+    };
+    if (!res.ok || data.ok !== true || !data.purchaseUrl?.trim()) {
+      return {
+        ok: false,
+        error: data.message?.trim() || "Lisans yenileme bağlantısı oluşturulamadı.",
+      };
+    }
+    return { ok: true, purchaseUrl: data.purchaseUrl.trim() };
+  } catch {
+    return { ok: false, error: "Yenileme sunucusuna ulaşılamadı. İnternet bağlantınızı kontrol edin." };
+  }
 }
 
 export function licenseGetState(): LicenseState {
