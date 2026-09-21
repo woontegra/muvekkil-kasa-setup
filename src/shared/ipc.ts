@@ -98,6 +98,7 @@ export const IPC = {
     getState: "license:getState",
     activate: "license:activate",
     validate: "license:validate",
+    startTrial: "license:startTrial",
     openRenewalUrl: "license:openRenewalUrl",
   },
   masrafTurleri: "masrafTurleri",

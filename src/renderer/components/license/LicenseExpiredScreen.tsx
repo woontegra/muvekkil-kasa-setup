@@ -5,6 +5,7 @@ type Props = {
   onRenew: () => void;
   onCheck: () => void;
   onQuit: () => void;
+  renewLabel?: string;
 };
 
 export function LicenseExpiredScreen({
@@ -14,6 +15,7 @@ export function LicenseExpiredScreen({
   onRenew,
   onCheck,
   onQuit,
+  renewLabel = "Lisansı Yenile",
 }: Props) {
   return (
     <div className="license-expired-page">
@@ -32,7 +34,7 @@ export function LicenseExpiredScreen({
         </p>
         <div className="license-expired-actions">
           <button type="button" className="btn btn-primary" onClick={onRenew} disabled={busy}>
-            Lisansı Yenile
+            {renewLabel}
           </button>
           <button type="button" className="btn btn-outline-primary" onClick={onCheck} disabled={busy}>
             Lisansı Kontrol Et

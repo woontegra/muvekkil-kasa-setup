@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import type { LicenseState } from "@shared/types/license";
 import { PremiumLicenseExpiredScreen } from "../components/license/PremiumLicenseExpiredScreen";
 import { PremiumLicenseStatusBootstrap } from "../components/license/PremiumLicenseStatusShell";
 import { PremiumLoadingScreen } from "../components/auth/PremiumLoadingScreen";
 import { openLicenseRenewalPage } from "../services/licenseStatusService";
 import { PremiumLicenseProvider } from "../context/PremiumLicenseContext";
+import { PremiumAuthLayout } from "../components/auth/PremiumAuthLayout";
+import { PremiumButton } from "../components/PremiumButton";
 
 export function PremiumLicenseGate() {
   const [state, setState] = useState<LicenseState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [checkBusy, setCheckBusy] = useState(false);
+  const navigate = useNavigate();
 
   const loadLicenseState = useCallback(async () => {
     setLoadError(null);
@@ -18,7 +21,7 @@ export function PremiumLicenseGate() {
       try {
         await window.api.licenseValidate();
       } catch {
-        /* offline grace handled in main */
+        /* offline / trial network handled in main */
       }
       setState(await window.api.licenseGetState());
     } catch {
@@ -57,6 +60,36 @@ export function PremiumLicenseGate() {
     return <PremiumLoadingScreen message="Lisans durumu kontrol ediliyor…" />;
   }
 
+  if (state.phase === "trialNetworkRequired") {
+    return (
+      <PremiumAuthLayout>
+        <div className="pm-auth-card pm-auth-card--enter">
+          <h2 className="pm-auth-card-title">İnternet gerekli</h2>
+          <p className="pm-auth-card-sub">
+            {state.message ?? "Ücretsiz deneme lisansınızı doğrulamak için internet bağlantısı gereklidir."}
+          </p>
+          <PremiumButton type="button" className="pm-auth-submit" disabled={checkBusy} onClick={() => void handleCheckLicense()}>
+            {checkBusy ? "Kontrol ediliyor…" : "Tekrar Dene"}
+          </PremiumButton>
+        </div>
+      </PremiumAuthLayout>
+    );
+  }
+
+  if (state.phase === "trialExpired" || (state.locked && state.record?.kind === "trial")) {
+    return (
+      <PremiumLicenseExpiredScreen
+        busy={checkBusy}
+        title="7 günlük ücretsiz deneme süreniz sona erdi."
+        message="Kayıtlı verileriniz silinmedi. Lisansınızı etkinleştirerek aynı verilerle devam edebilirsiniz."
+        renewLabel="Lisansımı Etkinleştir"
+        onRenew={() => navigate("/lisans/aktiflestir")}
+        onCheck={() => void handleCheckLicense()}
+        onQuit={() => void window.api.appQuit()}
+      />
+    );
+  }
+
   if (state.locked) {
     const expiredTitle = state.isExpired ? "Lisans süreniz sona erdi" : "Lisans doğrulanamadı";
     const expiredDefaultMessage = state.isExpired
@@ -75,7 +108,7 @@ export function PremiumLicenseGate() {
     );
   }
 
-  if (state.needsActivation) {
+  if (state.needsActivation || state.phase === "needsActivation") {
     return <Navigate to="/lisans" replace />;
   }
 

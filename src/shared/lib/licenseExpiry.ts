@@ -29,6 +29,35 @@ export function pickWarningThreshold(daysRemaining: number | null): LicenseWarni
   return null;
 }
 
+/** Paid renewal modalı yalnızca ücretli ve geçerli lisans + eşik + kurulum tamam için. */
+export function isPaidRenewalReminderEligible(input: {
+  valid: boolean;
+  kind?: string | null;
+  warningThreshold: LicenseWarningThreshold | null;
+  needsSetup?: boolean;
+}): boolean {
+  if (input.needsSetup === true) return false;
+  if (!input.valid) return false;
+  if (input.kind !== "paid") return false;
+  return input.warningThreshold != null;
+}
+
+export function desktopLicenseKindLabel(kind?: string | null): string | null {
+  if (kind === "trial") return "7 Günlük Ücretsiz Deneme";
+  if (kind === "paid") return "Yıllık Lisans";
+  return null;
+}
+
+/** Settings CTA: paid renews; trial upgrades in-app. No invented shop URL. */
+export function desktopLicenseActionCta(kind?: string | null): "renew" | "upgrade" | null {
+  if (kind === "trial") return "upgrade";
+  if (kind === "paid") return "renew";
+  return null;
+}
+
+/** Renderer contexts refresh local license state after in-app activate (trial→paid). */
+export const DESKTOP_LICENSE_UPDATED_EVENT = "mkd-license-updated";
+
 export function formatLicenseExpiryDate(expiresAt: string | null | undefined): string | null {
   if (!expiresAt?.trim()) return null;
   const d = new Date(expiresAt);

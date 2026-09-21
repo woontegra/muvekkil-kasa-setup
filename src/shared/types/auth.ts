@@ -3,6 +3,7 @@ export type AuthUser = {
   adSoyad: string;
   kullaniciAdi: string;
   eposta: string | null;
+  telefon: string | null;
 };
 
 export type AuthResult<T = void> =
@@ -11,10 +12,12 @@ export type AuthResult<T = void> =
 
 export type SetupInput = {
   adSoyad: string;
-  kullaniciAdi: string;
+  kullaniciAdi?: string;
   sifre: string;
   guvenlikSorusuKodu: string;
   guvenlikCevabi: string;
+  eposta?: string;
+  telefon?: string;
 };
 
 export type LoginInput = {

@@ -7,7 +7,7 @@ import {
   shouldShowExpiryWarning,
 } from "../services/licenseStatusService";
 
-type LicenseStatusContextValue = {
+type PremiumLicenseContextValue = {
   state: LicenseState | null;
   loading: boolean;
   offlineNotice: string | null;
@@ -19,9 +19,9 @@ type LicenseStatusContextValue = {
   dismissWarning: () => void;
 };
 
-const LicenseStatusContext = createContext<LicenseStatusContextValue | null>(null);
+const PremiumLicenseContext = createContext<PremiumLicenseContextValue | null>(null);
 
-export function LicenseStatusProvider({ children }: { children: ReactNode }) {
+export function PremiumLicenseProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<LicenseState | null>(null);
   const [loading, setLoading] = useState(true);
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
@@ -111,13 +111,13 @@ export function LicenseStatusProvider({ children }: { children: ReactNode }) {
     [state, loading, offlineNotice, refresh, checkLicense, openRenewal, quitApp, activeWarningDays, dismissWarning],
   );
 
-  return <LicenseStatusContext.Provider value={value}>{children}</LicenseStatusContext.Provider>;
+  return <PremiumLicenseContext.Provider value={value}>{children}</PremiumLicenseContext.Provider>;
 }
 
-export function useLicenseStatus(): LicenseStatusContextValue {
-  const ctx = useContext(LicenseStatusContext);
+export function usePremiumLicense(): PremiumLicenseContextValue {
+  const ctx = useContext(PremiumLicenseContext);
   if (!ctx) {
-    throw new Error("useLicenseStatus yalnızca LicenseStatusProvider içinde kullanılabilir.");
+    throw new Error("usePremiumLicense yalnızca PremiumLicenseProvider içinde kullanılabilir.");
   }
   return ctx;
 }

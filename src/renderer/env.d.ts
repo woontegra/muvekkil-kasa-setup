@@ -163,6 +163,9 @@ export type Api = {
   licenseActivate: (
     input: import("@shared/types/license").LicenseActivateInput,
   ) => Promise<import("@shared/types/license").LicenseActivateResult>;
+  licenseStartTrial: (
+    input: import("@shared/types/license").LicenseStartTrialInput,
+  ) => Promise<import("@shared/types/license").LicenseStartTrialResult>;
   licenseValidate: (
     options?: import("@shared/types/license").LicenseValidateOptions,
   ) => Promise<import("@shared/types/license").LicenseValidateResult>;

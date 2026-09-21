@@ -67,14 +67,15 @@ export function LoginPage() {
           ) : null}
           <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
             <div className="auth-field">
-              <label htmlFor={idUser}>Kullanıcı adı</label>
+              <label htmlFor={idUser}>E-posta</label>
               <input
                 id={idUser}
                 className="auth-input"
-                autoComplete="username"
+                autoComplete="email"
                 value={kullaniciAdi}
                 onChange={(e) => setKullaniciAdi(e.target.value)}
                 disabled={busy}
+                placeholder="ornek@mail.com"
               />
             </div>
             <div className="auth-field">

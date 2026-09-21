@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthShell } from "../../components/AuthShell";
+import { requireTrialEmail, requireTurkishMobile } from "@shared/lib/trialContact";
 import { useAuth } from "../../context/AuthContext";
 import { GUVENLIK_SORULARI, GUVENLIK_SORU_KODLARI } from "@shared/types/auth";
 
@@ -8,13 +9,15 @@ export function SetupPage() {
   const { needsSetup, setupFirst } = useAuth();
   const navigate = useNavigate();
   const idAd = useId();
-  const idUser = useId();
+  const idEmail = useId();
+  const idPhone = useId();
   const idPass = useId();
   const idPass2 = useId();
   const idGuvenlikSoru = useId();
   const idGuvenlikCevap = useId();
   const [adSoyad, setAdSoyad] = useState("");
-  const [kullaniciAdi, setKullaniciAdi] = useState("");
+  const [eposta, setEposta] = useState("");
+  const [telefon, setTelefon] = useState("");
   const [sifre, setSifre] = useState("");
   const [sifre2, setSifre2] = useState("");
   const [guvenlikSorusuKodu, setGuvenlikSorusuKodu] = useState("G1");
@@ -30,7 +33,7 @@ export function SetupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!adSoyad.trim() || !kullaniciAdi.trim() || !sifre || !sifre2 || !guvenlikCevabi.trim()) {
+    if (!adSoyad.trim() || !sifre || !sifre2 || !guvenlikCevabi.trim()) {
       setError("Lütfen tüm alanları doldurun.");
       return;
     }
@@ -38,14 +41,24 @@ export function SetupPage() {
       setError("Şifreler eşleşmiyor.");
       return;
     }
+    let email: string;
+    let phone: string;
+    try {
+      email = requireTrialEmail(eposta);
+      phone = requireTurkishMobile(telefon);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "İletişim bilgileri geçersiz.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await setupFirst({
         adSoyad: adSoyad.trim(),
-        kullaniciAdi: kullaniciAdi.trim(),
         sifre,
         guvenlikSorusuKodu,
         guvenlikCevabi: guvenlikCevabi.trim(),
+        eposta: email,
+        telefon: phone,
       });
       if (!r.ok) {
         setError(r.error ?? "Hesap oluşturulamadı.");
@@ -90,16 +103,30 @@ export function SetupPage() {
               />
             </div>
             <div className="auth-field">
-              <label htmlFor={idUser}>Kullanıcı adı</label>
+              <label htmlFor={idEmail}>E-posta</label>
               <input
-                id={idUser}
+                id={idEmail}
                 className="auth-input"
-                autoComplete="username"
-                value={kullaniciAdi}
-                onChange={(e) => setKullaniciAdi(e.target.value)}
+                autoComplete="email"
+                value={eposta}
+                onChange={(e) => setEposta(e.target.value)}
                 disabled={busy}
+                placeholder="ornek@mail.com"
               />
             </div>
+            <div className="auth-field">
+              <label htmlFor={idPhone}>Telefon</label>
+              <input
+                id={idPhone}
+                className="auth-input"
+                autoComplete="tel"
+                value={telefon}
+                onChange={(e) => setTelefon(e.target.value)}
+                disabled={busy}
+                placeholder="05xx xxx xx xx"
+              />
+            </div>
+            <div className="auth-form-row">
             <div className="auth-field">
               <label htmlFor={idPass}>Şifre</label>
               <div className="auth-input-row">
@@ -128,6 +155,7 @@ export function SetupPage() {
                 onChange={(e) => setSifre2(e.target.value)}
                 disabled={busy}
               />
+            </div>
             </div>
             <div className="auth-field">
               <label htmlFor={idGuvenlikSoru}>Güvenlik sorusu</label>

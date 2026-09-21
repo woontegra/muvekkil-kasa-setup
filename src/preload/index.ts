@@ -90,6 +90,8 @@ const api = {
   licenseGetState: () => ipcRenderer.invoke(IPC.license.getState),
   licenseActivate: (input: import("@shared/types/license").LicenseActivateInput) =>
     ipcRenderer.invoke(IPC.license.activate, input),
+  licenseStartTrial: (input: import("@shared/types/license").LicenseStartTrialInput) =>
+    ipcRenderer.invoke(IPC.license.startTrial, input),
   licenseValidate: (options?: import("@shared/types/license").LicenseValidateOptions) =>
     ipcRenderer.invoke(IPC.license.validate, options),
   licenseOpenRenewalUrl: () => ipcRenderer.invoke(IPC.license.openRenewalUrl),

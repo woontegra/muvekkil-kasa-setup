@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser, SetupInput } from "@shared/types/auth";
 
-type AuthContextValue = {
+type PremiumAuthContextValue = {
   user: AuthUser | null;
   needsSetup: boolean;
   loading: boolean;
@@ -11,9 +11,9 @@ type AuthContextValue = {
   refresh: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const PremiumAuthContext = createContext<PremiumAuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function PremiumAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [needsSetup, setNeedsSetup] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { ok: false, error: r.error };
     },
-    []
+    [],
   );
 
   const logout = useCallback(async () => {
@@ -68,14 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ user, needsSetup, loading, login, setupFirst, logout, refresh }),
-    [user, needsSetup, loading, login, setupFirst, logout, refresh]
+    [user, needsSetup, loading, login, setupFirst, logout, refresh],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <PremiumAuthContext.Provider value={value}>{children}</PremiumAuthContext.Provider>;
 }
 
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth AuthProvider dışında kullanılamaz");
+export function usePremiumAuth(): PremiumAuthContextValue {
+  const ctx = useContext(PremiumAuthContext);
+  if (!ctx) throw new Error("usePremiumAuth PremiumAuthProvider dışında kullanılamaz");
   return ctx;
 }

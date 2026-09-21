@@ -5,14 +5,15 @@ import { app } from "electron";
 import { getDb, nowIso } from "../db/connection";
 import type { AuthUser, LoginInput, RememberedLogin, SetupInput } from "@shared/types/auth";
 import { GUVENLIK_SORU_KODLARI, GUVENLIK_SORULARI } from "@shared/types/auth";
+import { LOGIN_IDENTITY_SQL, normalizeLocalEmail, resolveInternalUsername, safeTrim } from "@shared/lib/localAuthIdentity";
 
 let session: AuthUser | null = null;
 
 const REMEMBERED_LOGIN_FILE = "remembered-login.json";
 const LEGACY_REMEMBER_FILE = "auth-remember.json";
 
-function normalizeGuvenlikCevabi(raw: string): string {
-  return raw.trim().toLocaleLowerCase("tr-TR");
+function normalizeGuvenlikCevabi(raw: unknown): string {
+  return safeTrim(raw).toLocaleLowerCase("tr-TR");
 }
 
 function rowToUser(r: {
@@ -20,13 +21,16 @@ function rowToUser(r: {
   ad_soyad: string;
   kullanici_adi: string;
   eposta: string | null;
+  telefon?: string | null;
 }): AuthUser {
   const ep = r.eposta;
+  const tel = r.telefon;
   return {
     id: r.id,
     adSoyad: String(r.ad_soyad ?? ""),
     kullaniciAdi: String(r.kullanici_adi ?? ""),
     eposta: ep == null || String(ep).trim() === "" ? null : String(ep),
+    telefon: tel == null || String(tel).trim() === "" ? null : String(tel),
   };
 }
 
@@ -51,75 +55,95 @@ export function needsSetup(): boolean {
   return uygulamaKullaniciSayisi() === 0;
 }
 
-export function setupFirst(input: SetupInput): { ok: true; user: AuthUser } | { ok: false; error: string } {
-  if (uygulamaKullaniciSayisi() > 0) {
-    return { ok: false, error: "İlk kurulum zaten tamamlandı." };
-  }
-  const adSoyad = input.adSoyad.trim();
-  const kullaniciAdi = input.kullaniciAdi.trim();
-  const soruKodu = input.guvenlikSorusuKodu.trim();
-  if (!adSoyad || !kullaniciAdi || !input.sifre) {
-    return { ok: false, error: "Lütfen tüm alanları doldurun." };
-  }
-  if (!GUVENLIK_SORU_KODLARI.includes(soruKodu)) {
-    return { ok: false, error: "Güvenlik sorusu seçilmelidir." };
-  }
-  const cevapNorm = normalizeGuvenlikCevabi(input.guvenlikCevabi);
-  if (!cevapNorm) return { ok: false, error: "Güvenlik cevabı zorunludur." };
-  if (kullaniciAdi.length < 3) {
-    return { ok: false, error: "Kullanıcı adı en az 3 karakter olmalıdır." };
-  }
-  if (input.sifre.length < 6) {
-    return { ok: false, error: "Şifre en az 6 karakter olmalıdır." };
-  }
-  const hash = bcrypt.hashSync(input.sifre, 12);
-  const cevapHash = bcrypt.hashSync(cevapNorm, 12);
-  const t = nowIso();
+type KullaniciRow = {
+  id: number;
+  ad_soyad: string;
+  kullanici_adi: string;
+  eposta: string | null;
+  telefon?: string | null;
+  sifre_hash: string;
+  aktif_mi: number;
+};
+
+function loginIdentityBinds(identity: unknown): [string, string] {
+  const raw = safeTrim(identity);
+  return [raw, normalizeLocalEmail(raw)];
+}
+
+function findUserRowByLoginIdentity(identity: string): KullaniciRow | undefined {
+  const [raw, emailNorm] = loginIdentityBinds(identity);
+  if (!raw) return undefined;
+  return getDb()
+    .prepare(
+      `SELECT id, ad_soyad, kullanici_adi, eposta, telefon, sifre_hash, aktif_mi
+       FROM uygulama_kullanici WHERE ${LOGIN_IDENTITY_SQL}`,
+    )
+    .get(raw, emailNorm) as KullaniciRow | undefined;
+}
+
+export function setupFirst(input?: SetupInput | null): { ok: true; user: AuthUser } | { ok: false; error: string } {
   try {
+    if (!input || typeof input !== "object") {
+      return { ok: false, error: "Lütfen tüm alanları doldurun." };
+    }
+    if (uygulamaKullaniciSayisi() > 0) {
+      return { ok: false, error: "İlk kurulum zaten tamamlandı." };
+    }
+    const adSoyad = safeTrim(input.adSoyad);
+    const resolved = resolveInternalUsername({ eposta: input.eposta, kullaniciAdi: input.kullaniciAdi });
+    if (!resolved.ok) return resolved;
+    const kullaniciAdi = resolved.kullaniciAdi;
+    const eposta = resolved.eposta;
+    const soruKodu = safeTrim(input.guvenlikSorusuKodu);
+    const sifre = typeof input.sifre === "string" ? input.sifre : "";
+    if (!adSoyad || !sifre) {
+      return { ok: false, error: "Lütfen tüm alanları doldurun." };
+    }
+    if (!GUVENLIK_SORU_KODLARI.includes(soruKodu)) {
+      return { ok: false, error: "Güvenlik sorusu seçilmelidir." };
+    }
+    const cevapNorm = normalizeGuvenlikCevabi(input.guvenlikCevabi);
+    if (!cevapNorm) return { ok: false, error: "Güvenlik cevabı zorunludur." };
+    if (kullaniciAdi.length < 3) {
+      return { ok: false, error: "E-posta en az 3 karakter olmalıdır." };
+    }
+    if (sifre.length < 6) {
+      return { ok: false, error: "Şifre en az 6 karakter olmalıdır." };
+    }
+    const hash = bcrypt.hashSync(sifre, 12);
+    const cevapHash = bcrypt.hashSync(cevapNorm, 12);
+    const t = nowIso();
+    const telefon = safeTrim(input.telefon) || null;
     const info = getDb()
       .prepare(
-        `INSERT INTO uygulama_kullanici (ad_soyad, kullanici_adi, eposta, sifre_hash, guvenlik_sorusu_kodu, guvenlik_cevap_hash, aktif_mi, kayit_tarihi)
-         VALUES (?, ?, NULL, ?, ?, ?, 1, ?)`
+        `INSERT INTO uygulama_kullanici (ad_soyad, kullanici_adi, eposta, telefon, sifre_hash, guvenlik_sorusu_kodu, guvenlik_cevap_hash, aktif_mi, kayit_tarihi)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`
       )
-      .run(adSoyad, kullaniciAdi, hash, soruKodu, cevapHash, t);
+      .run(adSoyad, kullaniciAdi, eposta, telefon, hash, soruKodu, cevapHash, t);
     const id = Number(info.lastInsertRowid);
-    const user: AuthUser = { id, adSoyad, kullaniciAdi, eposta: null };
+    const user: AuthUser = { id, adSoyad, kullaniciAdi, eposta, telefon };
     authLoginSuccess(user);
     clearRememberedLogin();
     return { ok: true, user };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.toUpperCase().includes("UNIQUE")) {
-      return { ok: false, error: "Bu kullanıcı adı zaten kayıtlı." };
+      return { ok: false, error: "Bu e-posta adresi zaten kayıtlı." };
     }
     return { ok: false, error: "Hesap oluşturulamadı." };
   }
 }
 
 export function login(input: LoginInput): { ok: true; user: AuthUser } | { ok: false; error: string } {
-  const ka = input.kullaniciAdi.trim();
-  if (!ka || !input.password) {
+  const ka = safeTrim(input?.kullaniciAdi);
+  if (!ka || !input?.password) {
     return { ok: false, error: "Lütfen tüm alanları doldurun." };
   }
-  const r = getDb()
-    .prepare(
-      `SELECT id, ad_soyad, kullanici_adi, eposta, sifre_hash, aktif_mi
-       FROM uygulama_kullanici WHERE kullanici_adi = ? COLLATE NOCASE`
-    )
-    .get(ka) as
-    | {
-        id: number;
-        ad_soyad: string;
-        kullanici_adi: string;
-        eposta: string | null;
-        sifre_hash: string;
-        aktif_mi: number;
-      }
-    | undefined;
-  if (!r) return { ok: false, error: "Kullanıcı adı veya şifre hatalı." };
+  const r = findUserRowByLoginIdentity(ka);
+  if (!r) return { ok: false, error: "E-posta veya şifre hatalı." };
   if (!Number(r.aktif_mi)) return { ok: false, error: "Bu kullanıcı pasif durumda." };
   if (!bcrypt.compareSync(input.password, r.sifre_hash)) {
-    return { ok: false, error: "Kullanıcı adı veya şifre hatalı." };
+    return { ok: false, error: "E-posta veya şifre hatalı." };
   }
   const user = rowToUser(r);
   authLoginSuccess(user);
@@ -127,15 +151,14 @@ export function login(input: LoginInput): { ok: true; user: AuthUser } | { ok: f
 }
 
 export function forgotPasswordGetQuestion(kullaniciAdi: string) {
-  const ka = kullaniciAdi.trim();
-  if (!ka) return { ok: false as const, error: "Kullanıcı adı boş olamaz." };
-  const r = getDb()
-    .prepare(
-      `SELECT guvenlik_sorusu_kodu, guvenlik_cevap_hash, aktif_mi FROM uygulama_kullanici WHERE kullanici_adi = ? COLLATE NOCASE`
-    )
-    .get(ka) as { guvenlik_sorusu_kodu: string | null; guvenlik_cevap_hash: string | null; aktif_mi: number } | undefined;
+  const ka = safeTrim(kullaniciAdi);
+  if (!ka) return { ok: false as const, error: "E-posta boş olamaz." };
+  const r = findUserRowByLoginIdentity(ka);
   if (!r || !Number(r.aktif_mi)) return { ok: false as const, error: "Kullanıcı bulunamadı." };
-  const kod = r.guvenlik_sorusu_kodu?.trim() ?? "";
+  const q = getDb()
+    .prepare(`SELECT guvenlik_sorusu_kodu, guvenlik_cevap_hash FROM uygulama_kullanici WHERE id = ?`)
+    .get(r.id) as { guvenlik_sorusu_kodu: string | null; guvenlik_cevap_hash: string | null } | undefined;
+  const kod = q?.guvenlik_sorusu_kodu?.trim() ?? "";
   if (!kod) {
     return { ok: false as const, error: "Bu hesap için güvenlik sorusu tanımlı değil." };
   }
@@ -149,14 +172,17 @@ export function forgotPasswordSubmit(input: {
   guvenlikCevabi: string;
   yeniSifre: string;
 }) {
-  const ka = input.kullaniciAdi.trim();
-  if (!ka) return { ok: false as const, error: "Kullanıcı adı boş olamaz." };
+  const ka = safeTrim(input.kullaniciAdi);
+  if (!ka) return { ok: false as const, error: "E-posta boş olamaz." };
   if (input.yeniSifre.length < 6) {
     return { ok: false as const, error: "Yeni şifre en az 6 karakter olmalıdır." };
   }
-  const r = getDb()
-    .prepare(`SELECT id, guvenlik_cevap_hash FROM uygulama_kullanici WHERE kullanici_adi = ? COLLATE NOCASE AND aktif_mi = 1`)
-    .get(ka) as { id: number; guvenlik_cevap_hash: string | null } | undefined;
+  const found = findUserRowByLoginIdentity(ka);
+  const r = found
+    ? (getDb()
+        .prepare(`SELECT id, guvenlik_cevap_hash FROM uygulama_kullanici WHERE id = ? AND aktif_mi = 1`)
+        .get(found.id) as { id: number; guvenlik_cevap_hash: string | null } | undefined)
+    : undefined;
   if (!r?.guvenlik_cevap_hash) {
     return { ok: false as const, error: "Kullanıcı bulunamadı veya güvenlik cevabı tanımlı değil." };
   }
@@ -194,8 +220,8 @@ function readRememberedFromFile(path: string): RememberedLogin | null {
 }
 
 export function saveRememberedLogin(kullaniciAdi: string): { ok: boolean; error?: string } {
-  const ka = kullaniciAdi.trim();
-  if (!ka) return { ok: false, error: "Kullanıcı adı boş olamaz." };
+  const ka = safeTrim(kullaniciAdi);
+  if (!ka) return { ok: false, error: "E-posta boş olamaz." };
   const payload = { v: 2, kullaniciAdi: ka, rememberMe: true as const };
   try {
     writeFileSync(rememberPath(), JSON.stringify(payload), "utf8");

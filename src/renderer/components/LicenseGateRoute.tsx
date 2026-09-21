@@ -43,6 +43,34 @@ export function LicenseGateRoute() {
     );
   }
 
+  if (state.phase === "trialNetworkRequired") {
+    return (
+      <div className="auth-page">
+        <div className="auth-card auth-card--enter" style={{ maxWidth: 420, margin: "12vh auto", padding: 24 }}>
+          <h1 className="auth-title">İnternet gerekli</h1>
+          <p className="auth-subtitle">{state.message ?? "Ücretsiz deneme lisansınızı doğrulamak için internet bağlantısı gereklidir."}</p>
+          <button type="button" className="auth-submit" disabled={checkBusy} onClick={() => void handleCheckLicense()}>
+            {checkBusy ? "Kontrol ediliyor…" : "Tekrar Dene"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (state.phase === "trialExpired" || (state.locked && state.record?.kind === "trial")) {
+    return (
+      <LicenseExpiredScreen
+        busy={checkBusy}
+        title="7 günlük ücretsiz deneme süreniz sona erdi."
+        message="Kayıtlı verileriniz silinmedi. Lisansınızı etkinleştirerek aynı verilerle devam edebilirsiniz."
+        renewLabel="Lisansımı Etkinleştir"
+        onRenew={() => { window.location.hash = "#/lisans/aktiflestir"; }}
+        onCheck={() => void handleCheckLicense()}
+        onQuit={() => void window.api.appQuit()}
+      />
+    );
+  }
+
   if (state.locked) {
     const expiredTitle = state.isExpired ? "Lisans süreniz sona erdi" : "Lisans doğrulanamadı";
     const expiredDefaultMessage = state.isExpired

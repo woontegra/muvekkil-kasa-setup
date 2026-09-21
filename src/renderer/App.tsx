@@ -4,6 +4,8 @@ import { AppShell } from "./components/AppShell";
 import { GuestAuthRoute, ProtectedRoute, SetupOnlyRoute } from "./components/ProtectedRoute";
 import { LicenseGateRoute, LicenseGuestRoute } from "./components/LicenseGateRoute";
 import { LicenseActivatePage } from "./pages/license/LicenseActivatePage";
+import { LicenseChoicePage } from "./pages/license/LicenseChoicePage";
+import { LicenseTrialSetupPage } from "./pages/license/LicenseTrialSetupPage";
 import { SetupPage } from "./pages/auth/SetupPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
@@ -22,7 +24,9 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route element={<LicenseGuestRoute />}>
-            <Route path="/lisans" element={<LicenseActivatePage />} />
+            <Route path="/lisans" element={<LicenseChoicePage />} />
+            <Route path="/lisans/aktiflestir" element={<LicenseActivatePage />} />
+            <Route path="/lisans/dene" element={<LicenseTrialSetupPage />} />
           </Route>
           <Route element={<LicenseGateRoute />}>
             <Route element={<SetupOnlyRoute />}>
@@ -33,6 +37,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             </Route>
             <Route element={<ProtectedRoute />}>
+              <Route path="/lisans/yukselt" element={<LicenseActivatePage />} />
               <Route element={<AppShell />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/muvekkiller" element={<MuvekkillerPage />} />

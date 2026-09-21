@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GUVENLIK_SORULARI, GUVENLIK_SORU_KODLARI } from "@shared/types/auth";
 import type { OfficeSettings } from "@shared/types/office";
+import type { LicenseState } from "@shared/types/license";
+import { desktopLicenseActionCta, desktopLicenseKindLabel } from "@shared/lib/licenseExpiry";
+import { useLicenseStatus } from "../../hooks/useLicenseStatus";
+
+function officeLicenseStatusLabel(state: LicenseState | null): string {
+  if (!state) return "—";
+  if (state.locked) return state.isExpired ? "Süresi doldu" : "Kilitli";
+  if (!state.valid) return "Geçersiz";
+  if (state.offlineDegraded) return "Çevrimdışı (geçerli)";
+  return "Aktif";
+}
 import programLogo from "../../assets/logo-M6Wo_PDM.png";
 import woontegraLogo from "../../assets/woontegra-logo-C922wZYn.png";
 
@@ -47,6 +58,8 @@ function formFromRow(row: OfficeSettings) {
 }
 
 export function OfficeSettingsPage() {
+  const navigate = useNavigate();
+  const { state: licenseState, loading: licenseLoading, checkLicense, openRenewal } = useLicenseStatus();
   const [surum, setSurum] = useState("0.1.0");
   const [form, setForm] = useState(bosForm());
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -68,6 +81,8 @@ export function OfficeSettingsPage() {
 
   const [backupMesaj, setBackupMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [lisansKontrolBusy, setLisansKontrolBusy] = useState(false);
+  const [lisansMesaj, setLisansMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
 
   const yukleLogoOnizleme = useCallback(async (path: string | null) => {
     const p = (path ?? "").trim();
@@ -220,6 +235,24 @@ export function OfficeSettingsPage() {
       setGuvenlikMesaj({ tip: "err", metin: "Güvenlik güncellenemedi." });
     } finally {
       setGuvenlikKaydediyor(false);
+    }
+  }
+
+  async function lisansKontrol() {
+    if (lisansKontrolBusy) return;
+    setLisansKontrolBusy(true);
+    setLisansMesaj(null);
+    try {
+      const r = await checkLicense();
+      if (r.ok) {
+        setLisansMesaj({ tip: "ok", metin: "Lisans durumu güncellendi." });
+      } else {
+        setLisansMesaj({ tip: "err", metin: r.error?.trim() || "Lisans doğrulanamadı." });
+      }
+    } catch {
+      setLisansMesaj({ tip: "err", metin: "Lisans doğrulanamadı." });
+    } finally {
+      setLisansKontrolBusy(false);
     }
   }
 
@@ -582,7 +615,69 @@ export function OfficeSettingsPage() {
         </div>
       </section>
 
-      <section className="desk-panel desk-panel--about-app desk-office-settings-panel--about">
+      
+      <section className="section-card desk-panel desk-office-settings-panel">
+        <div className="desk-panel-head">
+          <span>Lisans</span>
+        </div>
+        <div className="desk-panel-body desk-panel-body--pad-sm">
+          <p className="desk-muted-compact">
+            {licenseState?.record?.kind === "trial"
+              ? "Deneme lisansınızın süresini ve durumunu görüntüleyin."
+              : "Lisans durumunuzu görüntüleyin ve yenileme işlemlerini yönetin."}
+          </p>
+          <p className="desk-about-app-meta">
+            <span className="desk-about-label">Durum:</span> {officeLicenseStatusLabel(licenseState)}
+          </p>
+          <p className="desk-about-app-meta">
+            <span className="desk-about-label">Lisans türü:</span>{" "}
+            {desktopLicenseKindLabel(licenseState?.record?.kind) ?? "—"}
+          </p>
+          <p className="desk-about-app-meta">
+            <span className="desk-about-label">Kalan gün:</span>{" "}
+            {licenseState?.daysRemaining != null ? `${licenseState.daysRemaining} gün` : "—"}
+          </p>
+          <p className="desk-about-app-meta">
+            <span className="desk-about-label">Son geçerlilik:</span>{" "}
+            {licenseState?.expiryLabel?.trim() || licenseState?.expiresAt?.trim() || "—"}
+          </p>
+          <p className="desk-about-app-meta">
+            <span className="desk-about-label">Cihaz durumu:</span>{" "}
+            {licenseState?.record?.status === "ACTIVE"
+              ? "Kayıtlı"
+              : licenseState?.record?.status === "LOCKED"
+                ? "Kilitli"
+                : "—"}
+          </p>
+          {lisansMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${lisansMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {lisansMesaj.metin}
+            </div>
+          ) : null}
+          <div className="desk-office-settings-actions">
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={lisansKontrolBusy || licenseLoading}
+              onClick={() => void lisansKontrol()}
+            >
+              {lisansKontrolBusy ? "Kontrol ediliyor…" : "Lisansı kontrol et"}
+            </button>
+            {desktopLicenseActionCta(licenseState?.record?.kind) === "renew" ? (
+              <button type="button" className="btn btn-sm" onClick={() => void openRenewal()}>
+                Lisansı yenile
+              </button>
+            ) : null}
+            {desktopLicenseActionCta(licenseState?.record?.kind) === "upgrade" ? (
+              <button type="button" className="btn btn-sm" onClick={() => navigate("/lisans/yukselt")}>
+                Tam Sürüme Geç
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+<section className="desk-panel desk-panel--about-app desk-office-settings-panel--about">
         <div className="desk-panel-head">
           <span>UYGULAMA HAKKINDA</span>
           <span className="desk-panel-meta">Woontegra</span>

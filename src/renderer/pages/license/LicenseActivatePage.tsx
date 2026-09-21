@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { DESKTOP_LICENSE_UPDATED_EVENT } from "@shared/lib/licenseExpiry";
 import { AuthShell } from "../../components/AuthShell";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,6 +10,7 @@ const SUCCESS_REDIRECT_MS = 1500;
 export function LicenseActivatePage() {
   const { needsSetup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [licenseKey, setLicenseKey] = useState("");
   const [activationPassword, setActivationPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,11 @@ export function LicenseActivatePage() {
       }
 
       activated = true;
+      window.dispatchEvent(new Event(DESKTOP_LICENSE_UPDATED_EVENT));
       setSuccess(r.message?.trim() || "Lisans başarıyla aktifleştirildi.");
+      const nextPath = needsSetup ? "/setup" : location.pathname.includes("yukselt") ? "/ayarlar/ofis" : "/login";
       window.setTimeout(() => {
-        navigate(needsSetup ? "/setup" : "/login", { replace: true });
+        navigate(nextPath, { replace: true });
       }, SUCCESS_REDIRECT_MS);
     } finally {
       if (!activated) setBusy(false);

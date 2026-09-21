@@ -24,18 +24,6 @@ import {
   masrafTurleriList,
 } from "../services/kasa.service";
 import {
-  icraTahsilatAlacakIptal,
-  icraTahsilatAlacakOlustur,
-  icraTahsilatList,
-  icraTahsilatSmmKesildi,
-  icraTahsilatTaksitList,
-  icraTahsilatTaksitOdemeAl,
-  icraTahsilatTaksitOdemeGecmisi,
-  icraTahsilatTaksitSil,
-  icraTahsilatTaksitGuncelle,
-  icraTahsilatUstOzet,
-} from "../services/icraTahsilat.service";
-import {
   vekaletByDosya,
   vekaletGetOrCreate,
   vekaletGuncelle,
@@ -48,8 +36,6 @@ import {
   vekaletTaksitOdemeAl,
   vekaletTaksitOdemeGecmisi,
   vekaletTaksitSil,
-  vekaletTaksitleriTopluSil,
-  vekaletTaksitUyariOzet,
 } from "../services/vekalet.service";
 import {
   dosyaEkle,
@@ -94,24 +80,16 @@ import {
 } from "../services/ofisKasa.service";
 import { backupDatabase, restoreDatabase } from "../services/backup.service";
 import { officeLogoDataUrl, officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
-import { getAccountingPeriodMode, setAccountingPeriodMode } from "../services/appSettings.service";
-import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import {
+  clearTrialGrantedPendingSetup,
   licenseActivate,
   licenseGetStateForRenderer,
   licenseRequestRenewalLink,
+  licenseStartTrial,
   licenseValidate,
   licenseValidateOnStartup,
 } from "../services/license.service";
-import {
-  checkForUpdates,
-  dismissUpdatePrompt,
-  downloadUpdate,
-  getUpdateStatus,
-  initUpdateService,
-  installUpdate,
-  scheduleAutoUpdateCheck,
-} from "../services/update.service";
+import { installIpcLicenseAuthorization } from "./licenseAuthorization";
 
 function oturumKullaniciEtiketi(): { id: number | null; ad: string | null } {
   const s = authGetSession();
@@ -121,12 +99,18 @@ function oturumKullaniciEtiketi(): { id: number | null; ad: string | null } {
 }
 
 export function registerIpcHandlers(): void {
+  installIpcLicenseAuthorization();
   ipcMain.handle(IPC.auth.needsSetup, () => needsSetup());
   ipcMain.handle(IPC.auth.getSession, () => authGetSession());
   ipcMain.handle(IPC.auth.login, (_e, payload) => login(payload));
   ipcMain.handle(IPC.auth.setupFirst, (_e, input) => {
-    const r = setupFirst(input);
-    return r;
+    try {
+      const r = setupFirst(input);
+      if (r.ok) clearTrialGrantedPendingSetup();
+      return r;
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Hesap oluşturulamadı." };
+    }
   });
   ipcMain.handle(IPC.auth.forgotPasswordGetQuestion, (_e, kullaniciAdi: string) =>
     forgotPasswordGetQuestion(kullaniciAdi)
@@ -167,10 +151,6 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.office.save, (_e, input) => officeSettingsSave(input));
   ipcMain.handle(IPC.office.pickLogo, () => officePickLogo());
   ipcMain.handle(IPC.office.logoDataUrl, (_e, filePath: string) => officeLogoDataUrl(filePath));
-  ipcMain.handle(IPC.appSettings.getAccountingPeriodMode, () => getAccountingPeriodMode());
-  ipcMain.handle(IPC.appSettings.setAccountingPeriodMode, (_e, mode: AccountingPeriodMode) =>
-    setAccountingPeriodMode(mode),
-  );
   ipcMain.handle(IPC.backup.al, () => backupDatabase());
   ipcMain.handle(IPC.backup.geriYukle, () => restoreDatabase());
 
@@ -227,23 +207,6 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.kasa.onayla, (_e, id: number) => kasaHareketOnayla(id));
   ipcMain.handle(IPC.masrafTurleri, () => masrafTurleriList());
 
-  ipcMain.handle(IPC.icraTahsilat.ustOzet, () => icraTahsilatUstOzet());
-  ipcMain.handle(IPC.icraTahsilat.list, (_e, filtre) => icraTahsilatList(filtre ?? {}));
-  ipcMain.handle(IPC.icraTahsilat.alacakOlustur, (_e, input) => icraTahsilatAlacakOlustur(input));
-  ipcMain.handle(IPC.icraTahsilat.taksitList, (_e, alacakId: number) => icraTahsilatTaksitList(alacakId));
-  ipcMain.handle(IPC.icraTahsilat.taksitOdemeAl, (_e, taksitId: number, input) =>
-    icraTahsilatTaksitOdemeAl(taksitId, input),
-  );
-  ipcMain.handle(IPC.icraTahsilat.taksitOdemeGecmisi, (_e, taksitId: number) =>
-    icraTahsilatTaksitOdemeGecmisi(taksitId),
-  );
-  ipcMain.handle(IPC.icraTahsilat.taksitSil, (_e, taksitId: number) => icraTahsilatTaksitSil(taksitId));
-  ipcMain.handle(IPC.icraTahsilat.taksitGuncelle, (_e, taksitId: number, patch) =>
-    icraTahsilatTaksitGuncelle(taksitId, patch),
-  );
-  ipcMain.handle(IPC.icraTahsilat.smmKesildi, (_e, odemeId: number) => icraTahsilatSmmKesildi(odemeId));
-  ipcMain.handle(IPC.icraTahsilat.alacakIptal, (_e, alacakId: number) => icraTahsilatAlacakIptal(alacakId));
-
   ipcMain.handle(IPC.vekalet.getOrCreate, (_e, dosyaId: number, muvekkilId: number) =>
     vekaletGetOrCreate(dosyaId, muvekkilId)
   );
@@ -259,12 +222,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.vekalet.taksitEkle, (_e, vekaletId: number, input) => vekaletTaksitEkle(vekaletId, input));
   ipcMain.handle(IPC.vekalet.taksitGuncelle, (_e, id: number, patch) => vekaletTaksitGuncelle(id, patch));
   ipcMain.handle(IPC.vekalet.taksitSil, (_e, id: number) => vekaletTaksitSil(id));
-  ipcMain.handle(IPC.vekalet.taksitleriTopluSil, (_e, vekaletId: number) => vekaletTaksitleriTopluSil(vekaletId));
   ipcMain.handle(IPC.vekalet.taksitOdemeAl, (_e, taksitId: number, input) => vekaletTaksitOdemeAl(taksitId, input));
   ipcMain.handle(IPC.vekalet.taksitOdemeGecmisi, (_e, taksitId: number) => vekaletTaksitOdemeGecmisi(taksitId));
   ipcMain.handle(IPC.vekalet.smmBekleyenler, (_e, dosyaId?: number) => vekaletSmmBekleyenler(dosyaId));
   ipcMain.handle(IPC.vekalet.smmKesildi, (_e, odemeId: number) => vekaletSmmKesildi(odemeId));
-  ipcMain.handle(IPC.vekalet.taksitUyariOzet, () => vekaletTaksitUyariOzet());
 
   ipcMain.handle(IPC.makbuz.ensureReceiptNumber, (_e, hareketId: number) =>
     ensureReceiptNumberForTransaction(hareketId)
@@ -315,6 +276,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.license.activate, (_e, input: import("@shared/types/license").LicenseActivateInput) =>
     licenseActivate(input),
   );
+  ipcMain.handle(IPC.license.startTrial, (_e, input: import("@shared/types/license").LicenseStartTrialInput) =>
+    licenseStartTrial(input),
+  );
   ipcMain.handle(
     IPC.license.validate,
     (_e, options?: import("@shared/types/license").LicenseValidateOptions) => licenseValidate(options),
@@ -328,16 +292,6 @@ export function registerIpcHandlers(): void {
     return { ok: true as const };
   });
 
-  ipcMain.handle(IPC.update.getStatus, () => getUpdateStatus());
-  ipcMain.handle(IPC.update.check, (_e, source?: "auto" | "manual") =>
-    checkForUpdates(source === "auto" ? "auto" : "manual"),
-  );
-  ipcMain.handle(IPC.update.download, () => downloadUpdate());
-  ipcMain.handle(IPC.update.install, () => installUpdate());
-  ipcMain.handle(IPC.update.dismiss, () => {
-    dismissUpdatePrompt();
-    return { ok: true as const };
-  });
 }
 
 export function initLicenseOnReady(): void {
@@ -349,9 +303,3 @@ export function initLicenseOnReady(): void {
 export function initAuthOnReady(): void {
   authRestoreRemembered();
 }
-
-export function initUpdateOnReady(): void {
-  initUpdateService();
-}
-
-export { scheduleAutoUpdateCheck };

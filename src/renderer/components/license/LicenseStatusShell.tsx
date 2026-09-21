@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { LicenseExpiryWarningModal } from "./LicenseExpiryWarningModal";
+import { useAuth } from "../../context/AuthContext";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 
 export function LicenseStatusShell({ children }: { children: React.ReactNode }) {
+  const { needsSetup } = useAuth();
   const { offlineNotice, activeWarningDays, loading, openRenewal, dismissWarning, checkLicense } = useLicenseStatus();
   const [checkBusy, setCheckBusy] = useState(false);
 
@@ -22,7 +24,7 @@ export function LicenseStatusShell({ children }: { children: React.ReactNode }) 
           {offlineNotice}
         </div>
       ) : null}
-      {activeWarningDays != null ? (
+      {activeWarningDays != null && !needsSetup ? (
         <LicenseExpiryWarningModal
           daysRemaining={activeWarningDays}
           busy={loading || checkBusy}
