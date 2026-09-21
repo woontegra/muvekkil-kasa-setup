@@ -37,7 +37,11 @@ export function createMainWindow(): BrowserWindow {
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     win.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
-    win.loadFile(join(__dirname, "../renderer/index.html"));
+    const legacy = process.env.MKD_RENDERER === "legacy";
+    const html = legacy
+      ? join(__dirname, "../renderer/index.html")
+      : join(__dirname, "../renderer-premium/index.html");
+    win.loadFile(html);
   }
 
   return win;

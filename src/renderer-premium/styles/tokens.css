@@ -1,0 +1,77 @@
+/**
+ * Premium renderer — tasarım tokenları
+ */
+:root {
+  /* Renkler */
+  --pm-navy-900: #0a1628;
+  --pm-navy-800: #0f2744;
+  --pm-navy-700: #1a3a5f;
+  --pm-blue-600: #2b6cb8;
+  --pm-blue-500: #3b82d6;
+  --pm-blue-400: #60a5fa;
+  --pm-blue-50: #eff6ff;
+
+  --pm-bg-app: #f0f3f8;
+  --pm-bg-surface: #ffffff;
+  --pm-bg-elevated: #f8fafc;
+  --pm-bg-sidebar: #0f2744;
+  --pm-bg-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --pm-bg-sidebar-active: rgba(43, 108, 184, 0.35);
+
+  --pm-border: #d8e0ea;
+  --pm-border-soft: #e8edf4;
+  --pm-border-sidebar: rgba(255, 255, 255, 0.1);
+
+  --pm-text: #0f172a;
+  --pm-text-secondary: #475569;
+  --pm-text-muted: #64748b;
+  --pm-text-inverse: #f8fafc;
+  --pm-text-sidebar: rgba(255, 255, 255, 0.78);
+  --pm-text-sidebar-active: #ffffff;
+
+  /* Spacing */
+  --pm-space-1: 4px;
+  --pm-space-2: 8px;
+  --pm-space-3: 12px;
+  --pm-space-4: 16px;
+  --pm-space-5: 20px;
+  --pm-space-6: 24px;
+  --pm-space-8: 32px;
+
+  /* Radius */
+  --pm-radius-sm: 8px;
+  --pm-radius-md: 10px;
+  --pm-radius-lg: 12px;
+  --pm-radius-xl: 14px;
+
+  /* Shadow */
+  --pm-shadow-sm: 0 1px 2px rgba(15, 39, 68, 0.05);
+  --pm-shadow-md: 0 4px 14px rgba(15, 39, 68, 0.08);
+  --pm-shadow-lg: 0 12px 32px rgba(15, 39, 68, 0.12);
+  --pm-shadow-xl: 0 20px 48px rgba(15, 39, 68, 0.16);
+
+  /* Typography */
+  --pm-font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --pm-font-size-xs: 0.75rem;
+  --pm-font-size-sm: 0.8125rem;
+  --pm-font-size-base: 0.9375rem;
+  --pm-font-size-lg: 1.125rem;
+  --pm-font-size-xl: 1.375rem;
+  --pm-font-size-2xl: 1.625rem;
+
+  /* Layout */
+  --pm-sidebar-width: 248px;
+  --pm-sidebar-collapsed: 72px;
+  --pm-header-height: 64px;
+
+  --pm-accent: var(--pm-blue-600);
+  --pm-danger: #dc2626;
+  --pm-surface: var(--pm-bg-surface);
+  --pm-surface-elevated: var(--pm-bg-elevated);
+  --pm-surface-hover: #f1f5f9;
+  --pm-border-subtle: var(--pm-border-soft);
+  --pm-bg: var(--pm-bg-app);
+  --pm-font-size-md: var(--pm-font-size-base);
+  --pm-duration-normal: 220ms;
+  --pm-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
