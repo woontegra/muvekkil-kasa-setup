@@ -1,6 +1,6 @@
 import { app, dialog } from "electron";
-import { copyFileSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { closeDb, getDb, getDbPath } from "../db/connection";
 
 function copySqliteBundle(srcBase: string, destBase: string): void {
@@ -74,5 +74,62 @@ export async function restoreDatabase(): Promise<
       /* ignore */
     }
     return { ok: false, error: "Geri yükleme başarısız." };
+  }
+}
+
+function stampForFolder(): string {
+  return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+}
+
+/**
+ * Güncelleme öncesi güvenli yedek: SQLite (WAL checkpoint), ayar dosyaları, ofis logosu.
+ * userData/update-backups/[eski]-to-[yeni]-[tarih]/
+ */
+export function createPreUpdateBackup(
+  fromVersion: string,
+  toVersion: string,
+): { ok: true; path: string } | { ok: false; error: string } {
+  const safeFrom = fromVersion.replace(/[^\w.-]+/g, "_") || "unknown";
+  const safeTo = toVersion.replace(/[^\w.-]+/g, "_") || "unknown";
+  const dirName = `${safeFrom}-to-${safeTo}-${stampForFolder()}`;
+  const backupRoot = join(app.getPath("userData"), "update-backups");
+  const destDir = join(backupRoot, dirName);
+
+  try {
+    mkdirSync(destDir, { recursive: true });
+    const dbPath = getDbPath();
+    const dbFileName = basename(dbPath);
+    const db = getDb();
+    db.pragma("wal_checkpoint(TRUNCATE)");
+    copySqliteBundle(dbPath, join(destDir, dbFileName));
+
+    const userData = app.getPath("userData");
+    for (const name of ["remembered-login.json", "auth-remember.json"]) {
+      const src = join(userData, name);
+      if (existsSync(src)) copyFileSync(src, join(destDir, name));
+    }
+
+    const logosSrc = join(userData, "logos");
+    if (existsSync(logosSrc)) {
+      const logosDest = join(destDir, "logos");
+      mkdirSync(logosDest, { recursive: true });
+      for (const entry of readdirSync(logosSrc, { withFileTypes: true })) {
+        if (entry.isFile()) {
+          copyFileSync(join(logosSrc, entry.name), join(logosDest, entry.name));
+        }
+      }
+    }
+
+    const metadata = {
+      eskiSurum: fromVersion,
+      yeniSurum: toVersion,
+      yedekTarihi: new Date().toISOString(),
+      veritabaniDosyaAdi: dbFileName,
+    };
+    writeFileSync(join(destDir, "metadata.json"), JSON.stringify(metadata, null, 2), "utf8");
+    return { ok: true, path: destDir };
+  } catch (e) {
+    console.error("[createPreUpdateBackup]", e);
+    return { ok: false, error: "Güncelleme öncesi veri yedeği oluşturulamadı." };
   }
 }

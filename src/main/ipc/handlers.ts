@@ -90,6 +90,15 @@ import {
   licenseValidateOnStartup,
 } from "../services/license.service";
 import { installIpcLicenseAuthorization } from "./licenseAuthorization";
+import {
+  checkForUpdates,
+  dismissUpdatePrompt,
+  downloadUpdate,
+  getUpdateStatus,
+  initUpdateService,
+  installUpdate,
+  scheduleAutoUpdateCheck,
+} from "../services/update.service";
 
 function oturumKullaniciEtiketi(): { id: number | null; ad: string | null } {
   const s = authGetSession();
@@ -292,6 +301,16 @@ export function registerIpcHandlers(): void {
     return { ok: true as const };
   });
 
+  ipcMain.handle(IPC.update.getStatus, () => getUpdateStatus());
+  ipcMain.handle(IPC.update.check, (_e, source?: "auto" | "manual") =>
+    checkForUpdates(source === "auto" ? "auto" : "manual"),
+  );
+  ipcMain.handle(IPC.update.download, () => downloadUpdate());
+  ipcMain.handle(IPC.update.install, () => installUpdate());
+  ipcMain.handle(IPC.update.dismiss, () => {
+    dismissUpdatePrompt();
+    return { ok: true as const };
+  });
 }
 
 export function initLicenseOnReady(): void {
@@ -303,3 +322,9 @@ export function initLicenseOnReady(): void {
 export function initAuthOnReady(): void {
   authRestoreRemembered();
 }
+
+export function initUpdateOnReady(): void {
+  initUpdateService();
+}
+
+export { scheduleAutoUpdateCheck };

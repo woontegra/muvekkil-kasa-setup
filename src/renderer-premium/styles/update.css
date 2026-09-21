@@ -1,0 +1,105 @@
+/* Update prompt (packaged Premium) */
+.pm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pm-space-2);
+  min-height: 36px;
+  padding: 0 var(--pm-space-4);
+  border-radius: var(--pm-radius-md);
+  border: 1px solid transparent;
+  font-size: var(--pm-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pm-btn--primary {
+  background: var(--pm-blue-600);
+  border-color: var(--pm-blue-600);
+  color: #fff;
+}
+
+.pm-btn--ghost {
+  background: transparent;
+  border-color: var(--pm-border);
+  color: var(--pm-navy-800);
+}
+
+.pm-settings-update-new {
+  color: var(--pm-blue-600);
+}
+
+.pm-settings-update-progress {
+  display: flex;
+  flex-direction: column;
+}
+
+.pm-settings-update-progress-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--pm-space-2);
+  font-size: var(--pm-font-size-sm);
+}
+
+.pm-settings-update-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pm-border-soft);
+  overflow: hidden;
+}
+
+.pm-settings-update-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--pm-blue-500), var(--pm-blue-600));
+  transition: width 200ms var(--pm-ease);
+}
+
+.pm-settings-update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--pm-space-2);
+  font-size: var(--pm-font-size-xs);
+  color: var(--pm-text-muted);
+}
+
+.pm-update-modal-text {
+  margin: 0 0 var(--pm-space-3);
+  color: var(--pm-text-secondary);
+  line-height: 1.5;
+}
+
+.pm-update-modal-version {
+  margin: 0;
+  font-size: var(--pm-font-size-sm);
+}
+
+.pm-update-modal-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: var(--pm-font-size-sm);
+}
+
+.pm-update-modal-notes h3 {
+  margin: var(--pm-space-4) 0 var(--pm-space-2);
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-navy-800);
+}
+
+.pm-update-modal-notes ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-settings-update-progress-fill {
+    transition: none !important;
+  }
+}

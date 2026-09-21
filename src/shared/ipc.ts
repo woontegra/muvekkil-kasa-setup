@@ -101,5 +101,13 @@ export const IPC = {
     startTrial: "license:startTrial",
     openRenewalUrl: "license:openRenewalUrl",
   },
+  update: {
+    getStatus: "update:getStatus",
+    check: "update:check",
+    download: "update:download",
+    install: "update:install",
+    dismiss: "update:dismiss",
+    statusChanged: "update:statusChanged",
+  },
   masrafTurleri: "masrafTurleri",
 } as const;

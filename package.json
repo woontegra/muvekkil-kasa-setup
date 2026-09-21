@@ -1,11 +1,14 @@
 {
   "name": "muvekkil-kasa-defteri",
-  "version": "0.1.0",
+  "version": "0.1.10",
   "description": "Woontegra Müvekkil Kasa Defteri — geliştirilebilir kaynak",
   "main": "./out/main/index.js",
   "private": true,
   "type": "module",
   "author": "Woontegra",
+  "config": {
+    "updateBaseUrl": "https://updates.woontegra.com/updates/muvekkil-kasa-defteri/windows"
+  },
   "scripts": {
     "postinstall": "electron-builder install-app-deps && node scripts/fix-electron-shadow.cjs",
     "dev": "node scripts/run-dev.cjs",
@@ -16,6 +19,8 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.10.0",
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9",
     "pdfjs-dist": "^5.6.205",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

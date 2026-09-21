@@ -6,6 +6,8 @@ import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/auth.css";
 import "./styles/license.css";
+import "./styles/modal.css";
+import "./styles/update.css";
 
 function showBootError(message: string) {
   const root = document.getElementById("root");

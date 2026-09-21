@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { getDb, nowIso } from "./db/connection";
 import { runMigrations } from "./db/migrate";
 import { allMigrations } from "./migrations";
-import { registerIpcHandlers, initAuthOnReady, initLicenseOnReady } from "./ipc/handlers";
+import { registerIpcHandlers, initAuthOnReady, initLicenseOnReady, initUpdateOnReady, scheduleAutoUpdateCheck } from "./ipc/handlers";
 import { approveAllPendingOfisKasaOnExit } from "./services/ofisKasa.service";
 import { createMainWindow } from "./window";
 import { runVekaletOfisSmoke } from "./e2e/vekaletOfisSmoke";
@@ -32,11 +32,18 @@ if (process.env.MKD_E2E_VEKALET_OFIS !== "1") {
     registerIpcHandlers();
     initAuthOnReady();
     initLicenseOnReady();
+    initUpdateOnReady();
     mainWindow = createMainWindow();
+    mainWindow.webContents.once("did-finish-load", () => {
+      scheduleAutoUpdateCheck(5000);
+    });
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         mainWindow = createMainWindow();
+        mainWindow.webContents.once("did-finish-load", () => {
+          scheduleAutoUpdateCheck(5000);
+        });
       }
     });
   });

@@ -96,6 +96,19 @@ const api = {
     ipcRenderer.invoke(IPC.license.validate, options),
   licenseOpenRenewalUrl: () => ipcRenderer.invoke(IPC.license.openRenewalUrl),
   appQuit: () => ipcRenderer.invoke(IPC.app.quit),
+  updateGetStatus: () => ipcRenderer.invoke(IPC.update.getStatus),
+  updateCheck: (source?: "auto" | "manual") => ipcRenderer.invoke(IPC.update.check, source ?? "manual"),
+  updateDownload: () => ipcRenderer.invoke(IPC.update.download),
+  updateInstall: () => ipcRenderer.invoke(IPC.update.install),
+  updateDismiss: () => ipcRenderer.invoke(IPC.update.dismiss),
+  onUpdateStatusChanged: (cb: (status: import("@shared/types/update").UpdateStatusSnapshot) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: import("@shared/types/update").UpdateStatusSnapshot) =>
+      cb(status);
+    ipcRenderer.on(IPC.update.statusChanged, listener);
+    return () => {
+      ipcRenderer.removeListener(IPC.update.statusChanged, listener);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld("api", api);

@@ -34,6 +34,11 @@ const PUBLIC_CHANNELS = new Set<string>([
   IPC.license.validate,
   IPC.license.startTrial,
   IPC.license.openRenewalUrl,
+  IPC.update.getStatus,
+  IPC.update.check,
+  IPC.update.download,
+  IPC.update.install,
+  IPC.update.dismiss,
   IPC.util.pathToFileUrl,
 ]);
 
