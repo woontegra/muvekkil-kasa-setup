@@ -1,3 +1,6 @@
+import { DeskModalBackdrop } from "./DeskModalBackdrop";
+import { DeskModalHead } from "./DeskModalHead";
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -9,11 +12,9 @@ export function IslemEkleSecimModal({ open, onClose, onAvans, onMasraf }: Props)
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <DeskModalBackdrop onClose={onClose}>
       <div className="modal modal-desk modal-desk--narrow" role="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>İşlem ekle</h2>
-        </div>
+        <DeskModalHead title="İşlem ekle" onClose={onClose} />
         <div className="modal-body desk-islem-secim">
           <button
             type="button"
@@ -42,6 +43,6 @@ export function IslemEkleSecimModal({ open, onClose, onAvans, onMasraf }: Props)
           </button>
         </div>
       </div>
-    </div>
+    </DeskModalBackdrop>
   );
 }

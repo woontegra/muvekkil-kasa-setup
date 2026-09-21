@@ -1,0 +1,555 @@
+/* —— Randevu takvimi —— */
+.pm-randevu-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-4);
+}
+
+.pm-randevu-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+
+.pm-randevu-toolbar-spacer {
+  flex: 1;
+}
+
+.pm-randevu-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--pm-radius-md);
+  border: 1px solid var(--pm-border);
+  background: var(--pm-bg-subtle);
+}
+
+.pm-randevu-view-btn {
+  border: none;
+  border-radius: calc(var(--pm-radius-md) - 2px);
+  padding: 6px 12px;
+  font-size: var(--pm-font-size-xs);
+  font-weight: 700;
+  color: var(--pm-text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--pm-duration-fast) var(--pm-ease), color var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-randevu-view-btn:hover {
+  background: rgba(15, 39, 68, 0.06);
+  color: var(--pm-navy-800);
+}
+
+.pm-randevu-view-btn--active {
+  background: var(--pm-navy-800);
+  color: #fff;
+}
+
+.pm-randevu-period-label {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: var(--pm-font-size-sm);
+  font-weight: 600;
+  color: var(--pm-text-secondary);
+}
+
+.pm-randevu-combobox-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 140px;
+  overflow: auto;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: #fff;
+  box-shadow: var(--pm-shadow-md);
+}
+
+.pm-randevu-combobox-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--pm-font-size-sm);
+  cursor: pointer;
+}
+
+.pm-randevu-combobox-item:hover {
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.pm-randevu-selected-hint {
+  margin: 6px 0 0;
+  font-size: var(--pm-font-size-xs);
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-selected-hint button {
+  margin-left: 8px;
+  border: none;
+  background: none;
+  color: var(--pm-accent);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pm-randevu-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pm-space-4);
+}
+
+.pm-randevu-detail-field dt {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-detail-field dd {
+  margin: 0;
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-navy-800);
+}
+
+.pm-randevu-detail-note {
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border-radius: var(--pm-radius-md);
+  border: 1px solid var(--pm-border);
+  background: var(--pm-bg-subtle);
+}
+
+.pm-randevu-detail-note h4 {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-detail-note p {
+  margin: 0;
+  font-size: var(--pm-font-size-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.pm-randevu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-3);
+  margin-top: 4px;
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-widget-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-randevu-widget-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pm-space-3);
+  padding: 10px 12px;
+  border-radius: var(--pm-radius-md);
+  border: 1px solid var(--pm-border);
+  background: #fff;
+}
+
+.pm-randevu-widget-item button {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-randevu-widget-item strong {
+  display: block;
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-navy-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-randevu-widget-item span {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--pm-font-size-xs);
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-widget-time {
+  flex-shrink: 0;
+  font-size: var(--pm-font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pm-accent);
+}
+
+/* Takvim grid */
+.pm-randevu-cal {
+  --pm-randevu-grid-line: rgba(15, 39, 68, 0.07);
+  overflow: hidden;
+  border-radius: var(--pm-radius-lg);
+  border: 1px solid var(--pm-border-soft);
+  background: #fff;
+  box-shadow: var(--pm-shadow-sm);
+}
+
+.pm-randevu-cal-scroll {
+  overflow-x: auto;
+}
+
+.pm-randevu-cal-minw {
+  min-width: 640px;
+}
+
+.pm-randevu-cal-grid {
+  display: grid;
+  background: #fff;
+}
+
+.pm-randevu-cal-head-cell {
+  padding: 10px 8px;
+  text-align: center;
+  background: var(--pm-bg-subtle);
+  box-shadow: inset 0 -1px 0 var(--pm-randevu-grid-line);
+}
+
+.pm-randevu-cal-head-cell:not(:first-child) {
+  box-shadow:
+    inset 0 -1px 0 var(--pm-randevu-grid-line),
+    inset 1px 0 0 var(--pm-randevu-grid-line);
+}
+
+.pm-randevu-cal-head-cell--today {
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.pm-randevu-cal-head-weekday {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-cal-head-day {
+  margin: 4px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: var(--pm-font-size-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-randevu-cal-head-day--today {
+  background: var(--pm-accent);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+}
+
+.pm-randevu-cal-time {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 4px 10px 0 0;
+  margin: 0;
+  border: none;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--pm-text-muted);
+  background: #fff;
+  box-shadow: inset 0 -1px 0 var(--pm-randevu-grid-line);
+}
+
+.pm-randevu-cal-slot {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  box-shadow:
+    inset 0 -1px 0 var(--pm-randevu-grid-line),
+    inset 1px 0 0 var(--pm-randevu-grid-line);
+  transition: background var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-randevu-cal-slot:hover {
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.pm-randevu-cal-slot--today {
+  background: rgba(220, 38, 38, 0.02);
+}
+
+.pm-randevu-cal-slot:focus-visible {
+  outline: 2px solid rgba(43, 108, 184, 0.45);
+  outline-offset: -2px;
+}
+
+.pm-randevu-cal-overlay {
+  position: relative;
+  pointer-events: none;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.pm-randevu-cal-event-wrap {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.pm-randevu-cal-event {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.14);
+  background: #fff;
+  transition: box-shadow var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-randevu-cal-event:hover {
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.28);
+}
+
+.pm-randevu-cal-event--past {
+  box-shadow: inset 0 0 0 1px rgba(15, 39, 68, 0.12);
+}
+
+.pm-randevu-cal-event-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(254, 226, 226, 0.55) 0%, rgba(255, 255, 255, 0.9) 70%);
+}
+
+.pm-randevu-cal-event--past .pm-randevu-cal-event-wash {
+  background: linear-gradient(90deg, rgba(254, 226, 226, 0.15) 0%, #fff 70%);
+}
+
+.pm-randevu-cal-event-accent {
+  width: 3px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.55), rgba(220, 38, 38, 0.35));
+}
+
+.pm-randevu-cal-event--past .pm-randevu-cal-event-accent {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+.pm-randevu-cal-event-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 6px;
+  overflow: hidden;
+}
+
+.pm-randevu-cal-event-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--pm-navy-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-randevu-cal-event--past .pm-randevu-cal-event-title {
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-cal-event-sub {
+  margin: 2px 0 0;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--pm-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-randevu-cal-event-mvk {
+  margin: 2px 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pm-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-randevu-month-head {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--pm-bg-subtle);
+  box-shadow: inset 0 -1px 0 var(--pm-randevu-grid-line, rgba(15, 39, 68, 0.07));
+}
+
+.pm-randevu-month-head span {
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-month-head span:not(:first-child) {
+  box-shadow: inset 1px 0 0 var(--pm-randevu-grid-line, rgba(15, 39, 68, 0.07));
+}
+
+.pm-randevu-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.pm-randevu-month-day {
+  min-height: 92px;
+  padding: 6px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  appearance: none;
+  text-align: left;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: inset 0 -1px 0 var(--pm-randevu-grid-line, rgba(15, 39, 68, 0.07));
+  transition: background var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-randevu-month-day:not(:nth-child(7n + 1)) {
+  box-shadow:
+    inset 0 -1px 0 var(--pm-randevu-grid-line, rgba(15, 39, 68, 0.07)),
+    inset 1px 0 0 var(--pm-randevu-grid-line, rgba(15, 39, 68, 0.07));
+}
+
+.pm-randevu-month-day:hover {
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.pm-randevu-month-day--muted {
+  background: rgba(248, 250, 252, 0.9);
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-month-day--today {
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.pm-randevu-month-day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: var(--pm-font-size-xs);
+  font-weight: 800;
+}
+
+.pm-randevu-month-day--today .pm-randevu-month-day-num {
+  background: var(--pm-accent);
+  color: #fff;
+}
+
+.pm-randevu-month-events {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-randevu-month-more {
+  margin: 2px 0 0;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pm-text-muted);
+}
+
+.pm-randevu-cal-event--compact {
+  position: relative;
+  min-height: 18px;
+}
+
+.pm-randevu-cal-event--compact .pm-randevu-cal-event-accent {
+  width: 2px;
+  margin-top: 2px;
+  align-self: stretch;
+}
+
+.pm-randevu-section {
+  margin-top: var(--pm-space-5);
+}
+
+.pm-randevu-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-3);
+  margin-bottom: var(--pm-space-3);
+}
+
+.pm-randevu-section-title {
+  margin: 0;
+  font-size: var(--pm-font-size-md);
+  font-weight: 800;
+  color: var(--pm-navy-800);
+}
+
+@media (max-width: 640px) {
+  .pm-randevu-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

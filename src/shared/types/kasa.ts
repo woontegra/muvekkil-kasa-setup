@@ -14,7 +14,8 @@ export type KasaHareket = {
   masrafiYapanKisi: string | null;
   aciklama: string | null;
   belgeNo: string | null;
-  odemeYontemi: OdemeYontemiKodu;
+  /** Eski kod (NAKIT…) veya masraf için serbest/etiket metin (Baro kart, Enpara…). */
+  odemeYontemi: string;
   onayDurumu: KasaOnayDurumu;
   duzeltmeMi: boolean;
   duzeltilenIslemId: number | null;
@@ -45,7 +46,7 @@ export type KasaEkleInput = {
   islemTipi: KasaIslemTipi;
   tutar: number;
   tarih: string;
-  odemeYontemi?: OdemeYontemiKodu;
+  odemeYontemi?: OdemeYontemiKodu | string;
   aciklama?: string | null;
   masrafTuru?: string | null;
   masrafiYapanKisi?: string | null;
@@ -59,7 +60,7 @@ export type KasaGuncellePatch = {
   belgeNo?: string | null;
   masrafTuru?: string | null;
   masrafiYapanKisi?: string | null;
-  odemeYontemi?: OdemeYontemiKodu;
+  odemeYontemi?: OdemeYontemiKodu | string;
   onayDurumu?: "REDDEDILDI";
 };
 

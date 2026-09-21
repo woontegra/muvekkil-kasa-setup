@@ -6,10 +6,14 @@ import { registerEditableContextMenu } from "./contextMenu";
 export function createMainWindow(): BrowserWindow {
   const iconPath = getAppIconPath();
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 1100,
-    minHeight: 700,
+    width: 1100,
+    height: 720,
+    minWidth: 1000,
+    minHeight: 650,
+    center: true,
+    resizable: true,
+    maximizable: true,
+    fullscreenable: true,
     show: false,
     autoHideMenuBar: true,
     title: "Woontegra Müvekkil Kasa Defteri",
@@ -22,8 +26,6 @@ export function createMainWindow(): BrowserWindow {
     },
   });
 
-  win.maximize();
-
   registerEditableContextMenu(win);
 
   win.on("ready-to-show", () => win.show());
@@ -35,6 +37,7 @@ export function createMainWindow(): BrowserWindow {
   });
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
+    // electron-vite dev: legacy veya premium config hangisi çalışıyorsa onun URL'si gelir.
     win.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
     const legacy = process.env.MKD_RENDERER === "legacy";

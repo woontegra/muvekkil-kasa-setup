@@ -1,0 +1,1140 @@
+/**
+ * Ana sayfa dashboard — 2026 masaüstü yoğunluk ve 2 kolon düzeni
+ */
+
+/* --- Zemin & shell --- */
+html {
+  overflow-x: hidden;
+}
+
+body {
+  background: #eef2f7;
+  background-image: linear-gradient(165deg, #f6f8fc 0%, #eef2f7 45%, #e9eef5 100%);
+  color: var(--text-main, #0f172a);
+  overflow-x: hidden;
+}
+
+.app-main {
+  overflow-x: hidden;
+  min-width: 0;
+  width: 100%;
+}
+
+#root,
+.app-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Tam genişlik — app-pages.css ile ortak */
+.app-header-inner {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: var(--app-content-gutter);
+  padding-right: var(--app-content-gutter);
+  box-sizing: border-box;
+}
+
+/* --- Header (üst bar) — koyu lacivert toolbar --- */
+.app-header {
+  background: linear-gradient(180deg, #152a47 0%, #0f2240 100%);
+  border-bottom: 1px solid #0a1829;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 2px 8px rgba(10, 26, 46, 0.28);
+  padding: 0.35rem 0;
+  min-height: 48px;
+  width: 100%;
+}
+
+.app-header-inner {
+  padding-top: 0;
+  padding-bottom: 0;
+  column-gap: 1.25rem;
+  grid-template-columns: minmax(220px, auto) minmax(0, 1fr) auto;
+}
+
+.app-header h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.app-title-link:hover h1 {
+  color: #e8f0fa;
+}
+
+.app-header .tagline {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 500;
+}
+
+.app-header-mark-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.app-header-user-col {
+  gap: 10px;
+}
+
+.app-header-user-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn--header-logout {
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn--header-logout:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
+}
+
+.app-header-nav-col {
+  gap: 8px;
+}
+
+.nav-link {
+  padding: 0.38rem 0.85rem;
+  border-radius: var(--radius-control);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.nav-link:not(.nav-link--active):hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.nav-link--active,
+.nav-link--active:hover {
+  color: #fff !important;
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent-hover) !important;
+  box-shadow: 0 2px 8px rgba(43, 108, 184, 0.38);
+}
+
+.license-status-badge {
+  border-radius: var(--radius-pill);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  max-width: 220px;
+  line-height: 1.35;
+}
+
+/* --- Sayfa başlığı --- */
+.desk-home-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.desk-home-page-header-text {
+  min-width: 0;
+}
+
+.desk-page--home-dashboard .desk-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.desk-page--home-dashboard .desk-page-sub {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+}
+
+.desk-home-page-date {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-card);
+}
+
+.desk-home-page-date strong {
+  color: #0f2744;
+  font-weight: 700;
+}
+
+/* --- 2 kolon dashboard --- */
+.desk-home-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 22vw);
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+}
+
+.desk-home-dashboard-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.desk-home-dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 10px;
+  min-width: 0;
+  max-width: 380px;
+}
+
+/* Geniş ekran: sağ panel sabit, ana kolon kalan alanı doldurur */
+@media (min-width: 1400px) {
+  .desk-home-dashboard {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+  }
+
+  .desk-home-dashboard-side {
+    max-width: 340px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .desk-home-dashboard {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 22px;
+  }
+}
+
+/* Orta ekran */
+@media (min-width: 1050px) and (max-width: 1399px) {
+  .desk-home-dashboard {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 14px;
+  }
+
+  .desk-home-dashboard-side {
+    max-width: 280px;
+  }
+}
+
+/* Küçük pencere: sağ panel alta */
+@media (max-width: 1049px) {
+  .desk-home-dashboard {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .desk-home-dashboard-side {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 720px) {
+  .desk-home-dashboard-side {
+    grid-template-columns: 1fr;
+  }
+
+  .desk-home-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* --- KPI kartları --- */
+.desk-home-kpi-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px 16px;
+}
+
+.desk-home-kpi-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.desk-home-kpi-section-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.desk-home-kpi-cta {
+  flex-shrink: 0;
+}
+
+.desk-home-kpi-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 700px) {
+  .desk-home-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .desk-home-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .desk-home-kpi-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+.desk-home-kpi-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 39, 68, 0.04);
+  border-left-width: 3px;
+  min-height: 68px;
+  min-width: 0;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.desk-home-kpi-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-accent-muted);
+}
+
+.desk-home-kpi-card--gider {
+  border-left-color: #64748b;
+}
+
+.desk-home-kpi-card--ay {
+  border-left-color: #2563eb;
+}
+
+.desk-home-kpi-card--bakiye {
+  border-left-color: #059669;
+}
+
+.desk-home-kpi-card--smm {
+  border-left-color: #d97706;
+}
+
+.desk-home-kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.desk-home-kpi-card--bakiye .desk-home-kpi-icon {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.desk-home-kpi-card--smm .desk-home-kpi-icon {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.desk-home-kpi-card--ay .desk-home-kpi-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.desk-home-kpi-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.desk-home-kpi-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-home-kpi-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-home-kpi-value--success {
+  color: #059669;
+}
+
+.desk-home-kpi-hint {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Arama kartı --- */
+.desk-home-search-card {
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.desk-home-search-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.desk-home-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.desk-home-search-field {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: none;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .desk-home-search-row {
+    flex-wrap: wrap;
+  }
+}
+
+.desk-home-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.desk-home-search-input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 12px 0 40px;
+  font-size: 0.88rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-control);
+  background: #fff;
+}
+
+.desk-home-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  outline: none;
+}
+
+.desk-home-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.desk-home-search-btn-icon {
+  flex-shrink: 0;
+}
+
+.desk-home-search-status {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* --- Taksit uyarıları --- */
+.desk-page--home-dashboard .desk-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  background: #fff;
+}
+
+.desk-page--home-dashboard .desk-panel-head {
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fafbfd;
+  border-bottom: 1px solid #e8edf4;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+
+.desk-page--home-dashboard .desk-panel-body--pad-sm {
+  padding: 14px 16px 16px;
+}
+
+.desk-taksit-alert-metrics--three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.desk-taksit-alert-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px 8px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  min-height: 72px;
+}
+
+.desk-taksit-alert-metric--gecmis {
+  border-color: #fecaca;
+  background: linear-gradient(180deg, #fff 0%, #fef2f2 100%);
+}
+
+.desk-taksit-alert-metric--bugun {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fff 0%, #fffbeb 100%);
+}
+
+.desk-taksit-alert-metric--odenmemis {
+  border-color: #bfdbfe;
+  background: linear-gradient(180deg, #fff 0%, #eff6ff 100%);
+}
+
+.desk-taksit-metric-pill {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.desk-taksit-metric-pill--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.desk-taksit-metric-pill--warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.desk-taksit-metric-pill--info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.desk-taksit-alert-metric .v {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-navy);
+}
+
+.desk-taksit-alert-metric--gecmis .v {
+  color: #dc2626;
+}
+
+.desk-taksit-alert-metric--bugun .v {
+  color: #d97706;
+}
+
+.desk-taksit-alert-metric--odenmemis .v {
+  color: #2563eb;
+}
+
+.desk-taksit-metric-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.desk-home-smm-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-input);
+  border: 1px solid #bfdbfe;
+  background: #f0f7ff;
+}
+
+.desk-home-smm-band-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.desk-home-smm-band-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #2563eb;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-home-taksit-list-caption {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.desk-home-taksit-empty {
+  padding: 20px 16px;
+  font-size: 0.88rem;
+}
+
+/* --- Kayıt listesi --- */
+.desk-home-liste-filter-bar {
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e8edf4;
+}
+
+.desk-home-muvekkil-table-wrap {
+  max-height: min(40vh, 360px);
+  border-top: none;
+}
+
+@media (min-width: 1400px) {
+  .desk-home-muvekkil-table-wrap {
+    max-height: min(46vh, 460px);
+  }
+}
+
+@media (min-height: 860px) {
+  .desk-home-muvekkil-table-wrap {
+    max-height: min(48vh, 500px);
+  }
+}
+
+@media (max-height: 820px) {
+  .desk-home-muvekkil-table-wrap {
+    max-height: min(34vh, 260px);
+  }
+
+  .desk-home-dashboard-main {
+    gap: 10px;
+  }
+
+  .desk-home-kpi-section {
+    padding: 12px 14px 14px;
+  }
+}
+
+.desk-table--home {
+  font-size: 0.88rem;
+  width: 100%;
+  table-layout: auto;
+}
+
+@media (min-width: 1400px) {
+  .desk-table--home {
+    font-size: 0.92rem;
+  }
+}
+
+.desk-table--home th {
+  padding: 11px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+@media (min-width: 1400px) {
+  .desk-table--home th {
+    padding: 12px 16px;
+    font-size: 0.74rem;
+  }
+}
+
+.desk-table--home td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  border-right: none;
+  color: #334155;
+  vertical-align: middle;
+}
+
+@media (min-width: 1400px) {
+  .desk-table--home td {
+    padding: 13px 16px;
+  }
+}
+
+.desk-table--home tbody tr {
+  min-height: 44px;
+}
+
+.desk-table--home tbody tr:hover td {
+  background: #eff6ff;
+}
+
+.desk-table--home.desk-table--striped tbody tr:nth-child(even) {
+  background: #fafbfd;
+}
+
+.desk-table--home.desk-table--striped tbody tr:nth-child(even):hover td {
+  background: #eff6ff;
+}
+
+.desk-home-cell-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.desk-home-row-btn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.desk-mvk-pagination {
+  padding: 12px 16px;
+  border-top: 1px solid #e8edf4;
+  background: #fafbfd;
+}
+
+.desk-mvk-pagination-summary {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.desk-mvk-page-btn,
+.desk-mvk-page-num {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.desk-mvk-page-num--aktif {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.desk-input--tiny {
+  border-radius: 8px;
+  border: 1px solid #d1dae6;
+  min-height: 32px;
+}
+
+.desk-home-mvk-empty-state {
+  padding: 32px 24px;
+}
+
+.desk-home-mvk-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  margin-bottom: 12px;
+}
+
+.desk-home-mvk-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.desk-home-mvk-empty-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  max-width: 360px;
+  margin: 0 auto 16px;
+}
+
+/* --- Sağ panel --- */
+.desk-home-side-card {
+  padding: 14px 14px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.desk-home-side-title {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.desk-home-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.desk-home-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e8edf4;
+  border-radius: var(--radius-input);
+  background: #fafbfd;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.desk-home-quick-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.desk-home-quick-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.desk-home-quick-icon {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.desk-home-quick-btn:hover:not(:disabled) .desk-home-quick-icon {
+  color: #2563eb;
+}
+
+.desk-home-quick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e8edf4;
+  border-radius: var(--radius-input);
+  background: #fafbfd;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.desk-home-quick-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.desk-home-donem-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid #dbe3ef;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.desk-home-donem-switch-btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+}
+
+.desk-home-donem-switch-btn + .desk-home-donem-switch-btn {
+  border-left: 1px solid #dbe3ef;
+}
+
+.desk-home-donem-switch-btn.is-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.desk-home-donem-switch-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.desk-home-side-license-ok {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.desk-home-side-license-icon {
+  flex-shrink: 0;
+  color: #059669;
+  margin-top: 2px;
+}
+
+.desk-home-side-card--license {
+  border-left: 3px solid #059669;
+}
+
+.desk-home-side-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.desk-home-side-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.desk-home-side-stats li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.desk-home-side-stats li:last-child {
+  border-bottom: none;
+}
+
+.desk-home-side-stats strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-home-side-stat--danger {
+  color: #dc2626 !important;
+}
+
+.desk-home-side-card--help {
+  background: linear-gradient(180deg, #fafbfd 0%, #f8fafc 100%);
+}
+
+.desk-home-support-contacts {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.desk-home-support-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.4rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.desk-home-support-link:hover {
+  background: rgba(37, 99, 235, 0.08);
+  color: #1e40af;
+}
+
+.desk-home-support-link:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+}
+
+.desk-home-support-icon {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.desk-home-support-link:hover .desk-home-support-icon {
+  color: #1d4ed8;
+}
+
+/* --- Global buton/input (tüm ekranlar) --- */
+.btn {
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 1px 3px rgba(43, 108, 184, 0.22);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  box-shadow: 0 2px 8px rgba(43, 108, 184, 0.28);
+}
+
+.desk-input {
+  border: 1px solid var(--input-border);
+  background: #fff;
+  border-radius: var(--radius-control);
+}
+
+.desk-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
+  outline: none;
+}
+
+.desk-panel {
+  border-radius: var(--radius-panel);
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.desk-panel-head {
+  background: var(--panel-head-bg);
+  border-bottom: 1px solid var(--border-soft);
+  text-shadow: none;
+  color: var(--color-navy);
+  text-transform: none;
+}
+
+/* Lisans rozeti — koyu header üzerinde */
+.app-header .license-status-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.app-header .license-status-badge--warn {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+}
+
+.app-header .license-status-badge--danger {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}

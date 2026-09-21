@@ -6,6 +6,7 @@ import { officeSettingsGetForMakbuz } from "./office.service";
 import {
   vekaletTaksitList,
 } from "./vekalet.service";
+import { tryResolveParaBirimi } from "@shared/lib/paraBirimi";
 
 function bugunYmd(): string {
   return nowIso().slice(0, 10);
@@ -20,10 +21,28 @@ function rowOdemeRaw(r: Record<string, unknown>) {
     muvekkilId: Number(r.muvekkil_id),
     odemeTarihi: String(r.odeme_tarihi ?? "").slice(0, 10),
     tutar: Number(r.tutar ?? 0),
-    odemeYontemi: String(r.odeme_yontemi ?? "NAKIT"),
+    kasaTutari: Number(r.kasa_tutari ?? r.tutar ?? 0),
+    alacakParaBirimi: tryResolveParaBirimi(r.alacak_para_birimi),
+    odemeParaBirimi: tryResolveParaBirimi(r.odeme_para_birimi),
+    kur: r.kur == null ? null : Number(r.kur),
+    kurBazParaBirimi: r.kur_baz_para_birimi == null ? null : tryResolveParaBirimi(r.kur_baz_para_birimi),
+    kurKarsiParaBirimi: r.kur_karsi_para_birimi == null ? null : tryResolveParaBirimi(r.kur_karsi_para_birimi),
+    kurKaynagi:
+      r.kur_kaynagi === "TCMB" || r.kur_kaynagi === "MANUEL"
+        ? (r.kur_kaynagi as import("@shared/lib/paraBirimi").KurKaynagi)
+        : null,
+    tcmbKurTarihi: r.tcmb_kur_tarihi == null ? null : String(r.tcmb_kur_tarihi),
+    tcmbReferansKur: r.tcmb_referans_kur == null ? null : Number(r.tcmb_referans_kur),
+    odemeYontemi: String(r.odeme_yontemi ?? "NAKIT") as import("@shared/types/vekalet").VekaletTaksitOdeme["odemeYontemi"],
     aciklama: r.aciklama == null ? null : String(r.aciklama),
     makbuzNo: r.makbuz_no == null ? null : String(r.makbuz_no),
     smmKesildiMi: Number(r.smm_kesildi_mi) === 1,
+    kasaHareketId: r.kasa_hareket_id == null ? null : Number(r.kasa_hareket_id),
+    ofisKasaHareketId: r.ofis_kasa_hareket_id == null ? null : Number(r.ofis_kasa_hareket_id),
+    olusturanKullaniciId: r.olusturan_kullanici_id == null ? null : Number(r.olusturan_kullanici_id),
+    olusturanKullaniciAdi: r.olusturan_kullanici_adi == null ? null : String(r.olusturan_kullanici_adi),
+    kayitTarihi: String(r.kayit_tarihi ?? ""),
+    guncellemeTarihi: String(r.guncelleme_tarihi ?? ""),
   };
 }
 
@@ -94,6 +113,7 @@ function buildVekaletPaket(odemeId: number): VekaletMakbuzPaketi {
     dosyaId: Number(vRow.dosya_id),
     muvekkilId: Number(vRow.muvekkil_id),
     anlasilanTutar: Number(vRow.anlasilan_tutar ?? 0),
+    paraBirimi: tryResolveParaBirimi(vRow.para_birimi),
     aciklama: vRow.aciklama == null ? null : String(vRow.aciklama),
     kayitTarihi: String(vRow.kayit_tarihi ?? ""),
     guncellemeTarihi: String(vRow.guncelleme_tarihi ?? ""),
@@ -109,23 +129,10 @@ function buildVekaletPaket(odemeId: number): VekaletMakbuzPaketi {
   const odenenToplam = taksitler.reduce((s, t) => s + t.odenenToplam, 0);
   const kalanVekalet = Math.max(0, vekalet.anlasilanTutar - odenenToplam);
   const odemeFull = {
-    id: odeme.id,
-    taksitId: odeme.taksitId,
-    vekaletId: odeme.vekaletId,
-    dosyaId: odeme.dosyaId,
-    muvekkilId: odeme.muvekkilId,
-    odemeTarihi: odeme.odemeTarihi,
-    tutar: odeme.tutar,
-    odemeYontemi: odeme.odemeYontemi as import("@shared/types/vekalet").VekaletTaksitOdeme["odemeYontemi"],
-    aciklama: odeme.aciklama,
+    ...odeme,
     makbuzNo: ens.makbuzNo,
-    smmKesildiMi: odeme.smmKesildiMi,
     kasaHareketId: raw.kasa_hareket_id == null ? null : Number(raw.kasa_hareket_id),
     ofisKasaHareketId: raw.ofis_kasa_hareket_id == null ? null : Number(raw.ofis_kasa_hareket_id),
-    olusturanKullaniciId: raw.olusturan_kullanici_id == null ? null : Number(raw.olusturan_kullanici_id),
-    olusturanKullaniciAdi: raw.olusturan_kullanici_adi == null ? null : String(raw.olusturan_kullanici_adi),
-    kayitTarihi: String(raw.kayit_tarihi ?? ""),
-    guncellemeTarihi: String(raw.guncelleme_tarihi ?? ""),
   };
   return {
     ok: true,

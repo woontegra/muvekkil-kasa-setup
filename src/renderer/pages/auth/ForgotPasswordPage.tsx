@@ -65,19 +65,19 @@ export function ForgotPasswordPage() {
           <h2 className="auth-card-title">Şifremi Unuttum</h2>
           {step === "user" ? (
             <>
-              <p className="auth-card-sub">E-posta adresinizi girin.</p>
+              <p className="auth-card-sub">E-posta veya kullanıcı adınızı girin.</p>
               {error ? <div className="auth-alert auth-alert--error">{error}</div> : null}
               <form className="auth-form" onSubmit={(e) => void soruGetir(e)}>
                 <div className="auth-field">
-                  <label htmlFor={idUser}>E-posta</label>
+                  <label htmlFor={idUser}>E-posta veya Kullanıcı Adı</label>
                   <input
                     id={idUser}
                     className="auth-input"
-                    autoComplete="email"
+                    autoComplete="username"
                     value={kullaniciAdi}
                     onChange={(e) => setKullaniciAdi(e.target.value)}
                     disabled={busy}
-                    placeholder="ornek@mail.com"
+                    placeholder="E-posta veya kullanıcı adınızı girin"
                   />
                 </div>
                 <button type="submit" className="auth-btn-primary" disabled={busy}>

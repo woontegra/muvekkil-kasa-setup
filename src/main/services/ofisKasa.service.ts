@@ -8,6 +8,7 @@ import {
   OFIS_GELIR_KATEGORI_ETIKET,
   OFIS_GIDER_KATEGORI_ETIKET,
   OFIS_KASA_KAYNAK_VEKALET_TAHSILATI,
+  OFIS_KASA_KAYNAK_ICRA_TAHSILAT,
   ofisKategoriOzelAdDb,
 } from "@shared/constants/ofisKasa";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@shared/ofisKasaDuzeltme";
 import type {
   OfisKasaAnaSayfaOzet,
+  OfisKasaDovizDonusumInput,
   OfisKasaDuzeltmeInput,
   OfisKasaEkleInput,
   OfisKasaGuncellePatch,
@@ -26,8 +28,37 @@ import type {
   OfisKasaRaporPaketi,
   OfisKasaUstOzet,
 } from "@shared/types/ofisKasa";
+import {
+  PARA_BIRIMLERI,
+  applyToCurrencyBucket,
+  currencyBucketBalance,
+  emptyCurrencyBuckets,
+  formatKurOzeti,
+  resolveDovizDonusum,
+  resolveParaBirimi,
+  roundMoney,
+  tryResolveParaBirimi,
+  type ParaBirimi,
+} from "@shared/lib/paraBirimi";
+import { randomUUID } from "node:crypto";
+import { OFIS_KASA_AKTIF_SQL } from "./kasaAktifSql";
+import { fromKurus, toKurus } from "@shared/lib/moneyKurus";
+import {
+  canGoToNextAccountingPeriod,
+  getAccountingPeriod,
+  isCurrentAccountingPeriod,
+  toLocalYmd,
+} from "@shared/lib/accountingPeriod";
+import { getAccountingPeriodMode } from "./appSettings.service";
 import { getDb, nowIso } from "../db/connection";
 import { officeSettingsGetForMakbuz } from "./office.service";
+import { getTcmbPairRate } from "./tcmbKur.service";
+import {
+  getFinansKalemiByKod,
+  kalemOzelAdGerekli,
+  resolveAktifManuelKalem,
+} from "./finansKalemi.service";
+import { muvekkilGet } from "./muvekkil.service";
 
 function formatDateTrSimple(iso: string): string {
   const p = String(iso ?? "").slice(0, 10).split("-");
@@ -59,6 +90,7 @@ type OfisKasaOzetSatir = {
   duzeltme_mi: number;
   onay_durumu: string;
   duzeltme_kasa_etkisi: number | null;
+  para_birimi?: string;
 };
 
 function ofisKasaSatirKasaEtkisi(x: OfisKasaOzetSatir): number {
@@ -70,35 +102,37 @@ function ofisKasaSatirKasaEtkisi(x: OfisKasaOzetSatir): number {
       duzeltmeKasaEtkisi: x.duzeltme_kasa_etkisi,
     });
   }
+  if (x.islem_tipi === "DOVIZ_CIKIS") return -x.tutar;
+  if (x.islem_tipi === "DOVIZ_GIRIS") return x.tutar;
   return 0;
 }
 
-type OfisKasaSatirKatki = { gelir: number; gider: number; duzeltme: number };
+type OfisKasaSatirKatki = { gelir: number; gider: number; duzeltme: number; dovizCikis: number; dovizGiris: number };
 
 function ofisKasaSatirKatki(r: OfisKasaOzetSatir): OfisKasaSatirKatki {
-  if (r.islem_tipi === "GELIR" && !r.duzeltme_mi) return { gelir: r.tutar, gider: 0, duzeltme: 0 };
-  if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) return { gelir: 0, gider: r.tutar, duzeltme: 0 };
+  if (r.islem_tipi === "GELIR" && !r.duzeltme_mi) return { gelir: r.tutar, gider: 0, duzeltme: 0, dovizCikis: 0, dovizGiris: 0 };
+  if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) return { gelir: 0, gider: r.tutar, duzeltme: 0, dovizCikis: 0, dovizGiris: 0 };
   if (r.islem_tipi === "DUZELTME" && r.duzeltme_mi) {
-    return { gelir: 0, gider: 0, duzeltme: ofisKasaSatirKasaEtkisi(r) };
+    return { gelir: 0, gider: 0, duzeltme: ofisKasaSatirKasaEtkisi(r), dovizCikis: 0, dovizGiris: 0 };
   }
-  return { gelir: 0, gider: 0, duzeltme: 0 };
+  if (r.islem_tipi === "DOVIZ_CIKIS") return { gelir: 0, gider: 0, duzeltme: 0, dovizCikis: r.tutar, dovizGiris: 0 };
+  if (r.islem_tipi === "DOVIZ_GIRIS") return { gelir: 0, gider: 0, duzeltme: 0, dovizCikis: 0, dovizGiris: r.tutar };
+  return { gelir: 0, gider: 0, duzeltme: 0, dovizCikis: 0, dovizGiris: 0 };
 }
 
 function ofisKasaNetFromKatki(k: OfisKasaSatirKatki): number {
-  return k.gelir - k.gider + k.duzeltme;
+  return k.gelir - k.gider + k.duzeltme - k.dovizCikis + k.dovizGiris;
 }
 
 function ofisKasaLifetimeBakiye(rows: OfisKasaOzetSatir[]): number {
-  let gelir = 0;
-  let gider = 0;
-  let duzeltme = 0;
+  const buckets = emptyCurrencyBuckets();
   for (const r of rows) {
-    const k = ofisKasaSatirKatki(r);
-    gelir += k.gelir;
-    gider += k.gider;
-    duzeltme += k.duzeltme;
+    const pb = tryResolveParaBirimi(r.para_birimi);
+    const tutar = r.islem_tipi === "DUZELTME" ? ofisKasaSatirKasaEtkisi(r) : r.tutar;
+    applyToCurrencyBucket(buckets, r.islem_tipi, pb, tutar);
   }
-  return gelir - gider + duzeltme;
+  const pb = rows[0] ? tryResolveParaBirimi(rows[0].para_birimi) : "TRY";
+  return currencyBucketBalance(buckets[pb]);
 }
 
 function ayBasiSonuYmd(d = new Date()): { bas: string; bit: string } {
@@ -122,49 +156,70 @@ function hesaplaOfisKasaDonemOzet(
   donemDuzeltmeEtkisi: number;
   kasaBakiyesi: number;
 } {
-  let devredenGelir = 0;
-  let devredenGider = 0;
-  let devredenDuzeltme = 0;
-  let donemGelir = 0;
-  let donemGider = 0;
-  let donemDuzeltme = 0;
+  let devredenGelirK = 0;
+  let devredenGiderK = 0;
+  let devredenDuzeltmeK = 0;
+  let devredenDovizK = 0;
+  let donemGelirK = 0;
+  let donemGiderK = 0;
+  let donemDuzeltmeK = 0;
+  let donemDovizK = 0;
 
   for (const r of rows) {
     const t = String(r.tarih ?? "").slice(0, 10);
     const k = ofisKasaSatirKatki(r);
     if (t < donemBas) {
-      devredenGelir += k.gelir;
-      devredenGider += k.gider;
-      devredenDuzeltme += k.duzeltme;
+      devredenGelirK += toKurus(k.gelir);
+      devredenGiderK += toKurus(k.gider);
+      devredenDuzeltmeK += toKurus(k.duzeltme);
+      devredenDovizK += toKurus(-k.dovizCikis + k.dovizGiris);
     } else if (t <= donemBit) {
-      donemGelir += k.gelir;
-      donemGider += k.gider;
-      donemDuzeltme += k.duzeltme;
+      donemGelirK += toKurus(k.gelir);
+      donemGiderK += toKurus(k.gider);
+      donemDuzeltmeK += toKurus(k.duzeltme);
+      donemDovizK += toKurus(-k.dovizCikis + k.dovizGiris);
     }
   }
 
-  const devredenBakiye = ofisKasaNetFromKatki({
-    gelir: devredenGelir,
-    gider: devredenGider,
-    duzeltme: devredenDuzeltme,
-  });
-  const kasaBakiyesi =
-    devredenBakiye + ofisKasaNetFromKatki({ gelir: donemGelir, gider: donemGider, duzeltme: donemDuzeltme });
+  const devredenBakiye = fromKurus(devredenGelirK - devredenGiderK + devredenDuzeltmeK + devredenDovizK);
+  const donemGelir = fromKurus(donemGelirK);
+  const donemGider = fromKurus(donemGiderK);
+  const donemDuzeltmeEtkisi = fromKurus(donemDuzeltmeK);
+  const kasaBakiyesi = fromKurus(
+    devredenGelirK - devredenGiderK + devredenDuzeltmeK + devredenDovizK +
+      donemGelirK - donemGiderK + donemDuzeltmeK + donemDovizK,
+  );
 
   return {
     devredenBakiye,
     donemGelir,
     donemGider,
-    donemDuzeltmeEtkisi: donemDuzeltme,
+    donemDuzeltmeEtkisi,
     kasaBakiyesi,
   };
+}
+
+function hesaplaParaBirimiOzetleri(rows: OfisKasaOzetSatir[], bas: string, bit: string) {
+  const byCurrency = {} as OfisKasaUstOzet["byCurrency"];
+  const bakiyeler = {} as Record<ParaBirimi, number>;
+  for (const pb of PARA_BIRIMLERI) {
+    const pbRows = rows.filter((r) => tryResolveParaBirimi(r.para_birimi) === pb);
+    const o = hesaplaOfisKasaDonemOzet(pbRows, bas, bit);
+    byCurrency[pb] = {
+      ...o,
+      donemNetSonucu: roundMoney(o.kasaBakiyesi - o.devredenBakiye),
+    };
+    bakiyeler[pb] = ofisKasaLifetimeBakiye(pbRows);
+  }
+  return { byCurrency, bakiyeler };
 }
 
 function ofisKasaOzetSatirlari(d: ReturnType<typeof getDb>): OfisKasaOzetSatir[] {
   return d
     .prepare(
-      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi
-       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI')`
+      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi,
+              COALESCE(para_birimi, 'TRY') AS para_birimi
+       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI') ${OFIS_KASA_AKTIF_SQL}`
     )
     .all() as OfisKasaOzetSatir[];
 }
@@ -199,8 +254,23 @@ function rowOfisKasaHareket(r: Record<string, unknown>): OfisKasaHareket {
     tarih: String(r.tarih ?? ""),
     kategori: String(r.kategori ?? ""),
     ozelKategoriAdi: r.ozel_kategori_adi == null ? null : String(r.ozel_kategori_adi),
+    kalemId: r.kalem_id == null ? null : Number(r.kalem_id),
+    muvekkilId: r.muvekkil_id == null ? null : Number(r.muvekkil_id),
+    muvekkilAdiSnapshot: r.muvekkil_adi_snapshot == null ? null : String(r.muvekkil_adi_snapshot),
+    tahsilatiYapanKullaniciId:
+      r.tahsilati_yapan_kullanici_id == null ? null : Number(r.tahsilati_yapan_kullanici_id),
+    tahsilatiYapanKullaniciAdi:
+      r.tahsilati_yapan_kullanici_adi == null ? null : String(r.tahsilati_yapan_kullanici_adi),
     aciklama: r.aciklama == null ? null : String(r.aciklama),
     tutar: Number(r.tutar ?? 0),
+    paraBirimi: tryResolveParaBirimi(r.para_birimi),
+    dovizDonusumId: r.doviz_donusum_id == null ? null : String(r.doviz_donusum_id),
+    kur: r.kur == null ? null : Number(r.kur),
+    kurBazParaBirimi: r.kur_baz_para_birimi == null ? null : tryResolveParaBirimi(r.kur_baz_para_birimi),
+    kurKarsiParaBirimi: r.kur_karsi_para_birimi == null ? null : tryResolveParaBirimi(r.kur_karsi_para_birimi),
+    kurKaynagi: r.kur_kaynagi === "TCMB" || r.kur_kaynagi === "MANUEL" ? r.kur_kaynagi : null,
+    tcmbKurTarihi: r.tcmb_kur_tarihi == null ? null : String(r.tcmb_kur_tarihi),
+    tcmbReferansKur: r.tcmb_referans_kur == null ? null : Number(r.tcmb_referans_kur),
     odemeYontemi: String(r.odeme_yontemi ?? ""),
     belgeNo: r.belge_no == null ? null : String(r.belge_no),
     not: r.not_metni == null ? null : String(r.not_metni),
@@ -225,6 +295,8 @@ function rowOfisKasaHareket(r: Record<string, unknown>): OfisKasaHareket {
     duzeltmeKasaEtkisi: r.duzeltme_kasa_etkisi == null ? null : Number(r.duzeltme_kasa_etkisi),
     duzeltmeRefTipi:
       r.duzeltme_ref_tipi === "GELIR" || r.duzeltme_ref_tipi === "GIDER" ? r.duzeltme_ref_tipi : null,
+    kaynakTipi: r.kaynak_tipi == null ? null : String(r.kaynak_tipi),
+    kaynakId: r.kaynak_id == null ? null : Number(r.kaynak_id),
   };
 }
 
@@ -235,10 +307,17 @@ export function approveAllPendingOfisKasaOnExit(): { approved: number } {
     .prepare(
       `UPDATE ofis_kasa_hareketleri SET onay_durumu = 'ONAYLI', onay_tarihi = ?, otomatik_onay_mi = 1,
        onaylayan_kullanici_id = NULL, onaylayan_kullanici_adi = 'Otomatik (kapanış)', guncelleme_tarihi = ?
-       WHERE onay_durumu = 'ONAYSIZ'`
+       WHERE onay_durumu = 'ONAYSIZ' ${OFIS_KASA_AKTIF_SQL}`
     )
     .run(t, t);
   return { approved: Number(r.changes ?? 0) };
+}
+
+function ofisKasaHareketSilinmisMi(id: number): boolean {
+  const r = getDb()
+    .prepare(`SELECT silinme_tarihi FROM ofis_kasa_hareketleri WHERE id = ?`)
+    .get(id) as { silinme_tarihi: string | null } | undefined;
+  return Boolean(r?.silinme_tarihi);
 }
 
 export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareketListeSatir[] {
@@ -247,7 +326,7 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
   const te = (f.tarihBit ?? "").trim().slice(0, 10);
   const q = (f.q ?? "").trim();
   const kat = (f.kategori ?? "").trim();
-  const conds = [`tarih >= ?`, `tarih <= ?`];
+  const conds = [`tarih >= ?`, `tarih <= ?`, `silinme_tarihi IS NULL`];
   const params: unknown[] = [tb, te];
   if (f.islemTipi === "GELIR") {
     conds.push(`islem_tipi = 'GELIR'`);
@@ -255,17 +334,28 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
     conds.push(`islem_tipi = 'GIDER'`);
   } else if (f.islemTipi === "DUZELTME") {
     conds.push(`islem_tipi = 'DUZELTME'`);
+  } else if (f.islemTipi === "DOVIZ_CIKIS" || f.islemTipi === "DOVIZ_GIRIS") {
+    conds.push(`islem_tipi = ?`);
+    params.push(f.islemTipi);
+  }
+  if (f.paraBirimi?.trim()) {
+    conds.push(`COALESCE(para_birimi, 'TRY') = ?`);
+    params.push(resolveParaBirimi(f.paraBirimi));
   }
   if (kat) {
     conds.push(`kategori = ?`);
     params.push(kat);
   }
+  if (f.muvekkilId != null && Number.isFinite(Number(f.muvekkilId)) && Number(f.muvekkilId) > 0) {
+    conds.push(`muvekkil_id = ?`);
+    params.push(Number(f.muvekkilId));
+  }
   if (q) {
     const like = `%${q.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
     conds.push(
-      `(aciklama LIKE ? ESCAPE '\\' OR belge_no LIKE ? ESCAPE '\\' OR not_metni LIKE ? ESCAPE '\\' OR ozel_kategori_adi LIKE ? ESCAPE '\\')`
+      `(aciklama LIKE ? ESCAPE '\\' OR belge_no LIKE ? ESCAPE '\\' OR not_metni LIKE ? ESCAPE '\\' OR ozel_kategori_adi LIKE ? ESCAPE '\\' OR muvekkil_adi_snapshot LIKE ? ESCAPE '\\')`,
     );
-    params.push(like, like, like, like);
+    params.push(like, like, like, like, like);
   }
   const sql = `SELECT * FROM ofis_kasa_hareketleri WHERE ${conds.join(" AND ")} ORDER BY tarih DESC, id DESC`;
   const rows = d.prepare(sql).all(...params) as Record<string, unknown>[];
@@ -273,7 +363,7 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
     (
       d
         .prepare(
-          `SELECT DISTINCT orijinal_hareket_id AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id IS NOT NULL`
+          `SELECT DISTINCT orijinal_hareket_id AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id IS NOT NULL ${OFIS_KASA_AKTIF_SQL}`
         )
         .all() as { x: number }[]
     ).map((r) => r.x)
@@ -294,36 +384,65 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
   });
 }
 
-export function ofisKasaUstOzet(): OfisKasaUstOzet {
+export function ofisKasaUstOzet(opts?: { referenceDate?: string }): OfisKasaUstOzet {
   const d = getDb();
   const rows = ofisKasaOzetSatirlari(d);
-  const { bas, bit } = ayBasiSonuYmd();
-  const donem = hesaplaOfisKasaDonemOzet(rows, bas, bit);
+  const mode = getAccountingPeriodMode();
+  const period = getAccountingPeriod(mode, opts?.referenceDate ?? toLocalYmd());
+  const { byCurrency, bakiyeler } = hesaplaParaBirimiOzetleri(rows, period.bas, period.bit);
+  const donem = byCurrency.TRY;
+  const donemNetSonucu = donem.donemNetSonucu;
   return {
+    mode,
+    period,
     devredenBakiye: donem.devredenBakiye,
     buAyGelir: donem.donemGelir,
     buAyGider: donem.donemGider,
     buAyDuzeltmeEtkisi: donem.donemDuzeltmeEtkisi,
-    kasaBakiyesi: ofisKasaLifetimeBakiye(rows),
+    donemGelir: donem.donemGelir,
+    donemGider: donem.donemGider,
+    donemDuzeltmeEtkisi: donem.donemDuzeltmeEtkisi,
+    donemNetSonucu,
+    kasaBakiyesi: bakiyeler.TRY,
+    bakiyeler,
+    byCurrency,
   };
 }
 
-export function ofisKasaAnaSayfaOzet(): OfisKasaAnaSayfaOzet {
-  const ust = ofisKasaUstOzet();
+export function ofisKasaAnaSayfaOzet(opts?: { referenceDate?: string }): OfisKasaAnaSayfaOzet {
+  const mode = getAccountingPeriodMode();
+  const ref = opts?.referenceDate ?? toLocalYmd();
+  const period = getAccountingPeriod(mode, ref);
+  const ust = ofisKasaUstOzet({ referenceDate: period.bas });
   const d = getDb();
-  const bugun = bugunYerelIso();
-  const { bas, bit } = ayBasiSonuYmd();
+  const bugun = toLocalYmd();
   const rows = ofisKasaOzetSatirlari(d);
-  let bugunGider = 0;
-  let buAyGider = 0;
+  const bugunGider = { TRY: 0, USD: 0, EUR: 0 } as Record<ParaBirimi, number>;
   for (const r of rows) {
     const t = String(r.tarih ?? "").slice(0, 10);
-    if (r.islem_tipi === "GIDER" && !r.duzeltme_mi) {
-      if (t === bugun) bugunGider += r.tutar;
-      if (t >= bas && t <= bit) buAyGider += r.tutar;
+    if (r.islem_tipi === "GIDER" && !r.duzeltme_mi && t === bugun) {
+      const pb = tryResolveParaBirimi(r.para_birimi);
+      bugunGider[pb] += toKurus(r.tutar);
     }
   }
-  return { bugunGider, buAyGider, kasaBakiyesi: ust.kasaBakiyesi };
+  const byCurrency = { ...ust.byCurrency };
+  for (const pb of PARA_BIRIMLERI) byCurrency[pb] = { ...byCurrency[pb], bugunGider: fromKurus(bugunGider[pb]) };
+  return {
+    mode,
+    period,
+    isCurrent: isCurrentAccountingPeriod(period),
+    canGoNext: canGoToNextAccountingPeriod(period),
+    bugunGider: fromKurus(bugunGider.TRY),
+    buAyGider: ust.donemGider,
+    devredenBakiye: ust.devredenBakiye,
+    donemGelir: ust.donemGelir,
+    donemGider: ust.donemGider,
+    donemDuzeltmeEtkisi: ust.donemDuzeltmeEtkisi,
+    donemNetSonucu: ust.donemNetSonucu,
+    kasaBakiyesi: ust.kasaBakiyesi,
+    bakiyeler: ust.bakiyeler,
+    byCurrency,
+  };
 }
 
 function ofisKasaHareketGet(id: number): OfisKasaHareket | null {
@@ -336,40 +455,90 @@ function ofisKasaHareketGet(id: number): OfisKasaHareket | null {
 export function ofisKasaHareketEkle(
   input: OfisKasaEkleInput,
   olusturanKullaniciId: number | null,
-  olusturanKullaniciAdi: string | null
+  olusturanKullaniciAdi: string | null,
 ): OfisKasaIslemSonuc {
   const tarih = (input.tarih ?? "").trim().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(tarih)) return { ok: false, error: "Geçerli tarih girin (YYYY-AA-GG)." };
-  const kat = (input.kategori ?? "").trim();
-  if (input.islemTipi === "GELIR") {
-    if (!isGecerliOfisGelirKategori(kat)) return { ok: false, error: "Geçerli gelir kategorisi seçin." };
-  } else if (!isGecerliOfisGiderKategori(kat)) {
-    return { ok: false, error: "Geçerli gider kategorisi seçin." };
+
+  let kalemId: number | null = input.kalemId != null ? Number(input.kalemId) : null;
+  let kat = (input.kategori ?? "").trim();
+
+  if (kalemId != null && Number.isFinite(kalemId) && kalemId > 0) {
+    const resolved = resolveAktifManuelKalem(kalemId, input.islemTipi);
+    if (!resolved.ok) return { ok: false, error: resolved.error };
+    kat = resolved.kalem.kod?.trim() || resolved.kalem.ad;
+    const ozel = (input.ozelKategoriAdi ?? "").trim();
+    if (kalemOzelAdGerekli(resolved.kalem) && !ozel) {
+      return {
+        ok: false,
+        error: resolved.kalem.kod === PERSONEL_MAAS_KOD ? "Personel ismi zorunludur." : "Özel kategori adı zorunludur.",
+      };
+    }
+  } else {
+    if (input.islemTipi === "GELIR") {
+      if (!isGecerliOfisGelirKategori(kat)) return { ok: false, error: "Geçerli gelir kategorisi seçin." };
+    } else if (!isGecerliOfisGiderKategori(kat)) {
+      return { ok: false, error: "Geçerli gider kategorisi seçin." };
+    }
+    const byKod = getFinansKalemiByKod(kat);
+    if (byKod) kalemId = byKod.id;
+    const ozel = (input.ozelKategoriAdi ?? "").trim();
+    if (kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD) {
+      if (!ozel) return { ok: false, error: "Özel kategori adı zorunludur." };
+    }
+    if (kat === PERSONEL_MAAS_KOD) {
+      if (!ozel) return { ok: false, error: "Personel ismi zorunludur." };
+    }
   }
-  const ozel = (input.ozelKategoriAdi ?? "").trim();
-  if (kat === DIGER_GELIR_KOD || kat === DIGER_GIDER_KOD) {
-    if (!ozel) return { ok: false, error: "Özel kategori adı zorunludur." };
-  }
-  if (kat === PERSONEL_MAAS_KOD) {
-    if (!ozel) return { ok: false, error: "Personel ismi zorunludur." };
-  }
+
   if (!Number.isFinite(input.tutar) || input.tutar <= 0) {
     return { ok: false, error: "Tutar sıfırdan büyük olmalıdır." };
   }
   const od = (input.odemeYontemi ?? "").trim();
   if (!isOfisOdemeYontemiGecerli(od)) return { ok: false, error: "Geçerli ödeme yöntemi seçin." };
+  let paraBirimi: ParaBirimi;
+  try {
+    paraBirimi = resolveParaBirimi(input.paraBirimi);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Geçersiz para birimi." };
+  }
+
+  let muvekkilId: number | null = null;
+  let muvekkilAdi: string | null = null;
+  if (input.muvekkilId != null && Number(input.muvekkilId) > 0) {
+    const m = muvekkilGet(Number(input.muvekkilId));
+    if (!m || !m.aktifMi) return { ok: false, error: "İlgili müvekkil bulunamadı veya pasif." };
+    muvekkilId = m.id;
+    muvekkilAdi =
+      m.muvekkilTuru === "TUZEL_KISI" && m.sirketUnvani?.trim()
+        ? m.sirketUnvani.trim()
+        : m.adSoyad.trim() || m.sirketUnvani?.trim() || null;
+  }
+
+  let tahsilUserId: number | null = null;
+  let tahsilUserAdi: string | null = null;
+  if (input.islemTipi === "GELIR" && input.tahsilatiYapanKullaniciId != null && Number(input.tahsilatiYapanKullaniciId) > 0) {
+    const u = getDb()
+      .prepare(`SELECT id, ad_soyad FROM uygulama_kullanici WHERE id = ? AND aktif_mi = 1`)
+      .get(Number(input.tahsilatiYapanKullaniciId)) as { id: number; ad_soyad: string } | undefined;
+    if (!u) return { ok: false, error: "Tahsilatı yapan kullanıcı bulunamadı." };
+    tahsilUserId = u.id;
+    tahsilUserAdi = u.ad_soyad;
+  }
+
   const d = getDb();
   const t = nowIso();
-  const ozelDb = ofisKategoriOzelAdDb(kat, ozel);
+  const ozelDb = ofisKategoriOzelAdDb(kat, (input.ozelKategoriAdi ?? "").trim());
   try {
     const rIns = d
       .prepare(
         `INSERT INTO ofis_kasa_hareketleri (
-          islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, odeme_yontemi, belge_no, not_metni,
+          islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, para_birimi, odeme_yontemi, belge_no, not_metni,
           onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi, onay_tarihi,
           olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
-          onaylayan_kullanici_id, onaylayan_kullanici_adi
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          onaylayan_kullanici_id, onaylayan_kullanici_adi,
+          kalem_id, muvekkil_id, muvekkil_adi_snapshot, tahsilati_yapan_kullanici_id, tahsilati_yapan_kullanici_adi
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       )
       .run(
         input.islemTipi,
@@ -378,6 +547,7 @@ export function ofisKasaHareketEkle(
         ozelDb,
         (input.aciklama ?? "").trim() || null,
         input.tutar,
+        paraBirimi,
         od,
         (input.belgeNo ?? "").trim() || null,
         (input.not ?? "").trim() || null,
@@ -391,7 +561,12 @@ export function ofisKasaHareketEkle(
         olusturanKullaniciId,
         olusturanKullaniciAdi,
         null,
-        null
+        null,
+        kalemId,
+        muvekkilId,
+        muvekkilAdi,
+        tahsilUserId,
+        tahsilUserAdi,
       );
     const id = Number(rIns.lastInsertRowid);
     const row = ofisKasaHareketGet(id);
@@ -405,6 +580,7 @@ export function ofisKasaHareketEkle(
 type VekaletTahsilatOfisKasaInput = {
   vekaletOdemeId: number;
   tutar: number;
+  paraBirimi?: ParaBirimi;
   tarih: string;
   odemeYontemi: string;
   aciklama: string;
@@ -420,18 +596,18 @@ export function ofisKasaVekaletTahsilatEkleInTx(
   input: VekaletTahsilatOfisKasaInput
 ): number {
   const existing = d
-    .prepare(`SELECT id FROM ofis_kasa_hareketleri WHERE kaynak_tipi = ? AND kaynak_id = ?`)
+    .prepare(`SELECT id FROM ofis_kasa_hareketleri WHERE kaynak_tipi = ? AND kaynak_id = ? ${OFIS_KASA_AKTIF_SQL}`)
     .get(OFIS_KASA_KAYNAK_VEKALET_TAHSILATI, input.vekaletOdemeId) as { id: number } | undefined;
   if (existing) return existing.id;
 
   const rIns = d
     .prepare(
       `INSERT INTO ofis_kasa_hareketleri (
-        islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, odeme_yontemi, belge_no, not_metni,
+        islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, para_birimi, odeme_yontemi, belge_no, not_metni,
         onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi, onay_tarihi,
         olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
         onaylayan_kullanici_id, onaylayan_kullanici_adi, kaynak_tipi, kaynak_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     )
     .run(
       "GELIR",
@@ -440,6 +616,7 @@ export function ofisKasaVekaletTahsilatEkleInTx(
       null,
       input.aciklama,
       input.tutar,
+      resolveParaBirimi(input.paraBirimi),
       input.odemeYontemi,
       null,
       (input.not ?? "").trim() || null,
@@ -460,9 +637,71 @@ export function ofisKasaVekaletTahsilatEkleInTx(
   return Number(rIns.lastInsertRowid);
 }
 
+type IcraTahsilatOfisKasaInput = {
+  icraOdemeId: number;
+  tutar: number;
+  paraBirimi?: ParaBirimi;
+  tarih: string;
+  odemeYontemi: string;
+  kategori: string;
+  aciklama: string;
+  not?: string | null;
+  olusturanKullaniciId: number | null;
+  olusturanKullaniciAdi: string | null;
+  t: string;
+};
+
+/** İcra tahsilat ödemesi için Ofis Kasası gelir kaydı — aynı ödeme için tek kayıt (idempotent). */
+export function ofisKasaIcraTahsilatEkleInTx(
+  d: ReturnType<typeof getDb>,
+  input: IcraTahsilatOfisKasaInput,
+): number {
+  const existing = d
+    .prepare(`SELECT id FROM ofis_kasa_hareketleri WHERE kaynak_tipi = ? AND kaynak_id = ? ${OFIS_KASA_AKTIF_SQL}`)
+    .get(OFIS_KASA_KAYNAK_ICRA_TAHSILAT, input.icraOdemeId) as { id: number } | undefined;
+  if (existing) return existing.id;
+
+  const rIns = d
+    .prepare(
+      `INSERT INTO ofis_kasa_hareketleri (
+        islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, para_birimi, odeme_yontemi, belge_no, not_metni,
+        onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi, onay_tarihi,
+        olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
+        onaylayan_kullanici_id, onaylayan_kullanici_adi, kaynak_tipi, kaynak_id
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    )
+    .run(
+      "GELIR",
+      input.tarih,
+      input.kategori,
+      null,
+      input.aciklama,
+      input.tutar,
+      resolveParaBirimi(input.paraBirimi),
+      input.odemeYontemi,
+      null,
+      (input.not ?? "").trim() || null,
+      "ONAYSIZ",
+      0,
+      null,
+      0,
+      null,
+      input.t,
+      input.t,
+      input.olusturanKullaniciId,
+      input.olusturanKullaniciAdi,
+      null,
+      null,
+      OFIS_KASA_KAYNAK_ICRA_TAHSILAT,
+      input.icraOdemeId,
+    );
+  return Number(rIns.lastInsertRowid);
+}
+
 export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch): OfisKasaIslemSonuc {
   const cur = ofisKasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı." };
+  if (ofisKasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
   if (cur.onayDurumu === "ONAYLI") return { ok: false, error: "Onaylı işlem düzenlenemez." };
   if (cur.islemTipi === "DUZELTME") return { ok: false, error: "Düzeltme kaydı düzenlenemez." };
   const d = getDb();
@@ -527,6 +766,63 @@ export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch
     fields.push("not_metni = ?");
     vals.push((patch.not ?? "").trim() || null);
   }
+  if (patch.kalemId !== undefined) {
+    if (patch.kalemId != null && Number(patch.kalemId) > 0) {
+      const tipKalem = tip === "GELIR" || tip === "GIDER" ? tip : null;
+      if (!tipKalem) return { ok: false, error: "Bu kayıt tipi için kalem güncellenemez." };
+      const resolved = resolveAktifManuelKalem(Number(patch.kalemId), tipKalem);
+      if (!resolved.ok) return { ok: false, error: resolved.error };
+      kat = resolved.kalem.kod?.trim() || resolved.kalem.ad;
+      fields.push("kalem_id = ?");
+      vals.push(resolved.kalem.id);
+      fields.push("kategori = ?");
+      vals.push(kat);
+    } else {
+      fields.push("kalem_id = ?");
+      vals.push(null);
+    }
+  }
+  if (patch.muvekkilId !== undefined) {
+    if (patch.muvekkilId != null && Number(patch.muvekkilId) > 0) {
+      const m = muvekkilGet(Number(patch.muvekkilId));
+      if (!m || !m.aktifMi) return { ok: false, error: "İlgili müvekkil bulunamadı veya pasif." };
+      const adi =
+        m.muvekkilTuru === "TUZEL_KISI" && m.sirketUnvani?.trim()
+          ? m.sirketUnvani.trim()
+          : m.adSoyad.trim() || m.sirketUnvani?.trim() || null;
+      fields.push("muvekkil_id = ?");
+      vals.push(m.id);
+      fields.push("muvekkil_adi_snapshot = ?");
+      vals.push(adi);
+    } else {
+      fields.push("muvekkil_id = ?");
+      vals.push(null);
+      fields.push("muvekkil_adi_snapshot = ?");
+      vals.push(null);
+    }
+  }
+  if (patch.tahsilatiYapanKullaniciId !== undefined) {
+    if (tip !== "GELIR") {
+      fields.push("tahsilati_yapan_kullanici_id = ?");
+      vals.push(null);
+      fields.push("tahsilati_yapan_kullanici_adi = ?");
+      vals.push(null);
+    } else if (patch.tahsilatiYapanKullaniciId != null && Number(patch.tahsilatiYapanKullaniciId) > 0) {
+      const u = d
+        .prepare(`SELECT id, ad_soyad FROM uygulama_kullanici WHERE id = ? AND aktif_mi = 1`)
+        .get(Number(patch.tahsilatiYapanKullaniciId)) as { id: number; ad_soyad: string } | undefined;
+      if (!u) return { ok: false, error: "Tahsilatı yapan kullanıcı bulunamadı." };
+      fields.push("tahsilati_yapan_kullanici_id = ?");
+      vals.push(u.id);
+      fields.push("tahsilati_yapan_kullanici_adi = ?");
+      vals.push(u.ad_soyad);
+    } else {
+      fields.push("tahsilati_yapan_kullanici_id = ?");
+      vals.push(null);
+      fields.push("tahsilati_yapan_kullanici_adi = ?");
+      vals.push(null);
+    }
+  }
   if (fields.length === 0) return { ok: true, row: cur };
   const t = nowIso();
   fields.push("guncelleme_tarihi = ?");
@@ -540,8 +836,9 @@ export function ofisKasaHareketGuncelle(id: number, patch: OfisKasaGuncellePatch
 export function ofisKasaHareketSil(id: number): { ok: true } | { ok: false; error: string } {
   const cur = ofisKasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı." };
+  if (ofisKasaHareketSilinmisMi(id)) return { ok: false, error: "İşlem bulunamadı." };
   if (cur.onayDurumu === "ONAYLI") {
-    return { ok: false, error: "Onaylı işlem silinemez. Düzeltme kaydı oluşturun." };
+    return { ok: false, error: "Onaylı işlem için güvenli sil kullanın." };
   }
   getDb().prepare(`DELETE FROM ofis_kasa_hareketleri WHERE id = ?`).run(id);
   return { ok: true };
@@ -554,6 +851,7 @@ export function ofisKasaHareketOnayla(
 ): OfisKasaIslemSonuc {
   const cur = ofisKasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı." };
+  if (ofisKasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
   if (cur.onayDurumu === "ONAYLI") return { ok: false, error: "Zaten onaylı." };
   const t = nowIso();
   getDb()
@@ -573,6 +871,9 @@ export function ofisKasaDuzeltmeEkle(
 ): OfisKasaIslemSonuc {
   const ref = ofisKasaHareketGet(input.orijinalHareketId);
   if (!ref) return { ok: false, error: "Düzeltilen işlem bulunamadı." };
+  if (ofisKasaHareketSilinmisMi(input.orijinalHareketId)) {
+    return { ok: false, error: "Silinmiş işlem üzerinde düzeltme yapılamaz." };
+  }
   if (ref.onayDurumu !== "ONAYLI") {
     return { ok: false, error: "Düzeltme yalnızca onaylı işlemler için kaydedilebilir." };
   }
@@ -585,7 +886,7 @@ export function ofisKasaDuzeltmeEkle(
   const d = getDb();
   const mevcutDuz = d
     .prepare(
-      `SELECT 1 AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id = ?`
+      `SELECT 1 AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id = ? ${OFIS_KASA_AKTIF_SQL}`
     )
     .get(input.orijinalHareketId);
   if (mevcutDuz) {
@@ -607,13 +908,13 @@ export function ofisKasaDuzeltmeEkle(
     const rIns = d
       .prepare(
         `INSERT INTO ofis_kasa_hareketleri (
-          islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, odeme_yontemi, belge_no, not_metni,
+          islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, para_birimi, odeme_yontemi, belge_no, not_metni,
           onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi, onay_tarihi,
           olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
           onaylayan_kullanici_id, onaylayan_kullanici_adi,
           duzeltme_yonu, duzeltme_orijinal_tutar, duzeltme_dogru_tutar, duzeltme_fark_tutar, duzeltme_kasa_etkisi,
           duzeltme_ref_tipi
-        ) VALUES ('DUZELTME',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+        ) VALUES ('DUZELTME',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       )
       .run(
         tarih,
@@ -621,6 +922,7 @@ export function ofisKasaDuzeltmeEkle(
         ref.ozelKategoriAdi,
         aciklama,
         hesap.kasaEtkisi,
+        ref.paraBirimi,
         ref.odemeYontemi,
         belgeNo,
         notMetni || null,
@@ -651,6 +953,83 @@ export function ofisKasaDuzeltmeEkle(
   }
 }
 
+export async function ofisKasaDovizDonusum(
+  input: OfisKasaDovizDonusumInput,
+  olusturanKullaniciId: number | null,
+  olusturanKullaniciAdi: string | null,
+): Promise<
+  | { ok: true; cikis: OfisKasaHareket; giris: OfisKasaHareket }
+  | { ok: false; error: string }
+> {
+  const tarih = (input.tarih ?? "").trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tarih)) return { ok: false, error: "Geçerli tarih girin." };
+  try {
+    const x = resolveDovizDonusum(input);
+    const odemeYontemi = (input.odemeYontemi ?? "BANKA").trim();
+    if (!isOfisOdemeYontemiGecerli(odemeYontemi)) {
+      return { ok: false, error: "Geçerli ödeme yöntemi seçin." };
+    }
+    let kurKaynagi = input.kurKaynagi ?? "MANUEL";
+    let tcmbKurTarihi = input.tcmbKurTarihi ?? null;
+    let tcmbReferansKur = input.tcmbReferansKur ?? null;
+    if (kurKaynagi === "TCMB" && tcmbReferansKur == null) {
+      try {
+        const quote = await getTcmbPairRate(x.kaynakParaBirimi, x.hedefParaBirimi, { date: tarih });
+        if (quote) {
+          tcmbKurTarihi = quote.bulunanTcmbKurTarihi;
+          tcmbReferansKur = Number(quote.dovizAlis);
+        } else {
+          kurKaynagi = "MANUEL";
+        }
+      } catch {
+        kurKaynagi = "MANUEL";
+      }
+    }
+    const d = getDb();
+    const donusumId = randomUUID();
+    const t = nowIso();
+    const aciklama = (input.aciklama ?? "").trim() || formatKurOzeti(x.kaynakParaBirimi, x.hedefParaBirimi, x.kur);
+    const insertSql = `INSERT INTO ofis_kasa_hareketleri (
+      islem_tipi, tarih, kategori, ozel_kategori_adi, aciklama, tutar, para_birimi, odeme_yontemi,
+      belge_no, not_metni, onay_durumu, duzeltme_mi, orijinal_hareket_id, otomatik_onay_mi,
+      onay_tarihi, olusturma_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi,
+      onaylayan_kullanici_id, onaylayan_kullanici_adi, doviz_donusum_id, kur, kur_baz_para_birimi,
+      kur_karsi_para_birimi, kur_kaynagi, tcmb_kur_tarihi, tcmb_referans_kur
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+    const ids = d.transaction(() => {
+      const common = [
+        tarih, "DOVIZ_DONUSUM", null, aciklama, odemeYontemi, null, null, "ONAYSIZ", 0, null, 0,
+        null, t, t, olusturanKullaniciId, olusturanKullaniciAdi, null, null, donusumId, x.kur,
+        x.kaynakParaBirimi, x.hedefParaBirimi, kurKaynagi, tcmbKurTarihi, tcmbReferansKur,
+      ];
+      const cikis = d.prepare(insertSql).run(
+        "DOVIZ_CIKIS", ...common.slice(0, 4), x.kaynakTutar, x.kaynakParaBirimi, ...common.slice(4),
+      );
+      const giris = d.prepare(insertSql).run(
+        "DOVIZ_GIRIS", ...common.slice(0, 4), x.hedefTutar, x.hedefParaBirimi, ...common.slice(4),
+      );
+      return { cikisId: Number(cikis.lastInsertRowid), girisId: Number(giris.lastInsertRowid) };
+    })();
+    const cikis = ofisKasaHareketGet(ids.cikisId);
+    const giris = ofisKasaHareketGet(ids.girisId);
+    return cikis && giris ? { ok: true, cikis, giris } : { ok: false, error: "Döviz dönüşümü oluşturulamadı." };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Döviz dönüşümü oluşturulamadı." };
+  }
+}
+
+export function ofisKasaDovizDonusumSil(dovizDonusumId: string): { ok: true } | { ok: false; error: string } {
+  const id = dovizDonusumId.trim();
+  if (!id) return { ok: false, error: "Döviz dönüşümü bulunamadı." };
+  const d = getDb();
+  const approved = d.prepare(
+    `SELECT 1 AS x FROM ofis_kasa_hareketleri WHERE doviz_donusum_id = ? AND onay_durumu = 'ONAYLI' LIMIT 1`,
+  ).get(id);
+  if (approved) return { ok: false, error: "Onaylı döviz dönüşümü silinemez." };
+  d.prepare(`DELETE FROM ofis_kasa_hareketleri WHERE doviz_donusum_id = ?`).run(id);
+  return { ok: true };
+}
+
 export function getOfisKasaRaporPaketi(tarihBas: string, tarihBit: string): OfisKasaRaporPaketi {
   const tb = (tarihBas ?? "").trim().slice(0, 10);
   const te = (tarihBit ?? "").trim().slice(0, 10);
@@ -661,7 +1040,8 @@ export function getOfisKasaRaporPaketi(tarihBas: string, tarihBit: string): Ofis
   const liste = ofisKasaHareketList({ tarihBas: tb, tarihBit: te, islemTipi: "TUMU", kategori: "", q: "" });
   const d = getDb();
   const rows = ofisKasaOzetSatirlari(d);
-  const ozet = hesaplaOfisKasaDonemOzet(rows, tb, te);
+  const { byCurrency, bakiyeler } = hesaplaParaBirimiOzetleri(rows, tb, te);
+  const ozet = byCurrency.TRY;
   return {
     ok: true,
     tarihBas: tb,
@@ -673,6 +1053,8 @@ export function getOfisKasaRaporPaketi(tarihBas: string, tarihBit: string): Ofis
     donemGider: ozet.donemGider,
     donemDuzeltmeEtkisi: ozet.donemDuzeltmeEtkisi,
     kasaBakiyesi: ozet.kasaBakiyesi,
+    bakiyeler,
+    byCurrency,
     hareketler: liste,
   };
 }

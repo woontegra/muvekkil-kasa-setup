@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { ODEME_YONTEMI_ETIKET, ODEME_YONTEMI_KODLARI } from "@shared/constants/kasa";
 import type { OdemeYontemiKodu } from "@shared/constants/kasa";
 import { bugunYmd, parsePosTutar } from "../lib/format";
+import { DeskModalBackdrop } from "./DeskModalBackdrop";
+import { DeskModalPortal } from "./DeskModalPortal";
+import { DeskModalHead } from "./DeskModalHead";
+import { MoneyInput } from "./MoneyInput";
 
 type Props = {
   open: boolean;
@@ -29,17 +33,17 @@ export function KasaAvansModal({ open, saving, error, onClose, onSave }: Props) 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     const t = parsePosTutar(tutar);
     if (t == null) return;
     await onSave({ tarih, tutar: t, odemeYontemi: odeme, aciklama: aciklama.trim() || null });
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={() => !saving && onClose()}>
-      <div className="modal modal-desk" role="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>Avans girişi</h2>
-        </div>
+    <DeskModalPortal>
+    <DeskModalBackdrop onClose={onClose}>
+      <div className="modal modal-desk" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+        <DeskModalHead title="Avans girişi" onClose={onClose} closeDisabled={saving} />
         <div className="modal-body">
           {error ? <p className="form-error">{error}</p> : null}
           <form id="form-avans" onSubmit={(e) => void handleSubmit(e)}>
@@ -49,7 +53,7 @@ export function KasaAvansModal({ open, saving, error, onClose, onSave }: Props) 
             </div>
             <div className="field">
               <label htmlFor="avans-tutar">Tutar *</label>
-              <input id="avans-tutar" className="desk-input desk-num" value={tutar} onChange={(e) => setTutar(e.target.value)} />
+              <MoneyInput id="avans-tutar" value={tutar} onChange={setTutar} disabled={saving} />
             </div>
             <div className="field">
               <label htmlFor="avans-odeme">Ödeme yöntemi</label>
@@ -77,6 +81,7 @@ export function KasaAvansModal({ open, saving, error, onClose, onSave }: Props) 
           </button>
         </div>
       </div>
-    </div>
+    </DeskModalBackdrop>
+    </DeskModalPortal>
   );
 }

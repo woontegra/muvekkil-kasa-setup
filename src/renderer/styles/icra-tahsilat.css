@@ -1,0 +1,651 @@
+.desk-page--icra-tahsilat .desk-icra-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .desk-page--icra-tahsilat .desk-icra-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.desk-icra-filtre-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.desk-icra-filtre-bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.desk-icra-arama-field {
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+
+.desk-icra-liste-table-wrap {
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+
+.desk-icra-liste-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 980px;
+  font-size: 0.8rem;
+}
+
+.desk-icra-liste-table th,
+.desk-icra-liste-table td {
+  padding: 7px 8px;
+  vertical-align: middle;
+}
+
+.desk-icra-liste-table .desk-icra-money {
+  display: inline-block;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.desk-icra-liste-table th.num,
+.desk-icra-liste-table td.num {
+  text-align: right;
+}
+
+.desk-icra-taksit-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.desk-icra-taksit-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* İcra tahsilat detay modalı */
+.desk-icra-detay-backdrop {
+  padding: 0.5rem;
+}
+
+.modal-desk.modal-desk--icra-detay {
+  width: min(1100px, 92vw);
+  max-width: min(1100px, 92vw);
+  max-height: 75vh;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.desk-icra-detay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  flex: 0 0 auto;
+  background: var(--modal-desk-head-bg);
+  border-bottom: 1px solid var(--modal-desk-head-border);
+}
+
+.desk-icra-detay-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--modal-desk-head-fg);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.desk-icra-detay-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+
+.desk-icra-detay-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.desk-icra-detay-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.desk-icra-detay-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 8px 8px;
+}
+
+.desk-icra-detay-ozet-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px 8px;
+  margin-bottom: 6px;
+  padding: 5px 7px;
+  background: #fff;
+  border: 1px solid var(--desk-border, #d8e0ea);
+  border-radius: 2px;
+  font-size: 11px;
+}
+
+.desk-icra-detay-ozet-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.desk-icra-detay-ozet-item .lbl {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.desk-icra-detay-ozet-warn {
+  color: #b45309;
+}
+
+.desk-icra-detay-uyari {
+  margin: 0 0 8px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 2px;
+}
+
+.desk-icra-detay-table-wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(38vh, 340px);
+  border: 1px solid var(--desk-border, #d8e0ea);
+  background: #fff;
+}
+
+.desk-icra-detay-table {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.78rem;
+}
+
+.desk-icra-detay-table col.col-no {
+  width: 7%;
+}
+
+.desk-icra-detay-table col.col-vade {
+  width: 11%;
+}
+
+.desk-icra-detay-table col.col-tutar,
+.desk-icra-detay-table col.col-odenen,
+.desk-icra-detay-table col.col-kalan {
+  width: 12%;
+}
+
+.desk-icra-detay-table col.col-durum {
+  width: 10%;
+}
+
+.desk-icra-detay-table col.col-son {
+  width: 11%;
+}
+
+.desk-icra-detay-table col.col-smm {
+  width: 12%;
+}
+
+.desk-icra-detay-table col.col-islem {
+  width: 13%;
+}
+
+.desk-icra-detay-table th,
+.desk-icra-detay-table td {
+  padding: 4px 5px;
+  vertical-align: middle;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.desk-icra-detay-table .col-center {
+  text-align: center;
+}
+
+.desk-icra-detay-table th.num,
+.desk-icra-detay-table td.num {
+  text-align: right;
+}
+
+.desk-icra-detay-table .desk-icra-money {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-icra-detay-table .desk-smm-warn-cell {
+  min-width: 0;
+}
+
+.desk-icra-smm-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.desk-icra-smm-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-icra-detay-table .desk-smm-ok-badge,
+.desk-icra-detay-table .desk-blink-warning {
+  padding: 2px 4px;
+  font-size: 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-icra-detay-table .desk-icra-taksit-actions {
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+.desk-icra-detay-table td.desk-icra-detay-durum {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1099px) {
+  .desk-icra-detay-table-wrap {
+    overflow-x: auto;
+  }
+
+  .desk-icra-detay-table {
+    min-width: 860px;
+  }
+}
+
+.desk-icra-detay-row--aktif {
+  background: #eff6ff !important;
+}
+
+.desk-icra-detay-foot {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  background: var(--modal-desk-footer-bg);
+  border-top: 1px solid var(--modal-desk-footer-border);
+}
+
+.desk-icra-detay-foot-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-deep, #1e3a5f);
+}
+
+.desk-icra-detay-foot-grid {
+  margin-bottom: 6px;
+}
+
+.desk-icra-detay-foot-note {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.desk-icra-gecmis-table-wrap {
+  max-height: 160px;
+  overflow: auto;
+  margin-bottom: 6px;
+  border: 1px solid var(--desk-border, #d8e0ea);
+}
+
+.desk-icra-gecmis-table {
+  font-size: 0.78rem;
+}
+
+.desk-icra-gecmis-table th.num,
+.desk-icra-gecmis-table td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.desk-icra-detay-foot .desk-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* İcra tahsilat — küçük üst modallar (ödeme, geçmiş, düzenle) */
+.desk-icra-submodal-backdrop {
+  z-index: 1010;
+  padding: 0.5rem;
+}
+
+.desk-icra-submodal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--modal-desk-head-bg);
+  border-bottom: 1px solid var(--modal-desk-head-border);
+}
+
+.desk-icra-submodal-header h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--modal-desk-head-fg);
+}
+
+.desk-icra-submodal-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+  max-height: min(60vh, 420px);
+}
+
+.desk-icra-submodal-meta {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.desk-icra-submodal-kalan {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.desk-icra-submodal-foot {
+  padding: 6px 10px 8px;
+}
+
+.desk-icra-submodal-foot .desk-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-desk.modal-desk--icra-taksit-duzenle,
+.modal-desk.modal-desk--icra-taksit-odeme {
+  width: min(380px, 92vw);
+  max-width: min(380px, 92vw);
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-desk.modal-desk--icra-taksit-gecmis {
+  width: min(720px, 94vw);
+  max-width: min(720px, 94vw);
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.desk-icra-gecmis-modal-body {
+  min-height: 0;
+}
+
+.desk-icra-gecmis-modal-table-wrap {
+  max-height: min(42vh, 280px);
+  margin-bottom: 0;
+}
+
+.desk-icra-taksit-duzenle-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.desk-icra-submodal-body .desk-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.desk-icra-submodal-body .desk-form-field > span {
+  color: var(--text, #1e293b);
+}
+
+.desk-icra-submodal-body .desk-form-field .desk-input,
+.desk-icra-submodal-body .desk-form-field input,
+.desk-icra-submodal-body .desk-form-field select,
+.desk-icra-submodal-body .desk-form-field textarea {
+  font-weight: 400;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Yeni İcra Tahsilat Alacağı modalı */
+.modal-desk.modal-desk--icra-alacak {
+  width: min(760px, 94vw);
+  max-width: min(760px, 94vw);
+  max-height: 90vh;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.desk-icra-alacak-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  flex: 0 0 auto;
+  background: var(--modal-desk-head-bg);
+  border-bottom: 1px solid var(--modal-desk-head-border);
+}
+
+.desk-icra-alacak-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--modal-desk-head-fg);
+  text-shadow: var(--panel-head-text-shadow);
+  min-width: 0;
+}
+
+.desk-icra-alacak-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 12px 6px;
+  background: var(--modal-desk-body-bg);
+}
+
+.desk-icra-alacak-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+  row-gap: 12px;
+  align-items: start;
+}
+
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field > label,
+.modal-desk--icra-alacak .desk-icra-alacak-pesinat-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text, #1e293b);
+}
+
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field input:not([type="checkbox"]),
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field select,
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field textarea {
+  width: 100%;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.modal-desk--icra-alacak .desk-icra-alacak-grid .field textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.desk-icra-alacak-pesinat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.desk-icra-alacak-check-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.desk-icra-alacak-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
+  max-width: 100%;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text, #1e293b);
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  align-self: flex-start;
+}
+
+.desk-icra-alacak-check input[type="checkbox"] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  align-self: center;
+  cursor: pointer;
+}
+
+.desk-icra-alacak-check > span {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.desk-icra-alacak-pesinat-tutar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.desk-icra-alacak-pesinat-tutar > label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.desk-icra-alacak-field-err {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #b91c1c;
+  line-height: 1.3;
+}
+
+.desk-icra-alacak-actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--modal-desk-footer-bg);
+  border-top: 1px solid var(--modal-desk-footer-border);
+}
+
+@media (max-width: 640px) {
+  .desk-icra-alacak-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .desk-icra-detay-ozet-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .app-header,
+  .no-print,
+  .desk-app-page-header-actions,
+  .desk-icra-filtre-panel {
+    display: none !important;
+  }
+
+  .desk-icra-liste-table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+}

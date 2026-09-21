@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GUVENLIK_SORULARI, GUVENLIK_SORU_KODLARI } from "@shared/types/auth";
+import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfficeSettings } from "@shared/types/office";
 import type { LicenseState } from "@shared/types/license";
 import { desktopLicenseActionCta, desktopLicenseKindLabel } from "@shared/lib/licenseExpiry";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
+import { LegacySettingsKalemleri } from "../../components/settings/LegacySettingsKalemleri";
+import { LegacySettingsDenetim, LegacySettingsKullanicilar } from "../LegacyParityPages";
+import programLogo from "../../assets/logo-M6Wo_PDM.png";
+import woontegraLogo from "../../assets/woontegra-logo-C922wZYn.png";
 
 function officeLicenseStatusLabel(state: LicenseState | null): string {
   if (!state) return "—";
@@ -13,8 +18,6 @@ function officeLicenseStatusLabel(state: LicenseState | null): string {
   if (state.offlineDegraded) return "Çevrimdışı (geçerli)";
   return "Aktif";
 }
-import programLogo from "../../assets/logo-M6Wo_PDM.png";
-import woontegraLogo from "../../assets/woontegra-logo-C922wZYn.png";
 
 function bosForm(): {
   ofisAdi: string;
@@ -58,6 +61,7 @@ function formFromRow(row: OfficeSettings) {
 }
 
 export function OfficeSettingsPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { state: licenseState, loading: licenseLoading, checkLicense, openRenewal } = useLicenseStatus();
   const [surum, setSurum] = useState("0.1.0");
@@ -66,6 +70,10 @@ export function OfficeSettingsPage() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [kaydediyor, setKaydediyor] = useState(false);
   const [kayitMesaj, setKayitMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
+
+  const [donemMode, setDonemMode] = useState<AccountingPeriodMode>("YEARLY");
+  const [donemKaydediyor, setDonemKaydediyor] = useState(false);
+  const [donemMesaj, setDonemMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
 
   const [mevcutSifre, setMevcutSifre] = useState("");
   const [yeniSifre, setYeniSifre] = useState("");
@@ -81,6 +89,8 @@ export function OfficeSettingsPage() {
 
   const [backupMesaj, setBackupMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [updateCheckBusy, setUpdateCheckBusy] = useState(false);
+  const [updateCheckMesaj, setUpdateCheckMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
   const [lisansKontrolBusy, setLisansKontrolBusy] = useState(false);
   const [lisansMesaj, setLisansMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
 
@@ -102,12 +112,14 @@ export function OfficeSettingsPage() {
     setYukleniyor(true);
     setKayitMesaj(null);
     try {
-      const [row, ver, guv] = await Promise.all([
+      const [row, ver, guv, mode] = await Promise.all([
         window.api.officeGet(),
         window.api.getAppVersion(),
         window.api.authGuvenlikBilgisi(),
+        window.api.getAccountingPeriodMode?.() ?? Promise.resolve("YEARLY" as AccountingPeriodMode),
       ]);
       setSurum(ver || "0.1.0");
+      setDonemMode(mode === "MONTHLY" ? "MONTHLY" : "YEARLY");
       const f = formFromRow(row);
       setForm(f);
       await yukleLogoOnizleme(f.logoPath);
@@ -124,6 +136,45 @@ export function OfficeSettingsPage() {
   useEffect(() => {
     void yukle();
   }, [yukle]);
+
+  useEffect(() => {
+    const onPeriodChanged = () => {
+      void (async () => {
+        try {
+          const m = await window.api.getAccountingPeriodMode?.();
+          setDonemMode(m === "MONTHLY" ? "MONTHLY" : "YEARLY");
+        } catch {
+          /* ignore */
+        }
+      })();
+    };
+    window.addEventListener("mkd:accounting-period-changed", onPeriodChanged);
+    return () => window.removeEventListener("mkd:accounting-period-changed", onPeriodChanged);
+  }, []);
+
+  useEffect(() => {
+    if (yukleniyor) return;
+    if (location.hash !== "#hesap-donemi") return;
+    const el = document.getElementById("hesap-donemi");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [location.hash, yukleniyor]);
+
+  async function donemKaydet() {
+    if (donemKaydediyor) return;
+    setDonemKaydediyor(true);
+    setDonemMesaj(null);
+    try {
+      const saved = await window.api.setAccountingPeriodMode(donemMode);
+      setDonemMode(saved === "MONTHLY" ? "MONTHLY" : "YEARLY");
+      setDonemMesaj({ tip: "ok", metin: "Hesap dönemi kaydedildi." });
+      window.dispatchEvent(new CustomEvent("mkd:accounting-period-changed"));
+    } catch (e) {
+      console.error("[setAccountingPeriodMode]", e);
+      setDonemMesaj({ tip: "err", metin: "Hesap dönemi kaydedilemedi." });
+    } finally {
+      setDonemKaydediyor(false);
+    }
+  }
 
   function alanDegistir<K extends keyof typeof form>(alan: K, deger: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [alan]: deger }));
@@ -311,23 +362,99 @@ export function OfficeSettingsPage() {
     : "Seçilmedi";
 
   return (
-    <div className="desk-page desk-page-shell desk-page--office-settings">
-      <div className="desk-toolbar desk-toolbar--tight">
-        <div className="desk-toolbar-left">
-          <Link className="desk-link-back" to="/">
-            ← Ana sayfa
+    <div className="desk-page desk-page-shell desk-app-page desk-page--office-settings">
+      <header className="desk-app-page-header">
+        <div className="desk-app-page-header-main">
+          <Link className="desk-app-page-back" to="/">
+            ← Müvekkil Kasa
           </Link>
-          <span className="desk-toolbar-title">Ofis bilgileri</span>
+          <h1 className="desk-app-page-title">Ofis bilgileri</h1>
+          <p className="desk-app-page-sub">
+            Makbuz ve çıktılarda kullanılır. Ofis adı veya avukat adı soyadından en az biri zorunludur.
+          </p>
         </div>
-      </div>
+      </header>
 
-      <p className="desk-muted-compact desk-office-settings-desc">
-        Makbuz ve çıktılarda kullanılır. Ofis adı veya avukat adı soyadından en az biri zorunludur.
-      </p>
+      <LegacySettingsKalemleri />
+      <LegacySettingsKullanicilar />
+      <LegacySettingsDenetim />
 
-      <section className="desk-panel desk-office-settings-panel">
+      <section id="hesap-donemi" className="section-card desk-panel desk-office-settings-panel">
         <div className="desk-panel-head">
-          <span>KURUM VE İLETİŞİM</span>
+          <span>Hesap Dönemi Ayarları</span>
+          <span className="desk-panel-meta">özet dönemleri</span>
+        </div>
+        <div className="desk-panel-body desk-panel-body--pad-sm">
+          {donemMesaj ? (
+            <div className={`desk-backup-notice desk-backup-notice--${donemMesaj.tip === "ok" ? "ok" : "err"}`}>
+              {donemMesaj.metin}
+            </div>
+          ) : null}
+          {yukleniyor ? (
+            <p className="desk-muted-compact">Yükleniyor…</p>
+          ) : (
+            <>
+              <p className="desk-muted-compact desk-office-settings-desc">
+                Ana sayfadaki gelir, gider ve dönem sonucu hesaplarının hangi dönem üzerinden gösterileceğini belirler.
+              </p>
+              <div className="desk-hesap-donemi-radios" role="radiogroup" aria-label="Hesap dönemi tipi">
+                <label className="desk-taksit-plani-radio desk-hesap-donemi-radio-block">
+                  <input
+                    type="radio"
+                    name="hesap-donemi-mode"
+                    checked={donemMode === "YEARLY"}
+                    disabled={donemKaydediyor}
+                    onChange={() => {
+                      setDonemMode("YEARLY");
+                      setDonemMesaj(null);
+                    }}
+                  />
+                  <span>
+                    <strong>Yıllık dönem</strong>
+                    <small className="desk-muted-compact">
+                      Her takvim yılında gelir ve gider hesapları sıfırdan başlar. Önceki yıldan kalan kasa tutarı
+                      devreden bakiye olarak gösterilir.
+                    </small>
+                  </span>
+                </label>
+                <label className="desk-taksit-plani-radio desk-hesap-donemi-radio-block">
+                  <input
+                    type="radio"
+                    name="hesap-donemi-mode"
+                    checked={donemMode === "MONTHLY"}
+                    disabled={donemKaydediyor}
+                    onChange={() => {
+                      setDonemMode("MONTHLY");
+                      setDonemMesaj(null);
+                    }}
+                  />
+                  <span>
+                    <strong>Aylık dönem</strong>
+                    <small className="desk-muted-compact">
+                      Her ay gelir ve gider hesapları sıfırdan başlar. Önceki aydan kalan kasa tutarı devreden bakiye
+                      olarak gösterilir.
+                    </small>
+                  </span>
+                </label>
+              </div>
+              <div className="desk-office-settings-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={donemKaydediyor}
+                  onClick={() => void donemKaydet()}
+                >
+                  {donemKaydediyor ? "Kaydediliyor…" : "Kaydet"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="section-card desk-panel desk-office-settings-panel">
+        <div className="desk-panel-head">
+          <span>Kurum ve iletişim</span>
           <span className="desk-panel-meta">kayıt</span>
         </div>
         <div className="desk-panel-body desk-panel-body--pad-sm">
@@ -467,9 +594,9 @@ export function OfficeSettingsPage() {
         </div>
       </section>
 
-      <section className="desk-panel desk-office-settings-panel">
+      <section className="section-card desk-panel desk-office-settings-panel">
         <div className="desk-panel-head">
-          <span>GÜVENLİK</span>
+          <span>Güvenlik</span>
         </div>
         <div className="desk-panel-body desk-panel-body--pad-sm">
           {sifreMesaj ? (
@@ -590,9 +717,9 @@ export function OfficeSettingsPage() {
         </div>
       </section>
 
-      <section className="desk-panel desk-office-settings-panel desk-office-settings-panel--backup">
+      <section className="section-card desk-panel desk-office-settings-panel desk-office-settings-panel--backup">
         <div className="desk-panel-head">
-          <span>YEDEKLEME VE GERİ YÜKLEME</span>
+          <span>Yedekleme ve geri yükleme</span>
         </div>
         <div className="desk-panel-body desk-panel-body--pad-sm">
           <p className="desk-muted-compact desk-office-backup-desc">
@@ -615,7 +742,6 @@ export function OfficeSettingsPage() {
         </div>
       </section>
 
-      
       <section className="section-card desk-panel desk-office-settings-panel">
         <div className="desk-panel-head">
           <span>Lisans</span>
@@ -677,9 +803,9 @@ export function OfficeSettingsPage() {
         </div>
       </section>
 
-<section className="desk-panel desk-panel--about-app desk-office-settings-panel--about">
+      <section className="section-card desk-panel desk-panel--about-app desk-office-settings-panel--about">
         <div className="desk-panel-head">
-          <span>UYGULAMA HAKKINDA</span>
+          <span>Uygulama hakkında</span>
           <span className="desk-panel-meta">Woontegra</span>
         </div>
         <div className="desk-panel-body desk-about-app-body">
@@ -693,9 +819,39 @@ export function OfficeSettingsPage() {
               <p className="desk-about-app-meta">
                 <span className="desk-about-label">Sürüm:</span> {surum}
               </p>
+              <span className="desk-update-status-badge">Otomatik güncelleme: Etkin</span>
               <p className="desk-about-app-desc">
                 Avukatlar için müvekkil bazlı avans, masraf ve vekalet takibi programı.
               </p>
+              <div className="desk-about-update-actions">
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={updateCheckBusy}
+                  onClick={() => {
+                    setUpdateCheckBusy(true);
+                    setUpdateCheckMesaj(null);
+                    void window.api
+                      .updateCheck("manual")
+                      .then((r) => {
+                        if (!r.ok) {
+                          setUpdateCheckMesaj({ tip: "err", metin: r.error });
+                        }
+                      })
+                      .catch(() => {
+                        setUpdateCheckMesaj({ tip: "err", metin: "Güncelleme kontrolü başarısız." });
+                      })
+                      .finally(() => setUpdateCheckBusy(false));
+                  }}
+                >
+                  {updateCheckBusy ? "Kontrol ediliyor…" : "Güncellemeleri kontrol et"}
+                </button>
+              </div>
+              {updateCheckMesaj ? (
+                <p className={`desk-about-update-msg${updateCheckMesaj.tip === "err" ? " desk-about-update-msg--err" : ""}`}>
+                  {updateCheckMesaj.metin}
+                </p>
+              ) : null}
             </div>
             <img src={woontegraLogo} alt="Woontegra" className="desk-about-woontegra-mark desk-about-woontegra-mark--settings" />
           </div>

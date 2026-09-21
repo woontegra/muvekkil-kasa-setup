@@ -2,6 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { OdemeYontemiKodu } from "@shared/constants/kasa";
 import type { KasaHareket, KasaOzet } from "@shared/types/kasa";
+import type { GuvenliSilInput } from "@shared/types/guvenliSil";
+import type { DosyaKasaGuvenliSilMode } from "@shared/lib/guvenliSil";
+import type { DeskGuvenliSilOzet } from "../components/DeskGuvenliSilModal";
+
+type ConfirmState = {
+  title: string;
+  message: string;
+  variant?: "danger" | "primary";
+  confirmLabel?: string;
+  onConfirm: () => Promise<void> | void;
+};
 
 export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
   const navigate = useNavigate();
@@ -16,6 +27,13 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
   const [saving, setSaving] = useState(false);
   const [duzeltmeErr, setDuzeltmeErr] = useState<string | null>(null);
   const [duzeltmeSaving, setDuzeltmeSaving] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [masrafFormKey, setMasrafFormKey] = useState(0);
+  const [avansFormKey, setAvansFormKey] = useState(0);
+  const [guvenliSilOzet, setGuvenliSilOzet] = useState<DeskGuvenliSilOzet | null>(null);
+  const [guvenliSilErr, setGuvenliSilErr] = useState<string | null>(null);
+  const [guvenliSilBusy, setGuvenliSilBusy] = useState(false);
 
   const yukle = useCallback(async () => {
     if (!window.api) return;
@@ -42,6 +60,7 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
     odemeYontemi: OdemeYontemiKodu;
     aciklama: string | null;
   }) {
+    if (saving) return;
     setFormErr(null);
     setSaving(true);
     try {
@@ -68,10 +87,11 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
   async function kaydetMasraf(data: {
     tarih: string;
     tutar: number;
-    odemeYontemi: OdemeYontemiKodu;
+    odemeYontemi: string;
     masrafTuru: string;
     aciklama: string | null;
   }) {
+    if (saving) return;
     setFormErr(null);
     setSaving(true);
     try {
@@ -112,24 +132,73 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
   }
 
   async function onaylaHareket(id: number) {
-    if (!confirm("Bu işlemi onaylamak istediğinize emin misiniz? Onaylanan işlem silinemez.")) return;
-    const r = await window.api.kasaOnayla(id);
-    if (!r.ok) alert(r.error ?? "Onaylanamadı");
-    void yukle();
+    setConfirm({
+      title: "İşlemi onayla",
+      message: "Bu işlemi onaylamak istediğinize emin misiniz? Onaylanan işlem silinemez.",
+      confirmLabel: "Onayla",
+      onConfirm: async () => {
+        const r = await window.api.kasaOnayla(id);
+        if (!r.ok) setFormErr(r.error ?? "Onaylanamadı");
+        void yukle();
+      },
+    });
   }
 
   async function reddetHareket(id: number) {
-    if (!confirm("Bu işlemi reddetmek istediğinize emin misiniz?")) return;
-    const r = await window.api.kasaGuncelle(id, { onayDurumu: "REDDEDILDI" });
-    if (!r.ok) alert(r.error ?? "Reddedilemedi");
-    void yukle();
+    setConfirm({
+      title: "İşlemi reddet",
+      message: "Bu işlemi reddetmek istediğinize emin misiniz?",
+      variant: "danger",
+      confirmLabel: "Reddet",
+      onConfirm: async () => {
+        const r = await window.api.kasaGuncelle(id, { onayDurumu: "REDDEDILDI" });
+        if (!r.ok) setFormErr(r.error ?? "Reddedilemedi");
+        void yukle();
+      },
+    });
+  }
+
+  function acGuvenliSil(h: KasaHareket, mode: DosyaKasaGuvenliSilMode) {
+    setGuvenliSilErr(null);
+    setGuvenliSilOzet({
+      id: h.id,
+      tarih: h.tarih,
+      aciklama: h.aciklama?.trim() || (h.islemTipi === "MASRAF" ? h.masrafTuru ?? "" : "Avans girişi"),
+      tutar: h.tutar,
+      odemeYontemi: h.odemeYontemi,
+      mode,
+    });
+  }
+
+  async function guvenliSilGonder(payload: GuvenliSilInput) {
+    if (!guvenliSilOzet || guvenliSilBusy) return;
+    setGuvenliSilErr(null);
+    setGuvenliSilBusy(true);
+    try {
+      const r = await window.api.kasaGuvenliSil(guvenliSilOzet.id, payload);
+      if (!r.ok) {
+        setGuvenliSilErr(r.error ?? "Silinemedi");
+        return;
+      }
+      setGuvenliSilOzet(null);
+      void yukle();
+    } finally {
+      setGuvenliSilBusy(false);
+    }
   }
 
   async function silHareket(id: number) {
-    if (!confirm("Bu işlemi silmek istediğinize emin misiniz?")) return;
-    const r = await window.api.kasaSil(id);
-    if (!r.ok) alert(r.error ?? "Silinemedi");
-    void yukle();
+    setConfirm({
+      title: "İşlemi sil",
+      message: "Bu işlemi silmek istediğinize emin misiniz?",
+      variant: "danger",
+      confirmLabel: "Sil",
+      onConfirm: async () => {
+        const r = await window.api.kasaSil(id);
+        if (!r.ok) setFormErr(r.error ?? "Silinemedi");
+        void yukle();
+      },
+    });
   }
 
   async function kaydetDuzeltme(data: { tutar: number; tarih: string; aciklama: string }) {
@@ -168,7 +237,7 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
     if (!window.api) return;
     const r = await window.api.makbuzYazdirmaPaketi(hid);
     if (!r.ok) {
-      alert(r.mesaj ?? r.error ?? "Makbuz açılamadı");
+      setFormErr(r.mesaj ?? r.error ?? "Makbuz açılamadı");
       return;
     }
     navigate(`/print/makbuz/kasa/${hid}`);
@@ -176,19 +245,33 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
 
   function openIslemEkle() {
     setFormErr(null);
+    setAvansFormKey((k) => k + 1);
     setAvansOpen(true);
   }
 
   function openMasrafEkle() {
     setFormErr(null);
     setMasrafEdit(null);
+    setMasrafFormKey((k) => k + 1);
     setMasrafOpen(true);
   }
 
   function openMasrafDuzenle(h: KasaHareket) {
     setFormErr(null);
     setMasrafEdit(h);
+    setMasrafFormKey((k) => k + 1);
     setMasrafOpen(true);
+  }
+
+  async function confirmOnayla() {
+    if (!confirm || confirmBusy) return;
+    setConfirmBusy(true);
+    try {
+      await confirm.onConfirm();
+      setConfirm(null);
+    } finally {
+      setConfirmBusy(false);
+    }
   }
 
   return {
@@ -205,9 +288,16 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
     duzeltmeHedef,
     setDuzeltmeHedef,
     formErr,
+    setFormErr,
     saving,
     duzeltmeErr,
     duzeltmeSaving,
+    masrafFormKey,
+    avansFormKey,
+    confirm,
+    confirmBusy,
+    setConfirm,
+    confirmOnayla,
     yukle,
     kaydetAvans,
     kaydetMasraf,
@@ -220,5 +310,11 @@ export function useDosyaKasa(dosyaId: number, muvekkilId: number) {
     openIslemEkle,
     openMasrafEkle,
     openMasrafDuzenle,
+    guvenliSilOzet,
+    setGuvenliSilOzet,
+    guvenliSilErr,
+    guvenliSilBusy,
+    acGuvenliSil,
+    guvenliSilGonder,
   };
 }

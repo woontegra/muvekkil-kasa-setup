@@ -6,8 +6,16 @@ import { migration006MakbuzOffice } from "./006_makbuz_office";
 import { migration007OfisKasaDuzeltme } from "./007_ofis_kasa_duzeltme";
 import { migration008License } from "./008_license";
 import { migration009VekaletOfisKasa } from "./009_vekalet_ofis_kasa";
+import { migration010VekaletAvansTemizlik } from "./010_vekalet_avans_temizlik";
+import { migration011IcraTahsilat } from "./011_icra_tahsilat";
+import { migration012AppSettings } from "./012_app_settings";
+import { migration013Randevu } from "./013_randevu";
 import { migration014LicenseTrial } from "./014_license_trial";
 import { migration015UserContact } from "./015_user_contact";
+import { migration016MultiCurrency } from "./016_multi_currency";
+import { migration017FinansKalemMuvekkilAudit } from "./017_finans_kalem_muvekkil_audit";
+import { migration018GuvenliSoftDelete } from "./018_guvenli_soft_delete";
+import { migration019VekaletGuvenliIptal } from "./019_vekalet_guvenli_iptal";
 
 /** v0.1.0 asar-extract ile uyumlu kullanıcı tablosu */
 export const migration001UygulamaKullanici: Migration = {
@@ -83,6 +91,14 @@ export const allMigrations: Migration[] = [
   migration007OfisKasaDuzeltme,
   migration008License,
   migration009VekaletOfisKasa,
+  migration010VekaletAvansTemizlik,
+  migration011IcraTahsilat,
+  migration012AppSettings,
+  migration013Randevu,
   migration014LicenseTrial,
   migration015UserContact,
+  migration016MultiCurrency,
+  migration017FinansKalemMuvekkilAudit,
+  migration018GuvenliSoftDelete,
+  migration019VekaletGuvenliIptal,
 ];

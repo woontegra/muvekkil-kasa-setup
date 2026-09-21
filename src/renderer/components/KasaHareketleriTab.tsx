@@ -16,6 +16,8 @@ import {
   onayBadgeMetni,
   tipEtiket,
 } from "../lib/kasa";
+import { DeskTableIconBtn } from "./DeskTableIconBtn";
+import { IconDuzenle, IconDuzeltme, IconMakbuz, IconOnayla, IconReddet, IconSil } from "./DeskTableIcons";
 
 type Props = {
   dosyaId: number;
@@ -62,6 +64,7 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
     odemeYontemi: OdemeYontemiKodu;
     aciklama: string | null;
   }) {
+    if (saving) return;
     setFormErr(null);
     setSaving(true);
     try {
@@ -88,10 +91,11 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
   async function kaydetMasraf(data: {
     tarih: string;
     tutar: number;
-    odemeYontemi: OdemeYontemiKodu;
+    odemeYontemi: string;
     masrafTuru: string;
     aciklama: string | null;
   }) {
+    if (saving) return;
     setFormErr(null);
     setSaving(true);
     try {
@@ -191,7 +195,7 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
       alert(r.mesaj ?? r.error ?? "Makbuz açılamadı");
       return;
     }
-    navigate(`/print/makbuz/${hid}`);
+    navigate(`/print/makbuz/kasa/${hid}`);
   }
 
   function islemRowActions(h: KasaHareket) {
@@ -199,54 +203,53 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
       return (
         <>
           {h.islemTipi === "MASRAF" ? (
-            <button
-              type="button"
-              className="btn btn-sm"
+            <DeskTableIconBtn
+              title="Düzenle"
               onClick={() => {
                 setFormErr(null);
                 setMasrafEdit(h);
                 setMasrafOpen(true);
               }}
             >
-              Düzenle
-            </button>
+              <IconDuzenle />
+            </DeskTableIconBtn>
           ) : null}
-          <button type="button" className="btn btn-sm" onClick={() => void onaylaHareket(h.id)}>
-            Onayla
-          </button>
-          <button type="button" className="btn btn-sm" onClick={() => void reddetHareket(h.id)}>
-            Reddet
-          </button>
-          <button type="button" className="btn btn-sm btn-danger" onClick={() => void silHareket(h.id)}>
-            Sil
-          </button>
+          <DeskTableIconBtn title="Onayla" variant="primary" onClick={() => void onaylaHareket(h.id)}>
+            <IconOnayla />
+          </DeskTableIconBtn>
+          <DeskTableIconBtn title="Reddet" onClick={() => void reddetHareket(h.id)}>
+            <IconReddet />
+          </DeskTableIconBtn>
+          <DeskTableIconBtn title="Sil" variant="danger" onClick={() => void silHareket(h.id)}>
+            <IconSil />
+          </DeskTableIconBtn>
         </>
       );
     }
     if (h.onayDurumu === "ONAYLI" && h.islemTipi !== "DUZELTME") {
       return (
         <>
-          <button type="button" className="btn btn-sm" onClick={() => void makbuzAc(h.id)}>
-            Makbuz
-          </button>
-          <button type="button" className="btn btn-sm" onClick={() => setDuzeltmeHedef(h)}>
-            Düzeltme ekle
-          </button>
+          <DeskTableIconBtn title="Makbuz" onClick={() => void makbuzAc(h.id)}>
+            <IconMakbuz />
+          </DeskTableIconBtn>
+          <DeskTableIconBtn title="Düzeltme ekle" onClick={() => setDuzeltmeHedef(h)}>
+            <IconDuzeltme />
+          </DeskTableIconBtn>
         </>
       );
     }
     if (h.onayDurumu === "ONAYLI" && h.islemTipi === "DUZELTME" && makbuzGosterilebilir(h)) {
       return (
-        <button type="button" className="btn btn-sm" onClick={() => void makbuzAc(h.id)}>
-          Makbuz
-        </button>
+        <DeskTableIconBtn title="Makbuz" onClick={() => void makbuzAc(h.id)}>
+          <IconMakbuz />
+        </DeskTableIconBtn>
       );
     }
     if (h.onayDurumu === "REDDEDILDI") {
       return (
-        <button type="button" className="btn btn-sm btn-danger" onClick={() => void silHareket(h.id)}>
-          Sil
-        </button>
+        <DeskTableIconBtn title="Sil" variant="danger" onClick={() => void silHareket(h.id)}>
+          <IconSil />
+        </DeskTableIconBtn>
       );
     }
     return <span className="muted">—</span>;

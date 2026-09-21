@@ -1,4 +1,4 @@
-import { app, dialog } from "electron";
+import { app, dialog, nativeImage } from "electron";
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { getDb, nowIso } from "../db/connection";
@@ -34,6 +34,12 @@ export function officeLogoDataUrl(filePath: string | null | undefined): string |
   try {
     const ext = extname(p).toLowerCase();
     const buf = readFileSync(p);
+    if (ext === ".webp") {
+      const img = nativeImage.createFromBuffer(buf);
+      if (!img.isEmpty()) {
+        return `data:image/png;base64,${img.toPNG().toString("base64")}`;
+      }
+    }
     return `data:${logoMime(ext)};base64,${buf.toString("base64")}`;
   } catch (e) {
     console.error("[officeLogoDataUrl]", e);

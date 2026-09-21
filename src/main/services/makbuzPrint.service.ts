@@ -1,4 +1,7 @@
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow } from "electron";
+import { unlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import type {
   HtmlToPdfRequest,
   HtmlToPdfResult,
@@ -47,6 +50,38 @@ function pdfPrintOptions(page: "A4" | "A5", landscape: boolean) {
   };
 }
 
+async function loadHtmlForPrint(win: BrowserWindow, html: string): Promise<void> {
+  const tmpPath = join(app.getPath("temp"), `mkd-print-${process.pid}-${Date.now()}.html`);
+  writeFileSync(tmpPath, html, "utf8");
+  try {
+    await win.loadURL(pathToFileURL(tmpPath).href);
+    await win.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const waitImages = () =>
+          Promise.all(
+            [...document.images].map((img) =>
+              img.complete
+                ? Promise.resolve()
+                : new Promise((r) => {
+                    img.onload = () => r(undefined);
+                    img.onerror = () => r(undefined);
+                  })
+            )
+          );
+        const done = () => waitImages().then(() => setTimeout(resolve, 200));
+        if (document.readyState === "complete") done();
+        else window.addEventListener("load", done, { once: true });
+      })
+    `);
+  } finally {
+    try {
+      unlinkSync(tmpPath);
+    } catch {
+      /* temp dosya silinemedi */
+    }
+  }
+}
+
 /** Yazıcı listesi */
 export async function getSystemPrinters(): Promise<YaziciInfo[]> {
   const win = createHiddenPrintWindow();
@@ -71,20 +106,7 @@ export async function htmlToPdf(req: HtmlToPdfRequest): Promise<HtmlToPdfResult>
 
   try {
     await win.loadURL("about:blank");
-    await win.webContents.executeJavaScript(
-      `(function(html) {
-        document.open();
-        document.write(html);
-        document.close();
-      })(${JSON.stringify(req.html)})`
-    );
-    await win.webContents.executeJavaScript(`
-      new Promise((resolve) => {
-        const done = () => setTimeout(resolve, 500);
-        if (document.readyState === "complete") done();
-        else window.addEventListener("load", done, { once: true });
-      })
-    `);
+    await loadHtmlForPrint(win, req.html);
 
     const pdfBuffer = await win.webContents.printToPDF({
       printBackground: true,

@@ -1,5 +1,10 @@
 import { getDb, nowIso } from "../db/connection";
-import { MASRAF_TURLERI, isMasrafTuruKaydiGecerli, isOdemeYontemiGecerli } from "@shared/constants/kasa";
+import {
+  MASRAF_TURLERI,
+  isMasrafOdemeYontemiKaydiGecerli,
+  isMasrafTuruKaydiGecerli,
+  isOdemeYontemiGecerli,
+} from "@shared/constants/kasa";
 import type {
   KasaEkleInput,
   KasaGuncellePatch,
@@ -10,6 +15,7 @@ import type {
 } from "@shared/types/kasa";
 import { authGetSession } from "./auth.service";
 import { dosyaGet } from "./dosya.service";
+import { KASA_AKTIF_SQL } from "./kasaAktifSql";
 
 function rowHareket(r: Record<string, unknown>): KasaHareket {
   const odeme = String(r.odeme_yontemi ?? "NAKIT");
@@ -24,7 +30,7 @@ function rowHareket(r: Record<string, unknown>): KasaHareket {
     masrafiYapanKisi: r.masrafi_yapan_kisi == null ? null : String(r.masrafi_yapan_kisi),
     aciklama: r.aciklama == null ? null : String(r.aciklama),
     belgeNo: r.belge_no == null ? null : String(r.belge_no),
-    odemeYontemi: isOdemeYontemiGecerli(odeme) ? odeme : "NAKIT",
+    odemeYontemi: odeme.trim() || "NAKIT",
     onayDurumu: (r.onay_durumu as KasaOnayDurumu) ?? "ONAYSIZ",
     duzeltmeMi: Boolean(r.duzeltme_mi),
     duzeltilenIslemId: r.duzeltilen_islem_id == null ? null : Number(r.duzeltilen_islem_id),
@@ -107,6 +113,16 @@ function olusturanBilgisi(): { id: number | null; adi: string | null } {
 
 const KASA_INSERT_COLS = `dosya_id, muvekkil_id, islem_tipi, masraf_turu, tutar, tarih, masrafi_yapan_kisi, aciklama, belge_no, odeme_yontemi, onay_durumu, duzeltme_mi, duzeltilen_islem_id, kayit_tarihi, guncelleme_tarihi, olusturan_kullanici_id, olusturan_kullanici_adi`;
 
+/** Vekalet tahsilatı dosya kasasına (avans) yazılmamalı — eski kayıtları hariç tut. */
+export const DOSYA_KASA_VEKALET_HARIC_SQL = `
+  AND id NOT IN (SELECT kasa_hareket_id FROM vekalet_taksit_odeme WHERE kasa_hareket_id IS NOT NULL)
+  AND NOT (
+    islem_tipi = 'AVANS_GIRISI'
+    AND trim(coalesce(aciklama, '')) != ''
+    AND (aciklama LIKE 'Vekalet taksit%' OR aciklama LIKE 'Vekalet tahsilat%')
+  )
+`;
+
 /** Transaction içinde dosya avans girişi (vekalet tahsilatı bu yolu kullanmaz). */
 export function kasaAvansEkleInTx(
   d: ReturnType<typeof getDb>,
@@ -153,13 +169,15 @@ export function masrafTurleriList(): string[] {
 export function kasaHareketList(dosyaId: number): KasaHareket[] {
   const d = getDb();
   const rows = d
-    .prepare(`SELECT * FROM dosya_kasa_hareket WHERE dosya_id = ? ORDER BY tarih DESC, id DESC`)
+    .prepare(
+      `SELECT * FROM dosya_kasa_hareket WHERE dosya_id = ? ${KASA_AKTIF_SQL} ${DOSYA_KASA_VEKALET_HARIC_SQL} ORDER BY tarih DESC, id DESC`,
+    )
     .all(dosyaId) as Record<string, unknown>[];
   const correctedIds = new Set(
     (
       d
         .prepare(
-          `SELECT DISTINCT duzeltilen_islem_id AS x FROM dosya_kasa_hareket WHERE dosya_id = ? AND duzeltme_mi = 1 AND duzeltilen_islem_id IS NOT NULL`
+          `SELECT DISTINCT duzeltilen_islem_id AS x FROM dosya_kasa_hareket WHERE dosya_id = ? AND duzeltme_mi = 1 AND duzeltilen_islem_id IS NOT NULL ${KASA_AKTIF_SQL}`
         )
         .all(dosyaId) as { x: number }[]
     ).map((r) => r.x)
@@ -182,20 +200,30 @@ export function hesaplaAvansBakiye(dosyaId: number): KasaOzet {
   const d = getDb();
   const rows = d
     .prepare(
-      `SELECT id, islem_tipi, tutar, duzeltilen_islem_id FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu IN ('ONAYSIZ','ONAYLI')`
+      `SELECT id, islem_tipi, tutar, duzeltilen_islem_id FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu IN ('ONAYSIZ','ONAYLI') ${KASA_AKTIF_SQL} ${DOSYA_KASA_VEKALET_HARIC_SQL}`
     )
     .all(dosyaId) as { id: number; islem_tipi: string; tutar: number; duzeltilen_islem_id: number | null }[];
   const bakiye = hesaplaAvansBakiyeFromRows(rows);
   const onayRow = d
-    .prepare(`SELECT COUNT(*) AS c FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu = 'ONAYSIZ'`)
+    .prepare(
+      `SELECT COUNT(*) AS c FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu = 'ONAYSIZ' ${KASA_AKTIF_SQL} ${DOSYA_KASA_VEKALET_HARIC_SQL}`
+    )
     .get(dosyaId) as { c: number };
   return { ...bakiye, onayBekleyenSayisi: Number(onayRow.c) || 0 };
+}
+
+function kasaHareketSilinmisMi(id: number): boolean {
+  const r = getDb()
+    .prepare(`SELECT silinme_tarihi FROM dosya_kasa_hareket WHERE id = ?`)
+    .get(id) as { silinme_tarihi: string | null } | undefined;
+  return Boolean(r?.silinme_tarihi);
 }
 
 export function kasaHareketOnayla(id: number): KasaIslemSonuc {
   const d = getDb();
   const cur = kasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı" };
+  if (kasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
   if (cur.onayDurumu === "ONAYLI") return { ok: false, error: "Zaten onaylı" };
   if (cur.onayDurumu === "REDDEDILDI") return { ok: false, error: "Reddedilmiş işlem onaylanamaz" };
   const t = nowIso();
@@ -208,10 +236,38 @@ export function kasaHareketOnayla(id: number): KasaIslemSonuc {
   return row ? { ok: true, row } : { ok: false, error: "İşlem bulunamadı" };
 }
 
+const OTOMATIK_ONAYLAYAN_AD = "Otomatik (kapanış)";
+
+export type KasaOtomatikOnaySonuc =
+  | { ok: true; row: KasaHareket; already?: boolean }
+  | { ok: false; error: string };
+
+/** Manuel kasaHareketOnayla ile aynı status güncellemesi; otomatik kapanış/kurtarma için. */
+export function kasaHareketOnaylaOtomatik(id: number): KasaOtomatikOnaySonuc {
+  const cur = kasaHareketGet(id);
+  if (!cur) return { ok: false, error: "İşlem bulunamadı" };
+  if (kasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
+  if (cur.onayDurumu === "ONAYLI") return { ok: true, row: cur, already: true };
+  if (cur.onayDurumu === "REDDEDILDI") return { ok: false, error: "Reddedilmiş işlem onaylanamaz" };
+  if (cur.islemTipi !== "AVANS_GIRISI" && cur.islemTipi !== "MASRAF") {
+    return { ok: false, error: "Yalnızca avans ve masraf girişleri otomatik onaylanır" };
+  }
+  const t = nowIso();
+  getDb()
+    .prepare(
+      `UPDATE dosya_kasa_hareket SET onay_durumu = 'ONAYLI', onay_tarihi = ?, otomatik_onay_mi = 1,
+       onaylayan_kullanici_id = NULL, onaylayan_kullanici_adi = ?, guncelleme_tarihi = ? WHERE id = ?`,
+    )
+    .run(t, OTOMATIK_ONAYLAYAN_AD, t, id);
+  const row = kasaHareketGet(id);
+  return row ? { ok: true, row } : { ok: false, error: "İşlem bulunamadı" };
+}
+
 export function kasaHareketReddet(id: number): KasaIslemSonuc {
   const d = getDb();
   const cur = kasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı" };
+  if (kasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
   if (cur.onayDurumu !== "ONAYSIZ") return { ok: false, error: "Yalnızca onaysız işlemler reddedilebilir" };
   const t = nowIso();
   const u = authGetSession();
@@ -226,8 +282,9 @@ export function kasaHareketReddet(id: number): KasaIslemSonuc {
 export function kasaHareketSil(id: number): { ok: true } | { ok: false; error: string } {
   const cur = kasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı" };
+  if (kasaHareketSilinmisMi(id)) return { ok: false, error: "İşlem bulunamadı" };
   if (cur.onayDurumu === "ONAYLI") {
-    return { ok: false, error: "Onaylanan işlem silinemez. Düzeltme kaydı oluşturabilirsiniz." };
+    return { ok: false, error: "Onaylı işlem için güvenli sil kullanın." };
   }
   getDb().prepare(`DELETE FROM dosya_kasa_hareket WHERE id = ?`).run(id);
   return { ok: true };
@@ -239,14 +296,22 @@ export function kasaHareketGuncelle(id: number, patch: KasaGuncellePatch): KasaI
   }
   const cur = kasaHareketGet(id);
   if (!cur) return { ok: false, error: "İşlem bulunamadı" };
+  if (kasaHareketSilinmisMi(id)) return { ok: false, error: "Silinmiş işlem üzerinde işlem yapılamaz" };
   if (cur.islemTipi === "DUZELTME") return { ok: false, error: "Düzeltme kaydı değiştirilemez" };
   if (cur.onayDurumu === "ONAYLI") return { ok: false, error: "Onaylı işlem değiştirilemez" };
   if (cur.onayDurumu === "REDDEDILDI") return { ok: false, error: "Reddedilmiş işlem değiştirilemez" };
   if (patch.masrafTuru !== undefined && cur.islemTipi === "MASRAF" && !isMasrafTuruKaydiGecerli(patch.masrafTuru)) {
     return { ok: false, error: "Geçerli masraf türü giriniz" };
   }
-  if (patch.odemeYontemi !== undefined && !isOdemeYontemiGecerli(patch.odemeYontemi)) {
-    return { ok: false, error: "Geçersiz ödeme yöntemi" };
+  if (patch.odemeYontemi !== undefined) {
+    const od = String(patch.odemeYontemi).trim();
+    if (cur.islemTipi === "MASRAF") {
+      if (!isMasrafOdemeYontemiKaydiGecerli(od)) {
+        return { ok: false, error: "Diğer ödeme yöntemini yazın." };
+      }
+    } else if (!isOdemeYontemiGecerli(od)) {
+      return { ok: false, error: "Geçersiz ödeme yöntemi" };
+    }
   }
   const d = getDb();
   const fields: string[] = ["guncelleme_tarihi = ?"];
@@ -277,7 +342,7 @@ export function kasaHareketGuncelle(id: number, patch: KasaGuncellePatch): KasaI
   }
   if (patch.odemeYontemi !== undefined) {
     fields.push("odeme_yontemi = ?");
-    vals.push(patch.odemeYontemi);
+    vals.push(String(patch.odemeYontemi).trim());
   }
   vals.push(id);
   d.prepare(`UPDATE dosya_kasa_hareket SET ${fields.join(", ")} WHERE id = ?`).run(...vals);
@@ -290,7 +355,6 @@ export function kasaHareketEkle(input: KasaEkleInput): KasaIslemSonuc {
   if (!dosya || dosya.muvekkilId !== input.muvekkilId) {
     return { ok: false, error: "Dosya ve müvekkil eşleşmiyor" };
   }
-  const odeme = input.odemeYontemi && isOdemeYontemiGecerli(input.odemeYontemi) ? input.odemeYontemi : "NAKIT";
   const t = nowIso();
   const d = getDb();
   const olusturan = olusturanBilgisi();
@@ -300,6 +364,10 @@ export function kasaHareketEkle(input: KasaEkleInput): KasaIslemSonuc {
   if (input.islemTipi === "MASRAF") {
     if (!isMasrafTuruKaydiGecerli(input.masrafTuru)) {
       return { ok: false, error: "Geçerli masraf türü giriniz" };
+    }
+    const masrafOdeme = String(input.odemeYontemi ?? "").trim();
+    if (!isMasrafOdemeYontemiKaydiGecerli(masrafOdeme)) {
+      return { ok: false, error: "Diğer ödeme yöntemini yazın." };
     }
     if (input.tutar <= 0) return { ok: false, error: "Masraf tutarı sıfırdan büyük olmalıdır" };
     const yapan = (input.masrafiYapanKisi ?? "").trim();
@@ -320,7 +388,7 @@ export function kasaHareketEkle(input: KasaEkleInput): KasaIslemSonuc {
             yapan || null,
             input.aciklama ?? null,
             belgeNo,
-            odeme,
+            masrafOdeme,
             t,
             t,
             olusturan.id,
@@ -337,6 +405,8 @@ export function kasaHareketEkle(input: KasaEkleInput): KasaIslemSonuc {
 
   if (input.islemTipi === "AVANS_GIRISI") {
     if (input.tutar <= 0) return { ok: false, error: "Avans tutarı sıfırdan büyük olmalıdır" };
+    const odeme =
+      input.odemeYontemi && isOdemeYontemiGecerli(input.odemeYontemi) ? input.odemeYontemi : "NAKIT";
     try {
       const row = d.transaction(() => {
         const belgeNo = allocateBelgeNoInTx(d, "AVANS_GIRISI");
@@ -385,6 +455,8 @@ export function kasaHareketEkle(input: KasaEkleInput): KasaIslemSonuc {
       return { ok: false, error: "Düzeltme kaydı üzerinden yeni düzeltme açılamaz; ana işlem üzerinden düzeltme girin" };
     }
     if (input.tutar === 0) return { ok: false, error: "Düzeltme tutarı sıfır olamaz" };
+    const odeme =
+      input.odemeYontemi && isOdemeYontemiGecerli(input.odemeYontemi) ? input.odemeYontemi : "NAKIT";
     try {
       const row = d.transaction(() => {
         const belgeNo = allocateBelgeNoInTx(d, "DUZELTME");

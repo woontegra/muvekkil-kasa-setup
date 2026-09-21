@@ -197,7 +197,7 @@ export function DosyaDetailPage() {
         <div className="desk-subpanels">
           <DosyaMasraflarPanel kasa={kasa} />
 
-          <div className="desk-panel">
+          <div className="desk-panel desk-panel--vekalet">
             <div className="desk-panel-head">
               <span>Anlaşılan vekalet ücreti ve taksitler</span>
               <span className="desk-panel-meta">{taksitMeta}</span>

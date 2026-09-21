@@ -1,7 +1,13 @@
+@import "./theme.css";
 @import "./layout.css";
 @import "./tables.css";
 @import "./forms.css";
 @import "./print.css";
 @import "./auth.css";
 @import "./ofis-kasa.css";
+@import "./icra-tahsilat.css";
 @import "./license.css";
+@import "./dashboard.css";
+@import "./belge-onizleme.css";
+@import "./app-pages.css";
+@import "./update.css";

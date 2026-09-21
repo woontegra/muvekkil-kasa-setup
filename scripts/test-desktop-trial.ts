@@ -228,9 +228,25 @@ function testUiParity() {
   assert(premiumTrial.includes("} catch (err)"), "trial page catches setupFirst throw");
   assert(!premiumTrial.includes("Kullanıcı adı") && !legacyTrial.includes("Kullanıcı adı"), "1 trial UX has no username field");
   assert(!premiumSetup.includes("Kullanıcı adı") && !legacySetup.includes("Kullanıcı adı"), "6 paid setup UX has no username field");
-  assert(premiumLogin.includes('label="E-posta"') && legacyLogin.includes(">E-posta<"), "login label is E-posta");
-  assert(premiumLogin.includes("ornek@mail.com") && legacyLogin.includes("ornek@mail.com"), "login placeholder is email");
-  assert(premiumForgot.includes('label="E-posta"') && legacyForgot.includes(">E-posta<"), "8 forgot-password uses email");
+  assert(
+    premiumLogin.includes('label="E-posta veya Kullanıcı Adı"') && legacyLogin.includes(">E-posta veya Kullanıcı Adı<"),
+    "login label is dual identity",
+  );
+  assert(
+    premiumLogin.includes("E-posta veya kullanıcı adınızı girin") && legacyLogin.includes("E-posta veya kullanıcı adınızı girin"),
+    "login placeholder is dual identity",
+  );
+  assert(
+    premiumForgot.includes('label="E-posta veya Kullanıcı Adı"') && legacyForgot.includes(">E-posta veya Kullanıcı Adı<"),
+    "8 forgot-password dual identity label",
+  );
+  assert(
+    premiumForgot.includes("E-posta veya kullanıcı adınızı girin.") && legacyForgot.includes("E-posta veya kullanıcı adınızı girin."),
+    "8 forgot-password dual identity copy",
+  );
+  assert(premiumTrial.includes('label="E-posta"') && legacyTrial.includes(">E-posta<"), "trial setup keeps real email label");
+  assert(authService.includes("findUserRowByLoginIdentity") && authService.includes("LOCAL_AUTH_IDENTITY_EMPTY_ERROR"), "login/forgot identity-neutral errors");
+  assert(!authService.includes("E-posta boş olamaz."), "auth.service has no email-only empty error");
   assert(premiumGate.includes("trialNetworkRequired") && premiumGate.includes("Tekrar Dene"), "DESKTOP-08 premium network UX");
   assert(legacyGate.includes("trialNetworkRequired") && legacyGate.includes("Tekrar Dene"), "DESKTOP-08 legacy network UX");
   assert(premiumGate.includes("7 günlük ücretsiz deneme süreniz sona erdi."), "DESKTOP-09 premium expired UX");
@@ -372,6 +388,15 @@ function testLegacyPaidUpgrade() {
   if (emailLogin.stdout) process.stdout.write(emailLogin.stdout);
   if (emailLogin.stderr) process.stderr.write(emailLogin.stderr);
   assert(emailLogin.status === 0, "email login / legacy username sqlite fixture");
+
+  const paidLogin = spawnSync(electronPath, [join(here, "test-legacy-paid-login.cjs")], {
+    cwd: join(here, ".."),
+    encoding: "utf8",
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+  });
+  if (paidLogin.stdout) process.stdout.write(paidLogin.stdout);
+  if (paidLogin.stderr) process.stderr.write(paidLogin.stderr);
+  assert(paidLogin.status === 0, "RELEASE BLOCKER legacy paid username login / forgot");
 }
 
 function main() {

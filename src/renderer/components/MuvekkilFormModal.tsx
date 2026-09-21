@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Muvekkil, MuvekkilInput, MuvekkilTuru } from "@shared/types/muvekkil";
 import { DeskModalPortal } from "./DeskModalPortal";
+import { DeskModalBackdrop } from "./DeskModalBackdrop";
+import { DeskModalHead } from "./DeskModalHead";
 
 type Props = {
   title: string;
@@ -71,6 +73,7 @@ export function MuvekkilFormModal({ title, open, saving, error, initial, onClose
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     let payload: MuvekkilInput;
     if (mvkTur === "GERCEK_KISI") {
       payload = {
@@ -103,11 +106,9 @@ export function MuvekkilFormModal({ title, open, saving, error, initial, onClose
 
   return (
     <DeskModalPortal>
-      <div className="modal-backdrop" role="presentation" onClick={() => !saving && onClose()}>
+      <DeskModalBackdrop onClose={onClose} disabled={saving}>
         <div className="modal modal-desk modal-desk--wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>{title}</h2>
-        </div>
+        <DeskModalHead title={title} onClose={onClose} closeDisabled={saving} />
         <div className="modal-body">
           {error ? <p className="form-error">{error}</p> : null}
           <form id="form-muvekkil" onSubmit={(e) => void handleSubmit(e)}>
@@ -225,7 +226,7 @@ export function MuvekkilFormModal({ title, open, saving, error, initial, onClose
           </button>
         </div>
       </div>
-    </div>
+    </DeskModalBackdrop>
     </DeskModalPortal>
   );
 }

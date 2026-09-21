@@ -41,8 +41,8 @@
   --primary-soft: var(--color-primary-soft);
   --primary-deep: #1e3a5f;
 
-  --bg-page: #f3f5f8;
-  --bg-page-tint: linear-gradient(165deg, #f6f8fb 0%, #eef2f7 50%, #e9eef5 100%);
+  --bg-page: var(--bg-app, #f0f4f9);
+  --bg-page-tint: linear-gradient(180deg, #f4f7fb 0%, #eef2f7 100%);
   --bg-card: #ffffff;
   --bg-elevated: #f5f8fc;
   --bg-panel: #fafbfd;
@@ -58,20 +58,20 @@
 
   --accent-line: rgba(59, 111, 201, 0.12);
 
-  /* Panel başlık şeridi — sakin açık mavi */
-  --panel-head-bg: linear-gradient(180deg, #e8eef6 0%, #dfe8f3 100%);
-  --panel-head-text: #1e3a5f;
+  /* Panel başlık şeridi — sade beyaz (dashboard.css ile uyumlu) */
+  --panel-head-bg: #fafbfd;
+  --panel-head-text: #0f172a;
   --panel-head-text-shadow: none;
-  --panel-head-meta: #5a7089;
-  --panel-head-border: #c8d6e8;
+  --panel-head-meta: #64748b;
+  --panel-head-border: #e5eaf2;
 
   /* Tablo üst satırı */
-  --table-header-bg: linear-gradient(180deg, #eef3f9 0%, #e6edf6 100%);
-  --table-header-fg: #1e3a5f;
-  --table-header-border: #c5d2e4;
-  --table-row-stripe: #f6f9fc;
-  --table-row-hover: #edf3fa;
-  --table-cell-border: #e2e8f0;
+  --table-header-bg: #f8fafc;
+  --table-header-fg: #64748b;
+  --table-header-border: #e5eaf2;
+  --table-row-stripe: #fafbfd;
+  --table-row-hover: #eff6ff;
+  --table-cell-border: #f1f5f9;
 
   /* Araç çubuğu / modal (masaüstü) */
   --toolbar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
@@ -96,9 +96,9 @@
   --page-block-gap: 10px;
 
   --radius-lg: 14px;
-  --radius-md: 9px;
-  --shadow-card: 0 1px 2px rgba(30, 58, 95, 0.05), 0 3px 10px rgba(59, 111, 201, 0.06);
-  --shadow-card-hover: 0 3px 10px rgba(30, 58, 95, 0.07), 0 8px 20px rgba(59, 111, 201, 0.08);
+  --radius-md: 10px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(37, 99, 235, 0.08);
 
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-family: var(--font);
@@ -141,14 +141,29 @@ a:hover {
   flex-direction: column;
 }
 
-/* Üst bar — masaüstü program şeridi */
+.browser-preview-banner {
+  flex-shrink: 0;
+  background: #fef3c7;
+  color: #92400e;
+  border-bottom: 1px solid #fde68a;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.browser-preview-banner code {
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Üst bar — dashboard.css ile premium toolbar */
 .app-header {
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f4f8 100%);
-  border-bottom: 1px solid var(--border);
-  padding: 0.22rem 0.4rem;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.92) inset, 0 1px 3px rgba(30, 58, 95, 0.06);
+  background: var(--color-navy-toolbar);
+  border-bottom: 1px solid var(--color-navy-deep);
 }
 
 .app-header h1 {
@@ -230,6 +245,107 @@ a:hover {
   min-width: 0;
 }
 
+.desk-tcmb-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.desk-tcmb-refresh {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.desk-tcmb-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.desk-tcmb-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: right;
+}
+
+.desk-tcmb-trigger:hover {
+  border-color: var(--border, #d0d5dd);
+  background: #f8fafc;
+}
+
+.desk-tcmb-rates {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.desk-tcmb-chip {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-tcmb-source {
+  font-size: 10px;
+  color: #667085;
+  white-space: nowrap;
+}
+
+.desk-tcmb-muted {
+  font-size: 10px;
+  color: #667085;
+}
+
+.desk-tcmb-status {
+  font-size: 10px;
+  color: #027a48;
+  max-width: 120px;
+}
+
+.desk-tcmb-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  width: 260px;
+  padding: 10px;
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+  font-size: 12px;
+}
+
+.desk-tcmb-popover p {
+  margin: 0 0 6px;
+}
+
+@media (max-width: 1100px) {
+  .desk-tcmb-source {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .desk-tcmb-rates {
+    display: none;
+  }
+}
+
 .app-header-user-label {
   font-size: 0.75rem;
   font-weight: 500;
@@ -248,29 +364,6 @@ a:hover {
 
 .app-header-brand {
   min-width: 0;
-}
-
-.app-header-brand-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  min-width: 0;
-}
-
-.app-header-woontegra-strip {
-  line-height: 0;
-  margin-bottom: 1px;
-}
-
-.app-header-woontegra-img {
-  display: block;
-  height: 11px;
-  width: auto;
-  max-width: 86px;
-  object-fit: contain;
-  object-position: left center;
-  opacity: 0.78;
 }
 
 .app-title-link {
@@ -511,10 +604,20 @@ a:hover {
 /* Boş durum */
 .empty-state {
   text-align: center;
-  padding: 1.75rem 1.25rem;
-  background: linear-gradient(180deg, #f6f7f9 0%, #fafbfc 100%);
+  padding: var(--space-4) var(--space-3);
+  background: var(--bg-elevated);
   border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-panel);
+}
+
+.empty-state::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 10px;
+  border-radius: var(--radius-control);
+  background: var(--color-accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%232b6cb8' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h16M4 12h10M4 17h14'/%3E%3C/svg%3E") center / 18px no-repeat;
 }
 
 .empty-state-title {
@@ -588,14 +691,15 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
+  min-height: var(--control-height);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--bg-card);
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .btn:hover:not(:disabled) {
@@ -614,15 +718,16 @@ a:hover {
 }
 
 .btn-primary {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
   color: #fff;
+  box-shadow: 0 1px 3px rgba(43, 108, 184, 0.22);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-  box-shadow: 0 1px 6px rgba(59, 111, 201, 0.28);
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 2px 8px rgba(43, 108, 184, 0.28);
 }
 
 .btn-primary:focus-visible {
@@ -756,16 +861,22 @@ a:hover {
 }
 
 .modal-head {
-  padding: 1.15rem 1.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px 16px 10px;
   border-bottom: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, var(--color-primary-soft) 0%, #ffffff 100%);
+  background: var(--modal-desk-head-bg);
 }
 
 .modal-head h2 {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
-  color: var(--primary-deep);
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-navy);
 }
 
 .modal-body {
@@ -1012,12 +1123,13 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .desk-dosya-scroll-stack .desk-dosya-layout {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 1.1 1 0;
+  min-height: 140px;
   min-width: 0;
   margin: 0;
   grid-template-columns: minmax(0, 1fr) 170px;
@@ -1025,16 +1137,23 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
 
 .desk-dosya-scroll-stack .desk-subpanels {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 240px;
   min-width: 0;
   margin-top: 0;
   align-content: stretch;
+  overflow: hidden;
+  /* Masraflar | Vekalet yan yana, ikisi de görünür */
+  grid-template-columns: minmax(200px, 1fr) minmax(280px, 1.35fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .desk-dosya-scroll-stack .desk-subpanels > .desk-panel {
   min-height: 0;
+  min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .desk-dosya-scroll-stack .desk-dosya-layout > .desk-panel {
@@ -1048,6 +1167,51 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.desk-dosya-scroll-stack .desk-subpanels > .desk-panel--masraflar {
+  min-width: 200px;
+}
+
+.desk-dosya-scroll-stack .desk-subpanels > .desk-panel--vekalet {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.desk-panel-head--masraflar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.desk-panel-head--masraflar .desk-panel-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.desk-panel-head-right.desk-kasa-period-filter-wrap,
+.desk-kasa-period-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.desk-kasa-period-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.desk-kasa-period-filter .desk-input {
+  min-width: 132px;
 }
 
 .desk-page--dosya-detail > .desk-summary-bar {
@@ -1135,12 +1299,12 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
 
 .desk-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
   display: flex;
   flex-direction: column;
   min-height: 0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--shadow-card);
 }
 
 .desk-panel--grow {
@@ -1149,19 +1313,19 @@ html:has(.desk-page--dosya-detail) #root > .app-shell {
 }
 
 .desk-panel-head {
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--panel-head-text);
-  text-shadow: var(--panel-head-text-shadow);
+  text-shadow: none;
   background: var(--panel-head-bg);
   border-bottom: 1px solid var(--panel-head-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .desk-panel-meta {
@@ -1230,11 +1394,12 @@ a.desk-btn-block {
 }
 
 .desk-file-strip {
-  background: var(--surface-panel-accent);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  margin-bottom: 6px;
-  box-shadow: 0 1px 3px rgba(30, 58, 95, 0.05);
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 
 .desk-file-kvgrid {
@@ -1268,21 +1433,23 @@ a.desk-btn-block {
 }
 
 .desk-kv-k {
-  padding: 4px 8px;
+  padding: 5px 10px;
   font-weight: 700;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-secondary-deep);
-  background: linear-gradient(90deg, var(--primary-soft) 0%, var(--color-secondary-soft) 100%);
-  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .desk-kv-v {
-  padding: 6px 8px;
+  padding: 7px 10px;
   flex: 1;
   word-break: break-word;
   background: var(--kv-value-bg);
+  font-weight: 500;
+  color: var(--color-navy);
 }
 
 .desk-info-table {
@@ -1320,7 +1487,7 @@ a.desk-btn-block {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   overflow: hidden;
   gap: 0;
 }
@@ -1333,18 +1500,26 @@ a.desk-btn-block {
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-soft);
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  flex: 0 0 auto;
 }
 
 .desk-vekalet-empty {
-  padding: 10px 8px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-control);
+  margin: 8px;
 }
 
 .desk-vekalet-ozet-wrap {
   padding: 6px 8px 0;
+  flex: 0 0 auto;
 }
 
 .desk-vekalet-ozet-table {
@@ -1393,8 +1568,121 @@ a.desk-btn-block {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   padding: 6px 8px;
+  flex: 0 0 auto;
+}
+
+.desk-vekalet-compact-actions-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.desk-vekalet-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.desk-vekalet-tumunu-sil {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.desk-vekalet-tumunu-sil svg {
+  flex: 0 0 auto;
+}
+
+.desk-vekalet-tumunu-sil-onay {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-danger, #dc2626);
+  color: #fff;
+  border-color: var(--color-danger, #dc2626);
+}
+
+.desk-vekalet-tumunu-sil-onay:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.desk-vekalet-basari {
+  margin: 0 8px 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 2px;
+}
+
+.desk-vekalet-inline-err {
+  margin: 0 8px 6px;
+}
+
+.desk-vekalet-toplu-sil-uyari {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #7f1d1d;
+}
+
+.desk-vekalet-toplu-sil-ozet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid var(--border-soft, #d8e0ea);
+  border-radius: 2px;
+}
+
+.desk-vekalet-toplu-sil-ozet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.desk-vekalet-toplu-sil-ozet-row span {
+  color: var(--text-muted, #64748b);
+}
+
+.desk-vekalet-toplu-sil-ozet-row strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #0f172a);
+}
+
+.desk-vekalet-asimi-uyari {
+  margin: 6px 8px 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #7f1d1d;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 2px;
+}
+
+.desk-vekalet-asimi-uyari strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.desk-vekalet-asimi-uyari .desk-muted-compact {
+  margin-top: 6px;
+  color: #9f1239;
 }
 
 .desk-vekalet-empty-taksit {
@@ -1405,16 +1693,79 @@ a.desk-btn-block {
   border: 1px solid var(--border-soft);
   border-radius: 2px;
   background: #fafbfc;
+  flex: 0 0 auto;
+}
+
+.desk-vekalet-kalan-yok {
+  margin: 0 8px 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .desk-vekalet-taksit-wrap {
-  flex: 0 0 auto;
-  margin: 0 8px 6px;
-  max-height: 200px;
+  flex: 1 1 0;
   min-height: 0;
-  overflow-x: auto;
+  margin: 0 8px 8px;
   overflow-y: auto;
+  overflow-x: auto;
   border: 1px solid var(--border-soft);
+  border-radius: 2px;
+  scrollbar-gutter: stable;
+}
+
+/* Dosya detay — taksit tablosu panelin kalan yüksekliğini doldurur, taşarsa iç scroll */
+.desk-vekalet-compact .desk-vekalet-taksit-wrap {
+  max-height: none;
+}
+
+@media (max-height: 640px) {
+  .desk-vekalet-compact .desk-vekalet-taksit-wrap {
+    min-height: 120px;
+  }
+}
+
+.desk-vekalet-taksit-wrap .desk-table--vekalet-taksit {
+  min-width: 640px;
+  width: 100%;
+}
+
+.desk-vekalet-taksit-wrap .desk-table--vekalet-taksit thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-header-bg);
+  box-shadow: 0 1px 0 var(--table-header-border);
+}
+
+.desk-vekalet-taksit-wrap .desk-table--vekalet-taksit th:last-child,
+.desk-vekalet-taksit-wrap .desk-table--vekalet-taksit td:last-child {
+  min-width: 5.5rem;
+}
+
+.desk-vekalet-taksit-wrap .row-actions {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+}
+
+@media (max-width: 1100px) {
+  .desk-page--dosya-detail > .desk-toolbar .desk-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .desk-page--dosya-detail > .desk-toolbar .desk-toolbar-actions .btn-sm {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .desk-vekalet-compact-actions .btn-sm {
+    flex: 1 1 calc(33.333% - 4px);
+    min-width: 0;
+    justify-content: center;
+  }
 }
 
 .desk-vekalet-compact-note {
@@ -1424,20 +1775,365 @@ a.desk-btn-block {
   background: transparent;
 }
 
-.desk-summary-bar--dosya-footer {
-  margin-top: 0;
-  padding: 6px;
+.desk-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.desk-link-btn:hover:not(:disabled) {
+  color: var(--primary-hover);
+}
+
+.desk-link-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.desk-taksit-plani-kalan {
+  margin: 0 0 10px;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.desk-taksit-plani-mod {
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-desk--taksit-plani .desk-taksit-plani-mod {
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+.desk-taksit-plani-mod-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.desk-taksit-plani-mod-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm, 4px);
+  background: #fff;
+}
+
+.desk-taksit-plani-mod-options--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.desk-taksit-plani-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.desk-taksit-plani-radio input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.desk-taksit-plani-radio span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* —— Vekalet modalları: ortak boyut ve footer —— */
+.modal-desk--vekalet-form {
+  width: min(620px, 92vw);
+  max-width: min(620px, 92vw);
+  max-height: 88vh;
+  height: auto;
+}
+
+.modal-desk--vekalet-form .modal-body {
+  overflow-y: auto;
+  flex: 0 1 auto;
+}
+
+.modal-actions--vekalet {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-desk.modal-desk--taksit-plani {
+  width: min(820px, 94vw);
+  max-width: min(820px, 94vw);
+  max-height: 88vh;
+  height: auto;
+}
+
+/* Eşit taksit: içerik kadar yükseklik */
+.modal-desk--taksit-plani:not(.modal-desk--taksit-plani-ozel) .modal-body--taksit-plani {
+  display: block;
+  overflow-y: auto;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.modal-desk--taksit-plani:not(.modal-desk--taksit-plani-ozel) .desk-taksit-plani-form {
+  display: block;
+  overflow: visible;
+  flex: none;
+  min-height: 0;
+}
+
+/* Özel dağılım: tablo alanı büyür, fazla satırda yalnızca tablo kayar */
+.modal-desk--taksit-plani-ozel {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-desk--taksit-plani-ozel .modal-body--taksit-plani {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 12px 6px;
+}
+
+.modal-desk--taksit-plani-ozel .desk-taksit-plani-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modal-desk--taksit-plani-ozel .desk-taksit-plani-ozel-wrap {
+  flex: 0 1 auto;
+  max-height: min(48vh, 400px);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modal-desk--taksit-plani .modal-head,
+.modal-desk--taksit-plani .modal-actions {
+  flex-shrink: 0;
+}
+
+.desk-taksit-plani-form {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.modal-desk--taksit-plani .modal-body--taksit-plani {
+  padding: 8px 12px 6px;
+}
+
+.desk-taksit-plani-form-top {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.desk-taksit-plani-form-fields-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.desk-taksit-plani-form-fields-row .field {
+  margin-bottom: 0;
+}
+
+.desk-taksit-plani-form-foot {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.desk-taksit-plani-ozel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.desk-taksit-plani-ozel-wrap {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm, 4px);
+  margin-bottom: 0;
+  scrollbar-gutter: stable;
+}
+
+.desk-table--taksit-plani-ozel {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.desk-table--taksit-plani-ozel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-header-bg);
+  box-shadow: 0 1px 0 var(--table-header-border);
+}
+
+.desk-table--taksit-plani-ozel th:nth-child(1),
+.desk-table--taksit-plani-ozel td:nth-child(1) {
+  width: 80px;
+  text-align: center;
+}
+
+.desk-table--taksit-plani-ozel th:nth-child(2),
+.desk-table--taksit-plani-ozel td:nth-child(2) {
+  width: 160px;
+}
+
+.desk-table--taksit-plani-ozel th:nth-child(3),
+.desk-table--taksit-plani-ozel td:nth-child(3) {
+  width: 180px;
+}
+
+.desk-table--taksit-plani-ozel th:nth-child(5),
+.desk-table--taksit-plani-ozel td:nth-child(5) {
+  width: 52px;
+  text-align: center;
+}
+
+.desk-table--taksit-plani-ozel .desk-input--cell {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.desk-table--taksit-plani-ozel td {
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.desk-table--taksit-plani-ozel td:first-child {
+  font-weight: 700;
+}
+
+.desk-table--taksit-plani-ozel td:last-child {
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.desk-table--taksit-plani-ozel .row-actions {
+  justify-content: center;
+}
+
+.desk-taksit-plani-ozet {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm, 4px);
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 
-.desk-summary-bar--dosya-footer .desk-metric {
-  flex: 1 1 100px;
-  min-width: 90px;
-  padding: 6px 8px;
+.desk-taksit-plani-ozet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
 }
 
-.desk-summary-bar--dosya-footer .desk-metric .v {
-  font-size: 13px;
+.desk-taksit-plani-ozet-row strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-deep);
+}
+
+.desk-taksit-plani-ozet-row--warn strong {
+  color: #b45309;
+}
+
+.modal-desk--taksit-plani .modal-body form.desk-taksit-plani-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.modal-desk--taksit-plani-ozel .modal-body form.desk-taksit-plani-form {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.modal-desk--taksit-plani .modal-body .field {
+  margin-bottom: 10px;
+}
+
+.modal-desk--taksit-plani .modal-body .field label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.modal-desk--taksit-plani .modal-body input.desk-num {
+  text-align: left;
+}
+
+.modal-desk--taksit-plani .desk-muted-compact {
+  margin: 0 0 6px;
+  padding: 0 2px;
+}
+
+.modal-desk--taksit-plani .modal-actions {
+  gap: 8px;
+}
+
+.desk-taksit-plani-onizleme {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm, 4px);
+  background: #eff6ff;
+  font-size: 12px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.desk-taksit-plani-onizleme-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1d4ed8;
 }
 
 .desk-col-id {

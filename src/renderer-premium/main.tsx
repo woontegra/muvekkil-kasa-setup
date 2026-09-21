@@ -4,10 +4,21 @@ import { premiumRestartHint } from "./lib/bootErrorHint";
 import App from "./App";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/shell.css";
 import "./styles/auth.css";
 import "./styles/license.css";
+import "./styles/toast.css";
+import "./styles/overview.css";
 import "./styles/modal.css";
-import "./styles/update.css";
+import "./styles/muvekkil.css";
+import "./styles/dosya-detail.css";
+import "./styles/vekalet.css";
+import "./styles/ofis-kasa.css";
+import "./styles/icra-tahsilat.css";
+import "./styles/tahsilat-merkezi.css";
+import "./styles/randevu.css";
+import "./styles/settings.css";
+import "./styles/raporlar.css";
 
 function showBootError(message: string) {
   const root = document.getElementById("root");

@@ -16,4 +16,5 @@ function run(label, args) {
 
 run("legacy paid upgrade", [path.join(__dirname, "test-legacy-paid-upgrade.cjs")]);
 run("email login / legacy username", [path.join(__dirname, "test-email-login.cjs")]);
+run("legacy paid username login", [path.join(__dirname, "test-legacy-paid-login.cjs")]);
 process.exit(0);

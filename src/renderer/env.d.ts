@@ -7,6 +7,8 @@ import type {
   YaziciInfo,
 } from "@shared/types/print";
 import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
+import type { DosyaMaliOzetSonuc } from "@shared/types/dosyaMaliOzet";
+import type { MuvekkilEkstreSonuc } from "@shared/types/muvekkilEkstre";
 import type { AuthUser, RememberedLogin } from "@shared/types/auth";
 import type { Dosya, DosyaInput, DosyaUpdateInput } from "@shared/types/dosya";
 import type {
@@ -23,6 +25,7 @@ import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type {
   OfisKasaAnaSayfaOzet,
   OfisKasaDuzeltmeInput,
+  OfisKasaDovizDonusumInput,
   OfisKasaEkleInput,
   OfisKasaGuncellePatch,
   OfisKasaHareketListeSatir,
@@ -36,6 +39,7 @@ import type {
   TaksitEkleInput,
   TaksitGuncelleInput,
   TaksitOdemeAlInput,
+  TaksitOdemeGuncelleInput,
   VekaletIslemSonuc,
   VekaletKaydetInput,
   VekaletTaksit,
@@ -43,6 +47,13 @@ import type {
   VekaletTaksitUyariOzet,
   VekaletUcreti,
 } from "@shared/types/vekalet";
+import type {
+  Randevu,
+  RandevuIslemSonuc,
+  RandevuKullanici,
+  RandevuListFilter,
+  RandevuWriteInput,
+} from "@shared/types/randevu";
 
 export type Api = {
   authNeedsSetup: () => Promise<boolean>;
@@ -80,26 +91,123 @@ export type Api = {
   ofisKasaEkle: (input: OfisKasaEkleInput) => Promise<OfisKasaIslemSonuc>;
   ofisKasaGuncelle: (id: number, patch: OfisKasaGuncellePatch) => Promise<OfisKasaIslemSonuc>;
   ofisKasaSil: (id: number) => Promise<{ ok: true } | { ok: false; error: string }>;
+  ofisKasaGuvenliSil: (
+    id: number,
+    input: import("@shared/types/guvenliSil").GuvenliSilInput,
+  ) => Promise<import("@shared/types/guvenliSil").GuvenliSilSonuc>;
   ofisKasaOnayla: (id: number) => Promise<OfisKasaIslemSonuc>;
   ofisKasaDuzeltmeEkle: (input: OfisKasaDuzeltmeInput) => Promise<OfisKasaIslemSonuc>;
+  ofisKasaDovizDonusum: (input: OfisKasaDovizDonusumInput) => Promise<{ ok: true; rows: OfisKasaHareketListeSatir[] } | { ok: false; error: string }>;
+  ofisKasaDovizDonusumSil: (dovizDonusumId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  kurlarTcmb: (opts?: { date?: string; forceRefresh?: boolean }) => Promise<any>;
+  kurlarTcmbCapraz: (input: { baz: import("@shared/lib/paraBirimi").ParaBirimi; karsi: import("@shared/lib/paraBirimi").ParaBirimi; date?: string }) => Promise<{
+    ok: boolean;
+    available: boolean;
+    error?: string;
+    dovizAlis?: string;
+    dovizSatis?: string | null;
+    bulunanTcmbKurTarihi?: string;
+  }>;
+  kurlarYaklasikTry: (
+    items: { tutar: number; paraBirimi: import("@shared/lib/paraBirimi").ParaBirimi; id?: string }[],
+    date?: string,
+  ) => Promise<
+    {
+      id: string | null;
+      paraBirimi: import("@shared/lib/paraBirimi").ParaBirimi;
+      tutar: number;
+      tryTutar: number | null;
+      kurTarihi: string | null;
+      aciklama: string | null;
+      available: boolean;
+    }[]
+  >;
   ofisKasaRaporPaketi: (input: { bas: string; bit: string }) => Promise<OfisKasaRaporPaketi>;
   muvekkilAra: (q: string) => Promise<MuvekkilListItem[]>;
   muvekkilAraPaged: (q: string, page: number, pageSize: number) => Promise<MuvekkilPagedResult>;
   muvekkilGet: (id: number) => Promise<Muvekkil | null>;
   muvekkilEkle: (input: MuvekkilInput) => Promise<Muvekkil>;
   muvekkilGuncelle: (id: number, input: MuvekkilInput) => Promise<Muvekkil | null>;
+  muvekkilKarlilik: (id: number) => Promise<import("@shared/types/muvekkilKarlilik").MuvekkilKarlilikSonuc>;
+  muvekkilOfisGelirleri: (
+    id: number,
+    opts?: { page?: number; limit?: number },
+  ) => Promise<import("@shared/types/muvekkilOfisGelir").MuvekkilOfisGelirListe>;
+  maliKontrolUyarilar: () => Promise<import("@shared/types/maliKontrol").MaliKontrolSonuc>;
   dosyaList: (muvekkilId: number) => Promise<Dosya[]>;
+  dosyaListAll: (
+    params?: import("@shared/types/dosyaListe").DosyaListeParams,
+  ) => Promise<import("@shared/types/dosyaListe").DosyaListeSonuc>;
   dosyaGet: (id: number) => Promise<Dosya | null>;
   dosyaEkle: (input: DosyaInput) => Promise<Dosya>;
   dosyaGuncelle: (id: number, input: DosyaUpdateInput) => Promise<Dosya | null>;
   dosyaHesapOzetPaketi: (dosyaId: number) => Promise<DosyaHesapOzetPaketi>;
+  dosyaMaliOzet: (dosyaId: number) => Promise<DosyaMaliOzetSonuc>;
+  dosyaMuvekkilEkstre: (
+    dosyaId: number,
+    opts?: { itibariyleTarih?: string | null; belgeRef?: string | null },
+  ) => Promise<MuvekkilEkstreSonuc>;
   kasaList: (dosyaId: number) => Promise<KasaHareket[]>;
   kasaOzet: (dosyaId: number) => Promise<KasaOzet>;
   kasaEkle: (input: KasaEkleInput) => Promise<KasaIslemSonuc>;
   kasaGuncelle: (id: number, patch: KasaGuncellePatch) => Promise<KasaIslemSonuc>;
   kasaSil: (id: number) => Promise<{ ok: true } | { ok: false; error: string }>;
+  kasaGuvenliSil: (
+    id: number,
+    input: import("@shared/types/guvenliSil").GuvenliSilInput,
+  ) => Promise<import("@shared/types/guvenliSil").GuvenliSilSonuc>;
   kasaOnayla: (id: number) => Promise<KasaIslemSonuc>;
   masrafTurleri: () => Promise<string[]>;
+  finansKalemiList: (opts?: {
+    tur?: "GELIR" | "GIDER";
+    aktif?: "true" | "false" | "all";
+    includeSistem?: boolean;
+    forForm?: boolean;
+  }) => Promise<
+    {
+      id: number;
+      tur: "GELIR" | "GIDER";
+      kod: string | null;
+      ad: string;
+      aktif: boolean;
+      sistemMi: boolean;
+      sira: number;
+      archivedAt: string | null;
+    }[]
+  >;
+  finansKalemiCreate: (
+    tur: "GELIR" | "GIDER",
+    ad: string,
+  ) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  finansKalemiUpdate: (id: number, ad: string) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  finansKalemiArchive: (id: number) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  finansKalemiActivate: (id: number) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  finansKalemiReorder: (
+    tur: "GELIR" | "GIDER",
+    orderedIds: number[],
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  auditList: (opts?: {
+    limit?: number;
+    offset?: number;
+  }) => Promise<{ rows: unknown[]; total: number }>;
+  kullaniciYonetimList: () => Promise<
+    {
+      id: number;
+      adSoyad: string;
+      kullaniciAdi: string;
+      eposta: string | null;
+      telefon: string | null;
+      rol: import("@shared/types/auth").KullaniciRolu;
+      aktifMi: boolean;
+      kayitTarihi: string;
+    }[]
+  >;
+  kullaniciYonetimCreate: (input: unknown) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  kullaniciYonetimSetAktif: (
+    id: number,
+    aktif: boolean,
+  ) => Promise<{ ok: true; row: unknown } | { ok: false; error: string }>;
+  kullaniciYonetimResetSifre: (id: number, yeniSifre: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   vekaletGetOrCreate: (dosyaId: number, muvekkilId: number) => Promise<VekaletUcreti>;
   vekaletByDosya: (dosyaId: number) => Promise<VekaletUcreti | null>;
   vekaletKaydet: (dosyaId: number, muvekkilId: number, input: VekaletKaydetInput) => Promise<VekaletIslemSonuc<VekaletUcreti>>;
@@ -115,10 +223,26 @@ export type Api = {
     taksitId: number,
     input: TaksitOdemeAlInput
   ) => Promise<VekaletIslemSonuc<{ taksit: VekaletTaksit; odeme: VekaletTaksitOdeme }>>;
+  vekaletTaksitOdemeGuncelle: (
+    odemeId: number,
+    input: TaksitOdemeGuncelleInput
+  ) => Promise<VekaletIslemSonuc<{ taksit: VekaletTaksit; odeme: VekaletTaksitOdeme }>>;
   vekaletTaksitOdemeGecmisi: (taksitId: number) => Promise<VekaletTaksitOdeme[]>;
   vekaletSmmBekleyenler: (dosyaId?: number) => Promise<SmmBekleyenSatir[]>;
   vekaletTaksitUyariOzet: () => Promise<import("@shared/types/vekalet").VekaletTaksitUyariSonuc>;
   vekaletSmmKesildi: (odemeId: number) => Promise<VekaletIslemSonuc<VekaletTaksitOdeme>>;
+  vekaletGuvenliSilTaksit: (
+    id: number,
+    input: import("@shared/types/guvenliSil").GuvenliSilInput,
+  ) => Promise<import("@shared/types/vekaletGuvenliIptal").VekaletGuvenliIptalSonuc>;
+  vekaletGuvenliSilTahsilat: (
+    id: number,
+    input: import("@shared/types/guvenliSil").GuvenliSilInput,
+  ) => Promise<import("@shared/types/vekaletGuvenliIptal").VekaletGuvenliIptalSonuc>;
+  tahsilatMerkeziOzet: () => Promise<import("@shared/types/tahsilatMerkezi").TahsilatMerkeziOzet>;
+  tahsilatMerkeziList: (
+    params?: import("@shared/types/tahsilatMerkezi").TahsilatMerkeziListeParams,
+  ) => Promise<import("@shared/types/tahsilatMerkezi").TahsilatMerkeziListResponse>;
   icraTahsilatUstOzet: () => Promise<import("@shared/types/icraTahsilat").IcraTahsilatUstOzet>;
   icraTahsilatList: (
     filtre?: import("@shared/types/icraTahsilat").IcraTahsilatListeFiltre,
@@ -146,6 +270,12 @@ export type Api = {
     odemeId: number,
   ) => Promise<import("@shared/types/icraTahsilat").IcraTahsilatIslemSonuc<import("@shared/types/icraTahsilat").IcraTahsilatOdeme>>;
   icraTahsilatAlacakIptal: (alacakId: number) => Promise<{ ok: true } | { ok: false; error: string }>;
+  randevuList: (filtre: RandevuListFilter) => Promise<Randevu[]>;
+  randevuGet: (id: number) => Promise<Randevu | null>;
+  randevuOlustur: (input: RandevuWriteInput) => Promise<RandevuIslemSonuc>;
+  randevuGuncelle: (id: number, input: RandevuWriteInput) => Promise<RandevuIslemSonuc>;
+  randevuSil: (id: number) => Promise<{ ok: true } | { ok: false; error: string }>;
+  randevuKullanicilar: () => Promise<RandevuKullanici[]>;
   makbuzYazdirmaPaketi: (hareketId: number) => Promise<KasaMakbuzPaketi>;
   printGetPrinters: () => Promise<YaziciInfo[]>;
   printDocument: (req: PrintDocumentRequest) => Promise<PrintDocumentResult>;

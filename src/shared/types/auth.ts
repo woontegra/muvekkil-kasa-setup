@@ -1,9 +1,32 @@
+export type KullaniciRolu = "BURO_SAHIBI" | "AVUKAT_YONETICI" | "KATIP_PERSONEL";
+
+export const KULLANICI_ROLLERI: readonly KullaniciRolu[] = [
+  "BURO_SAHIBI",
+  "AVUKAT_YONETICI",
+  "KATIP_PERSONEL",
+];
+
+export const KULLANICI_ROL_ETIKET: Record<KullaniciRolu, string> = {
+  BURO_SAHIBI: "Büro sahibi",
+  AVUKAT_YONETICI: "Avukat / yönetici",
+  KATIP_PERSONEL: "Kâtip / personel",
+};
+
+/** Bilinmeyen/boş rol en kısıtlı role düşer (fail-closed). */
+export function normalizeKullaniciRolu(raw: unknown): KullaniciRolu {
+  const s = String(raw ?? "").trim().toUpperCase();
+  return (KULLANICI_ROLLERI as KullaniciRolu[]).includes(s as KullaniciRolu)
+    ? (s as KullaniciRolu)
+    : "KATIP_PERSONEL";
+}
+
 export type AuthUser = {
   id: number;
   adSoyad: string;
   kullaniciAdi: string;
   eposta: string | null;
   telefon: string | null;
+  rol: KullaniciRolu;
 };
 
 export type AuthResult<T = void> =

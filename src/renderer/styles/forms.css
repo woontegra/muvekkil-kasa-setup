@@ -262,6 +262,109 @@
   overflow: auto;
 }
 
+.desk-home-taksit-gecmis-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 900px;
+  font-size: 0.8rem;
+}
+
+.desk-home-taksit-gecmis-table col.col-muvekkil {
+  width: 16%;
+}
+
+.desk-home-taksit-gecmis-table col.col-dosya {
+  width: 18%;
+}
+
+.desk-home-taksit-gecmis-table col.col-taksit {
+  width: 70px;
+}
+
+.desk-home-taksit-gecmis-table col.col-vade {
+  width: 100px;
+}
+
+.desk-home-taksit-gecmis-table col.col-tutar,
+.desk-home-taksit-gecmis-table col.col-odenen,
+.desk-home-taksit-gecmis-table col.col-kalan {
+  width: 132px;
+}
+
+.desk-home-taksit-gecmis-table col.col-durum {
+  width: 88px;
+}
+
+.desk-home-taksit-gecmis-table col.col-islem {
+  width: 70px;
+}
+
+.desk-home-taksit-gecmis-table.desk-table--home th,
+.desk-home-taksit-gecmis-table.desk-table--home td {
+  padding: 6px 6px;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.desk-home-taksit-gecmis-table th,
+.desk-home-taksit-gecmis-table td {
+  vertical-align: middle;
+}
+
+.desk-home-taksit-gecmis-table th {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 0.68rem;
+}
+
+.desk-home-taksit-gecmis-table .col-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+.desk-home-taksit-gecmis-table .col-num,
+.desk-home-taksit-gecmis-table th.col-num {
+  text-align: right;
+}
+
+.desk-home-taksit-gecmis-table .col-num {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-home-taksit-gecmis-table .desk-home-taksit-money {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.desk-home-taksit-gecmis-table .col-center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.desk-home-taksit-gecmis-table th.col-center {
+  text-align: center;
+}
+
+.desk-home-taksit-gecmis-table .col-durum .badge-taksit-gecmis,
+.desk-home-taksit-gecmis-table .col-durum [class*="badge-taksit"] {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.desk-home-taksit-gecmis-btn {
+  padding: 0.28rem 0.5rem;
+  font-size: 0.72rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 .desk-home-taksit-empty {
   margin: 4px 0;
   padding: 6px 2px;
@@ -564,7 +667,6 @@ select.desk-input--tiny {
 }
 
 .desk-home-cell-ellipsis {
-  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -754,6 +856,62 @@ select.desk-input--tiny {
 
 .desk-page--office-settings .desk-about-app-desc {
   max-width: none;
+}
+
+.desk-hesap-donemi-radios {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 8px 0 12px;
+}
+
+.desk-hesap-donemi-radio-block {
+  align-items: flex-start;
+  max-width: 36rem;
+}
+
+.desk-hesap-donemi-radio-block span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.desk-hesap-donemi-radio-block small {
+  display: block;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.desk-hesap-donemi-dl {
+  display: grid;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.desk-hesap-donemi-dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.desk-hesap-donemi-dl dt {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+}
+
+.desk-hesap-donemi-dl dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.desk-hesap-donemi-actions {
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .desk-office-settings-desc {

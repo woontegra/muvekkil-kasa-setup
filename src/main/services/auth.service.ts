@@ -4,8 +4,15 @@ import { join } from "node:path";
 import { app } from "electron";
 import { getDb, nowIso } from "../db/connection";
 import type { AuthUser, LoginInput, RememberedLogin, SetupInput } from "@shared/types/auth";
-import { GUVENLIK_SORU_KODLARI, GUVENLIK_SORULARI } from "@shared/types/auth";
-import { LOGIN_IDENTITY_SQL, normalizeLocalEmail, resolveInternalUsername, safeTrim } from "@shared/lib/localAuthIdentity";
+import { GUVENLIK_SORU_KODLARI, GUVENLIK_SORULARI, normalizeKullaniciRolu } from "@shared/types/auth";
+import {
+  LOCAL_AUTH_CREDENTIALS_INVALID_ERROR,
+  LOCAL_AUTH_IDENTITY_EMPTY_ERROR,
+  LOGIN_IDENTITY_SQL,
+  normalizeLocalEmail,
+  resolveInternalUsername,
+  safeTrim,
+} from "@shared/lib/localAuthIdentity";
 
 let session: AuthUser | null = null;
 
@@ -22,6 +29,7 @@ function rowToUser(r: {
   kullanici_adi: string;
   eposta: string | null;
   telefon?: string | null;
+  rol?: string | null;
 }): AuthUser {
   const ep = r.eposta;
   const tel = r.telefon;
@@ -31,6 +39,7 @@ function rowToUser(r: {
     kullaniciAdi: String(r.kullanici_adi ?? ""),
     eposta: ep == null || String(ep).trim() === "" ? null : String(ep),
     telefon: tel == null || String(tel).trim() === "" ? null : String(tel),
+    rol: normalizeKullaniciRolu(r.rol),
   };
 }
 
@@ -61,6 +70,7 @@ type KullaniciRow = {
   kullanici_adi: string;
   eposta: string | null;
   telefon?: string | null;
+  rol: string | null;
   sifre_hash: string;
   aktif_mi: number;
 };
@@ -75,7 +85,7 @@ function findUserRowByLoginIdentity(identity: string): KullaniciRow | undefined 
   if (!raw) return undefined;
   return getDb()
     .prepare(
-      `SELECT id, ad_soyad, kullanici_adi, eposta, telefon, sifre_hash, aktif_mi
+      `SELECT id, ad_soyad, kullanici_adi, eposta, telefon, COALESCE(rol, 'BURO_SAHIBI') AS rol, sifre_hash, aktif_mi
        FROM uygulama_kullanici WHERE ${LOGIN_IDENTITY_SQL}`,
     )
     .get(raw, emailNorm) as KullaniciRow | undefined;
@@ -116,12 +126,12 @@ export function setupFirst(input?: SetupInput | null): { ok: true; user: AuthUse
     const telefon = safeTrim(input.telefon) || null;
     const info = getDb()
       .prepare(
-        `INSERT INTO uygulama_kullanici (ad_soyad, kullanici_adi, eposta, telefon, sifre_hash, guvenlik_sorusu_kodu, guvenlik_cevap_hash, aktif_mi, kayit_tarihi)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`
+        `INSERT INTO uygulama_kullanici (ad_soyad, kullanici_adi, eposta, telefon, sifre_hash, guvenlik_sorusu_kodu, guvenlik_cevap_hash, aktif_mi, kayit_tarihi, rol)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 'BURO_SAHIBI')`
       )
       .run(adSoyad, kullaniciAdi, eposta, telefon, hash, soruKodu, cevapHash, t);
     const id = Number(info.lastInsertRowid);
-    const user: AuthUser = { id, adSoyad, kullaniciAdi, eposta, telefon };
+    const user: AuthUser = { id, adSoyad, kullaniciAdi, eposta, telefon, rol: "BURO_SAHIBI" };
     authLoginSuccess(user);
     clearRememberedLogin();
     return { ok: true, user };
@@ -140,10 +150,10 @@ export function login(input: LoginInput): { ok: true; user: AuthUser } | { ok: f
     return { ok: false, error: "Lütfen tüm alanları doldurun." };
   }
   const r = findUserRowByLoginIdentity(ka);
-  if (!r) return { ok: false, error: "E-posta veya şifre hatalı." };
+  if (!r) return { ok: false, error: LOCAL_AUTH_CREDENTIALS_INVALID_ERROR };
   if (!Number(r.aktif_mi)) return { ok: false, error: "Bu kullanıcı pasif durumda." };
   if (!bcrypt.compareSync(input.password, r.sifre_hash)) {
-    return { ok: false, error: "E-posta veya şifre hatalı." };
+    return { ok: false, error: LOCAL_AUTH_CREDENTIALS_INVALID_ERROR };
   }
   const user = rowToUser(r);
   authLoginSuccess(user);
@@ -152,7 +162,7 @@ export function login(input: LoginInput): { ok: true; user: AuthUser } | { ok: f
 
 export function forgotPasswordGetQuestion(kullaniciAdi: string) {
   const ka = safeTrim(kullaniciAdi);
-  if (!ka) return { ok: false as const, error: "E-posta boş olamaz." };
+  if (!ka) return { ok: false as const, error: LOCAL_AUTH_IDENTITY_EMPTY_ERROR };
   const r = findUserRowByLoginIdentity(ka);
   if (!r || !Number(r.aktif_mi)) return { ok: false as const, error: "Kullanıcı bulunamadı." };
   const q = getDb()
@@ -173,7 +183,7 @@ export function forgotPasswordSubmit(input: {
   yeniSifre: string;
 }) {
   const ka = safeTrim(input.kullaniciAdi);
-  if (!ka) return { ok: false as const, error: "E-posta boş olamaz." };
+  if (!ka) return { ok: false as const, error: LOCAL_AUTH_IDENTITY_EMPTY_ERROR };
   if (input.yeniSifre.length < 6) {
     return { ok: false as const, error: "Yeni şifre en az 6 karakter olmalıdır." };
   }
@@ -221,7 +231,7 @@ function readRememberedFromFile(path: string): RememberedLogin | null {
 
 export function saveRememberedLogin(kullaniciAdi: string): { ok: boolean; error?: string } {
   const ka = safeTrim(kullaniciAdi);
-  if (!ka) return { ok: false, error: "E-posta boş olamaz." };
+  if (!ka) return { ok: false, error: LOCAL_AUTH_IDENTITY_EMPTY_ERROR };
   const payload = { v: 2, kullaniciAdi: ka, rememberMe: true as const };
   try {
     writeFileSync(rememberPath(), JSON.stringify(payload), "utf8");

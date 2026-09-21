@@ -275,17 +275,6 @@
   flex-shrink: 0;
 }
 
-.belge-pdf-build-host {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-}
-
 .belge-pdf-viewer {
   flex: 1 1 auto;
   min-height: 0;
@@ -671,29 +660,36 @@
   .desk-subpanels {
     grid-template-columns: 1fr;
   }
+
+  .desk-dosya-scroll-stack .desk-subpanels {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(160px, 1fr) minmax(200px, 1.2fr);
+    min-height: 380px;
+  }
 }
 
 .desk-summary-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px;
-  background: linear-gradient(180deg, #e0e7ff 0%, #dbeafe 50%, #cffafe 100%);
-  border: 1px solid var(--color-primary-muted);
-  border-radius: var(--radius-md);
-  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
 }
 
 .desk-metric {
   flex: 1 1 120px;
   min-width: 100px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  border-left-width: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+  border-left-width: 3px;
+  transition: border-color var(--transition-fast);
 }
 
 .desk-metric--muted {
@@ -764,12 +760,12 @@
 }
 
 .desk-metric--accent-vekalet-kalan {
-  border-left-color: #ea580c;
-  background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+  border-left-color: var(--color-accent);
+  background: var(--metric-info-bg);
 }
 
 .desk-metric--accent-vekalet-kalan .v {
-  color: #c2410c;
+  color: var(--color-accent-hover);
 }
 
 .desk-metric--accent-onay-bekleyen {
@@ -837,12 +833,14 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 4px 6px;
+  padding: 5px 8px;
   font-size: 12px;
+  min-height: var(--control-height);
   border: 1px solid var(--input-border);
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   background: #fff;
   pointer-events: auto;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .desk-field-inline .desk-input {
@@ -913,9 +911,9 @@
 
 .modal-desk {
   max-width: 520px;
-  border-radius: 2px;
+  border-radius: var(--radius-panel);
   border: 1px solid var(--modal-desk-border);
-  box-shadow: 2px 4px 20px rgba(15, 23, 42, 0.22);
+  box-shadow: var(--shadow-modal);
   display: flex;
   flex-direction: column;
   max-height: min(90vh, 640px);
@@ -923,22 +921,60 @@
 }
 
 .modal-desk .modal-head {
-  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 14px;
   background: var(--modal-desk-head-bg);
   border-bottom: 1px solid var(--modal-desk-head-border);
 }
 
 .modal-desk .modal-head h2 {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
   color: var(--modal-desk-head-fg);
-  text-shadow: var(--panel-head-text-shadow);
+  text-shadow: none;
+}
+
+.modal-close-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.modal-close-btn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--color-navy);
+  border-color: var(--border);
+}
+
+.modal-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .modal-desk .modal-body {
-  padding: 8px 10px 4px;
+  padding: 12px 14px 8px;
   background: var(--modal-desk-body-bg);
   overflow-x: hidden;
   flex: 1 1 auto;
@@ -962,7 +998,7 @@
   margin-bottom: 2px;
 }
 
-.modal-desk .modal-body input,
+.modal-desk .modal-body input:not([type="radio"]):not([type="checkbox"]),
 .modal-desk .modal-body select,
 .modal-desk .modal-body textarea {
   width: 100%;
@@ -973,6 +1009,17 @@
   border: 1px solid var(--input-border);
   border-radius: 2px;
   background: #fff;
+  pointer-events: auto;
+}
+
+.modal-desk .modal-body input[type="radio"],
+.modal-desk .modal-body input[type="checkbox"] {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   pointer-events: auto;
 }
 
@@ -994,19 +1041,20 @@
 
 .modal-desk .modal-actions,
 .modal-desk .modal-foot {
-  padding: 8px 10px;
+  padding: 10px 14px;
   background: var(--modal-desk-footer-bg);
   border-top: 1px solid var(--modal-desk-footer-border);
-  gap: 10px;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }
 
 .modal-desk .modal-actions .btn,
 .modal-desk .modal-foot .btn {
   margin: 0;
-  padding: 4px 14px;
+  padding: 6px 14px;
   font-size: 12px;
-  min-height: 26px;
-  min-width: 72px;
+  min-height: var(--control-height);
+  min-width: 76px;
 }
 
 .modal-desk .btn {
@@ -1028,6 +1076,86 @@
   white-space: nowrap;
   width: 1%;
   min-width: 6.25rem;
+}
+
+/* Tablo satırı işlem ikon butonları (kompakt) */
+.desk-table-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border, #c5d0dc);
+  border-radius: 3px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.desk-table-icon-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.desk-table-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.desk-table-icon-btn--primary {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.desk-table-icon-btn--primary:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.desk-table-icon-btn--danger {
+  border-color: #f87171;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.desk-table-icon-btn--danger:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.desk-table-icon-btn--warning {
+  border-color: #fbbf24;
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.desk-table-icon-btn--warning:hover:not(:disabled) {
+  background: #fef3c7;
+}
+
+.desk-table-icon-btn__lira {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: inherit;
+}
+
+a.desk-table-icon-btn {
+  box-sizing: border-box;
+  text-decoration: none;
+  color: inherit;
+}
+
+.desk-table .row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Müvekkil ekle/düzenle — tüzel kişi alan grupları */
@@ -1226,5 +1354,141 @@
   color: #475569;
   border: 1px solid #cbd5e1;
   font-weight: 600;
+}
+
+/* —— Dosya detay: alt özet şeridi (tam genişlik grid) —— */
+.desk-page--dosya-detail > .desk-summary-bar.desk-summary-bar--dosya-footer {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin-top: 0;
+  padding: 0;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-top: 2px solid var(--color-navy);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric {
+  position: relative;
+  flex: none !important;
+  min-width: 0;
+  padding: 11px 14px 10px;
+  background: transparent;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Vekalet sütunları — hafif grup arka planı */
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet-odenen,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet-kalan {
+  background: #f7f9fc;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 0;
+  bottom: 10px;
+  width: 1px;
+  background: var(--border-soft);
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-kalan-avans::after {
+  background: var(--border);
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric .l {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric .v {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-avans,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-masraf,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-kalan-avans {
+  background: transparent;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-avans .v,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-masraf .v,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-kalan-avans .v,
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet .v {
+  color: var(--color-navy);
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet-odenen .v {
+  color: #1a5c38;
+}
+
+.desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-vekalet-kalan .v {
+  color: var(--color-accent-hover);
+  font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .desk-summary-bar.desk-summary-bar--dosya-footer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric:nth-child(3n)::after {
+    display: none;
+  }
+
+  .desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric--accent-kalan-avans::after {
+    display: block;
+  }
+}
+
+@media (max-width: 620px) {
+  .desk-summary-bar.desk-summary-bar--dosya-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric::after {
+    display: none;
+  }
+
+  .desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric {
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .desk-summary-bar.desk-summary-bar--dosya-footer .desk-metric:nth-last-child(-n + 2) {
+    border-bottom: none;
+  }
 }
 

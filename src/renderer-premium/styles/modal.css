@@ -59,7 +59,13 @@
   line-height: 1.4;
 }
 
+.pm-modal-panel--randevu-form {
+  width: min(100%, 680px);
+}
 
+.pm-modal-panel--randevu-detail {
+  width: min(100%, 600px);
+}
 
 .pm-modal-close {
   display: flex;

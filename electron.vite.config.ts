@@ -20,6 +20,7 @@ export default defineConfig({
     },
   },
   renderer: {
+    cacheDir: resolve("node_modules/.vite-legacy"),
     resolve: {
       alias: {
         "@renderer": resolve("src/renderer"),

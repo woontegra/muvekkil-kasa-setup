@@ -1,22 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { OfisKasaRaporPaketi } from "@shared/types/ofisKasa";
-import { PrintOfficeHeaderLeft } from "../../components/print/PrintOfficeHeaderLeft";
-import { formatDateTr, formatTry } from "../../lib/format";
-import {
-  ayBasiSonu,
-  duzeltmeAltSatir,
-  duzeltmeListeTutar,
-  duzeltmeTurEtiketForRow,
-  formatSignedTry,
-  islemTipiEtiket,
-  odemeEtiket,
-  ofisKasaKategoriListeEtiketi,
-  onayEtiket,
-} from "../../lib/ofisKasa";
+import { BelgeOnizlemeShell } from "../../components/print/BelgeOnizlemeShell";
+import { OfisKasaRaporSheet } from "../../components/rapor/OfisKasaRaporSheet";
+import { useBelgeHtmlFromRef } from "../../hooks/useBelgeHtmlFromRef";
+import { useBelgeOnizleme } from "../../hooks/useBelgeOnizleme";
+import { ayBasiSonu } from "../../lib/ofisKasa";
+import { buildRaporPrintHtml } from "../../lib/raporPrintDocument";
+
+const BASLIK = "Ofis kasa raporu";
 
 export function OfisKasaRaporuPrintPage() {
+  const navigate = useNavigate();
   const [params] = useSearchParams();
+  const buildRef = useRef<HTMLDivElement>(null);
+
   const { bas, bit } = useMemo(() => {
     const fallback = ayBasiSonu();
     return {
@@ -24,154 +22,96 @@ export function OfisKasaRaporuPrintPage() {
       bit: (params.get("bit") ?? fallback.bit).trim().slice(0, 10),
     };
   }, [params]);
-  const [paket, setPaket] = useState<OfisKasaRaporPaketi | null>(null);
+
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [hata, setHata] = useState<string | null>(null);
+  const [paket, setPaket] = useState<Extract<OfisKasaRaporPaketi, { ok: true }> | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  const onizleme = useBelgeOnizleme({ page: "A4", landscape: false });
 
   const yukle = useCallback(async () => {
     if (!window.api?.ofisKasaRaporPaketi) {
-      setPaket({ ok: false, mesaj: "Rapor servisi kullanılamıyor." });
+      setHata("Rapor servisi kullanılamıyor.");
+      setYukleniyor(false);
       return;
     }
+    setYukleniyor(true);
+    setHata(null);
+    onizleme.resetPdf();
+    setPaket(null);
+    setLogoUrl(null);
+
     try {
       const r = await window.api.ofisKasaRaporPaketi({ bas, bit });
       if (!r.ok) {
-        setPaket(r);
+        setHata(r.mesaj ?? "Rapor verisi alınamadı.");
         return;
       }
       setPaket(r);
       try {
         const lp = r.office.logoPath?.trim();
         if (lp) {
-          const u = await window.api.officeLogoDataUrl(lp);
-          setLogoUrl(u);
-        } else {
-          setLogoUrl(null);
+          setLogoUrl(await window.api.officeLogoDataUrl(lp));
         }
       } catch {
         setLogoUrl(null);
       }
     } catch {
-      setPaket({ ok: false, mesaj: "Rapor verisi alınamadı." });
+      setHata("Rapor verisi alınamadı.");
+    } finally {
+      setYukleniyor(false);
     }
-  }, [bas, bit]);
+  }, [bas, bit, onizleme.resetPdf]);
 
   useEffect(() => {
     void yukle();
   }, [yukle]);
 
-  if (!paket) {
-    return <p className="muted">Yükleniyor…</p>;
-  }
+  useBelgeHtmlFromRef(
+    buildRef,
+    !yukleniyor && !!paket,
+    [paket, logoUrl],
+    ".hesap-ozeti-doc",
+    (outer) => buildRaporPrintHtml(outer, BASLIK),
+    onizleme.setSourceHtml,
+    (mesaj) => setHata(mesaj),
+  );
 
-  if (!paket.ok) {
-    return (
-      <div className="hesap-ozeti-print-wrap">
-        <p className="form-error">{paket.mesaj}</p>
-        <Link to="/ofis-kasasi" className="btn no-print">
-          Ofis kasasına dön
-        </Link>
-      </div>
-    );
-  }
-
-  const office = paket.office;
-  const hareketler = paket.hareketler;
+  const gorunenHata = hata ?? onizleme.pdfHata;
 
   return (
-    <div className="hesap-ozeti-print-wrap">
-      <div className="hesap-ozeti-toolbar no-print">
-        <button type="button" className="btn btn-primary" onClick={() => window.print()}>
-          Yazdır
-        </button>
-        <Link to="/ofis-kasasi" className="btn">
-          Kapat
-        </Link>
-      </div>
-
-      <article className="hesap-ozeti-doc">
-        <header className="hesap-ozeti-header">
-          <PrintOfficeHeaderLeft office={office} logoSrc={logoUrl} />
-          <div className="hesap-ozeti-header-right">
-            <h1 className="hesap-ozeti-title">OFİS KASA RAPORU</h1>
-            <p className="hesap-ozeti-meta">
-              Tarih aralığı: {formatDateTr(paket.tarihBas)} — {formatDateTr(paket.tarihBit)}
-            </p>
-          </div>
-        </header>
-
-        <section className="hesap-ozeti-block">
-          <h2 className="hesap-ozeti-h2">Özet</h2>
-          <table className="hesap-ozeti-kv hesap-ozeti-kv--ozet">
-            <tbody>
-              <tr>
-                <th>Devreden bakiye</th>
-                <td className="hesap-ozeti-num">{formatTry(paket.devredenBakiye)}</td>
-              </tr>
-              <tr>
-                <th>Dönem geliri</th>
-                <td className="hesap-ozeti-num">{formatTry(paket.donemGelir)}</td>
-              </tr>
-              <tr>
-                <th>Dönem gideri</th>
-                <td className="hesap-ozeti-num">{formatTry(paket.donemGider)}</td>
-              </tr>
-              <tr>
-                <th>Dönem düzeltme etkisi</th>
-                <td className="hesap-ozeti-num">{formatSignedTry(paket.donemDuzeltmeEtkisi)}</td>
-              </tr>
-              <tr>
-                <th>Dönem sonu kasa bakiyesi</th>
-                <td className="hesap-ozeti-num hesap-ozeti-num--strong">{formatTry(paket.kasaBakiyesi)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section className="hesap-ozeti-block">
-          <h2 className="hesap-ozeti-h2">Hareket listesi</h2>
-          {hareketler.length === 0 ? (
-            <p className="hesap-ozeti-muted">Bu tarih aralığında ofis kasa hareketi bulunamadı.</p>
-          ) : (
-            <table className="hesap-ozeti-table">
-              <thead>
-                <tr>
-                  <th>Tarih</th>
-                  <th>Tip</th>
-                  <th>Kategori</th>
-                  <th>Açıklama</th>
-                  <th>Ödeme</th>
-                  <th>Belge no</th>
-                  <th className="hesap-ozeti-col-num">Tutar</th>
-                  <th>Durum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hareketler.map((h) => (
-                  <tr key={h.id}>
-                    <td>{formatDateTr(h.tarih)}</td>
-                    <td>{h.islemTipi === "DUZELTME" ? duzeltmeTurEtiketForRow(h) ?? "Düzeltme" : islemTipiEtiket(h.islemTipi)}</td>
-                    <td>{ofisKasaKategoriListeEtiketi(h.kategori, h.ozelKategoriAdi)}</td>
-                    <td>
-                      {h.islemTipi === "DUZELTME" ? (
-                        <>
-                          <div>{h.aciklama?.trim() ? h.aciklama : "—"}</div>
-                          {duzeltmeAltSatir(h) ? <div className="desk-kasa-duzeltme-alt">{duzeltmeAltSatir(h)}</div> : null}
-                        </>
-                      ) : (
-                        h.aciklama?.trim() ? h.aciklama : "—"
-                      )}
-                    </td>
-                    <td>{odemeEtiket(h)}</td>
-                    <td>{h.belgeNo?.trim() ? h.belgeNo : "—"}</td>
-                    <td className="hesap-ozeti-col-num">{formatTry(duzeltmeListeTutar(h))}</td>
-                    <td>{onayEtiket(h)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </article>
-    </div>
+    <BelgeOnizlemeShell
+      baslik={BASLIK}
+      altBaslik={BASLIK}
+      yukleniyor={yukleniyor}
+      hata={gorunenHata}
+      pdfOlusturuluyor={onizleme.pdfOlusturuluyor}
+      hazir={onizleme.hazir && !gorunenHata}
+      yazdiriliyor={onizleme.yazdiriliyor}
+      basariMesaji={onizleme.basariMesaji}
+      pdfBase64={onizleme.pdfBase64}
+      pageCount={onizleme.pageCount}
+      visiblePage={onizleme.visiblePage}
+      onPageCount={onizleme.setPageCount}
+      onVisiblePage={onizleme.setVisiblePage}
+      olcek={onizleme.olcek}
+      onOlcekChange={onizleme.setOlcek}
+      kagit={onizleme.kagit}
+      onKagitChange={onizleme.setKagit}
+      yatay={onizleme.yatay}
+      onYatayChange={onizleme.setYatay}
+      kopya={onizleme.kopya}
+      onKopyaChange={onizleme.setKopya}
+      yazicilar={onizleme.yazicilar}
+      seciliYazici={onizleme.seciliYazici}
+      onYaziciChange={onizleme.setSeciliYazici}
+      sourceHtml={onizleme.sourceHtml}
+      onYazdir={() => void onizleme.yazdir()}
+      onClose={() => navigate("/ofis-kasasi")}
+      htmlBuildHost={
+        <div ref={buildRef}>{paket ? <OfisKasaRaporSheet paket={paket} logoSrc={logoUrl} /> : null}</div>
+      }
+    />
   );
 }

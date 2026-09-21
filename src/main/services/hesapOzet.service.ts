@@ -1,7 +1,8 @@
 import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
 import { getDb } from "../db/connection";
 import { dosyaGet } from "./dosya.service";
-import { hesaplaAvansBakiye, kasaHareketList } from "./kasa.service";
+import { hesaplaAvansBakiye, kasaHareketList, DOSYA_KASA_VEKALET_HARIC_SQL } from "./kasa.service";
+import { KASA_AKTIF_SQL } from "./kasaAktifSql";
 import { muvekkilGet } from "./muvekkil.service";
 import { officeSettingsGet } from "./office.service";
 import { vekaletGetOrCreate, vekaletTaksitList } from "./vekalet.service";
@@ -14,9 +15,14 @@ function bugunYmd(): string {
   return `${y}-${m}-${day}`;
 }
 
-function vekaletOzetFromTaksitler(anlasilanTutar: number, taksitler: { odenenToplam: number }[]) {
+function vekaletOzetFromTaksitler(
+  anlasilanTutar: number,
+  paraBirimi: import("@shared/lib/paraBirimi").ParaBirimi,
+  taksitler: { odenenToplam: number }[],
+) {
   const odenenToplam = taksitler.reduce((s, t) => s + t.odenenToplam, 0);
   return {
+    paraBirimi,
     anlasilanTutar,
     odenenToplam,
     kalanVekalet: Math.max(0, anlasilanTutar - odenenToplam),
@@ -37,7 +43,7 @@ export function dosyaHesapOzetPaketiGetir(dosyaId: number): DosyaHesapOzetPaketi
   const ozet = hesaplaAvansBakiye(dosyaId);
   const rows = getDb()
     .prepare(
-      `SELECT islem_tipi, tutar FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu IN ('ONAYSIZ','ONAYLI')`
+      `SELECT islem_tipi, tutar FROM dosya_kasa_hareket WHERE dosya_id = ? AND onay_durumu IN ('ONAYSIZ','ONAYLI') ${KASA_AKTIF_SQL} ${DOSYA_KASA_VEKALET_HARIC_SQL}`
     )
     .all(dosyaId) as { islem_tipi: string; tutar: number }[];
 
@@ -72,6 +78,6 @@ export function dosyaHesapOzetPaketiGetir(dosyaId: number): DosyaHesapOzetPaketi
     hareketler,
     vekalet,
     taksitler,
-    vekaletOzet: vekaletOzetFromTaksitler(vekalet.anlasilanTutar, taksitler),
+    vekaletOzet: vekaletOzetFromTaksitler(vekalet.anlasilanTutar, vekalet.paraBirimi, taksitler),
   };
 }

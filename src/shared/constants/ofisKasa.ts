@@ -12,6 +12,8 @@ export const OFIS_GELIR_KATEGORI_KODLARI = [
 
   "KARSI_TARAF_VEKALET",
 
+  "ICRA_VEKALET",
+
   "VEKALET_DISI_GELIR",
 
   "DANISMANLIK_GELIR",
@@ -69,6 +71,8 @@ export const OFIS_GELIR_KATEGORI_ETIKET: Record<string, string> = {
   VEKALET_TAHSILATI: "Vekalet ücreti tahsilatı",
 
   KARSI_TARAF_VEKALET: "Karşı Taraf Vekalet Ücreti",
+
+  ICRA_VEKALET: "İcra Vekalet Ücreti",
 
   VEKALET_DISI_GELIR: "Vekalet ücreti dışı gelir",
 
@@ -187,4 +191,7 @@ export function ofisKategoriOzelAdDb(k: string, ozel: string): string | null {
 /** Ofis kasası kaynağı — vekalet taksit ödemesi */
 
 export const OFIS_KASA_KAYNAK_VEKALET_TAHSILATI = "VEKALET_TAHSILATI";
+
+/** Ofis kasası kaynağı — icra tahsilat ödemesi */
+export const OFIS_KASA_KAYNAK_ICRA_TAHSILAT = "ICRA_TAHSILAT";
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Dosya, DosyaDurum, DosyaInput, DosyaUpdateInput } from "@shared/types/dosya";
+import { DeskModalBackdrop } from "./DeskModalBackdrop";
+import { DeskModalHead } from "./DeskModalHead";
 
 type Props = {
   title: string;
@@ -40,6 +42,7 @@ export function DosyaFormModal({ title, open, saving, error, muvekkilId, initial
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     if (initial) {
       await onSave({
         konuBasligi: konu.trim(),
@@ -62,11 +65,9 @@ export function DosyaFormModal({ title, open, saving, error, muvekkilId, initial
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={() => !saving && onClose()}>
+    <DeskModalBackdrop onClose={onClose} disabled={saving}>
       <div className="modal modal-desk" role="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h2>{title}</h2>
-        </div>
+        <DeskModalHead title={title} onClose={onClose} closeDisabled={saving} />
         <div className="modal-body">
           {error ? <p className="form-error">{error}</p> : null}
           <form id="form-dosya" onSubmit={(e) => void handleSubmit(e)}>
@@ -116,6 +117,6 @@ export function DosyaFormModal({ title, open, saving, error, muvekkilId, initial
           </button>
         </div>
       </div>
-    </div>
+    </DeskModalBackdrop>
   );
 }

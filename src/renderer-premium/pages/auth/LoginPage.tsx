@@ -94,15 +94,15 @@ export function LoginPage() {
         {error ? <PremiumAlert tone="error">{error}</PremiumAlert> : null}
 
         <form className="pm-login-form" onSubmit={(e) => void onSubmit(e)}>
-          <PremiumFormField label="E-posta" htmlFor={idUser}>
+          <PremiumFormField label="E-posta veya Kullanıcı Adı" htmlFor={idUser}>
             <PremiumTextInput
               id={idUser}
               className="pm-login-input"
-              autoComplete="email"
+              autoComplete="username"
               value={kullaniciAdi}
               onChange={(e) => setKullaniciAdi(e.target.value)}
               disabled={busy}
-              placeholder="ornek@mail.com"
+              placeholder="E-posta veya kullanıcı adınızı girin"
             />
           </PremiumFormField>
 

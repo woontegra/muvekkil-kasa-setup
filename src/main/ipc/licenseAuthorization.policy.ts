@@ -40,22 +40,32 @@ const PUBLIC_CHANNELS = new Set<string>([
   IPC.update.install,
   IPC.update.dismiss,
   IPC.util.pathToFileUrl,
+  IPC.util.openContactLink,
 ]);
 
 const SETUP_CHANNELS = new Set<string>([IPC.auth.setupFirst]);
 
 const LICENSED_NAMESPACES = new Set([
   "office",
+  "appSettings",
   "backup",
   "ofisKasa",
   "muvekkil",
   "dosya",
   "kasa",
+  "icraTahsilat",
+  "tahsilatMerkezi",
   "vekalet",
   "print",
   "makbuz",
   "vekaletMakbuz",
+  "randevu",
   "masrafTurleri",
+  "kurlar",
+  "finansKalemi",
+  "audit",
+  "kullaniciYonetim",
+  "maliKontrol",
 ]);
 
 export function classifyLicenseIpcChannel(channel: string): LicenseIpcClass | "UNKNOWN" {

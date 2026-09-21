@@ -1,0 +1,294 @@
+/**
+ * Ortak uygulama sayfası düzeni — ana sayfa, ofis kasası, ofis bilgileri
+ */
+
+.desk-app-page,
+.desk-page--home-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px var(--app-content-gutter) 16px;
+  box-sizing: border-box;
+}
+
+.desk-page--home-dashboard.desk-page-shell {
+  padding-top: 12px;
+  padding-bottom: 16px;
+}
+
+/* Sayfa başlığı */
+.desk-app-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.desk-app-page-header-main {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.desk-app-page-back {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: none;
+  margin-bottom: 6px;
+}
+
+.desk-app-page-back:hover {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.desk-app-page-title {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.desk-app-page-sub {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.45;
+  max-width: 72ch;
+}
+
+.desk-app-page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.desk-app-page-date {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-card);
+}
+
+.desk-app-page-date strong {
+  color: #0f2744;
+  font-weight: 700;
+}
+
+/* Ortak panel kartları */
+.desk-app-page .desk-panel,
+.desk-page--home-dashboard .desk-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  background: #fff;
+  overflow: hidden;
+}
+
+.desk-app-page .desk-panel-head {
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fafbfd;
+  border-bottom: 1px solid #e8edf4;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+.desk-app-page .desk-panel-meta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: none;
+}
+
+.desk-app-page .desk-panel-body--pad-sm {
+  padding: 14px 16px;
+}
+
+.desk-app-page > .desk-panel + .desk-panel,
+.desk-app-page > .desk-ofis-kpi-section + .desk-panel,
+.desk-app-page > .desk-app-page-header + .desk-ofis-kpi-section,
+.desk-app-page > .desk-app-page-header + .desk-panel,
+.desk-app-page > .desk-ofis-kpi-section + .section-card {
+  margin-top: 12px;
+}
+
+/* Form alanları */
+.desk-app-page .field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.desk-app-page .desk-input,
+.desk-app-page .field select,
+.desk-app-page .field textarea {
+  border: 1px solid #d1dae6;
+  border-radius: var(--radius-input);
+  background: #fff;
+  min-height: 38px;
+  font-size: 0.88rem;
+}
+
+.desk-app-page .desk-input:focus,
+.desk-app-page .field select:focus,
+.desk-app-page .field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+/* Tablolar */
+.desk-app-page .desk-table--page {
+  font-size: 0.88rem;
+  width: 100%;
+}
+
+.desk-app-page .desk-table--page th {
+  padding: 11px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.desk-app-page .desk-table--page td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  border-right: none;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.desk-app-page .desk-table--page tbody tr:hover td {
+  background: #eff6ff;
+}
+
+.desk-app-page .desk-table--page.desk-table--striped tbody tr:nth-child(even) {
+  background: #fafbfd;
+}
+
+.desk-app-page .desk-table--page.desk-table--striped tbody tr:nth-child(even):hover td {
+  background: #eff6ff;
+}
+
+.desk-app-page .desk-table--page .row-actions .btn-sm {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.desk-app-page .empty-state,
+.desk-app-page .desk-muted-compact {
+  padding: 20px 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+/* --- Ofis bilgileri --- */
+.desk-page--office-settings {
+  overflow-y: auto;
+}
+
+.desk-page--office-settings .desk-office-settings-panel + .desk-office-settings-panel {
+  margin-top: 12px;
+}
+
+.desk-page--office-settings .desk-office-guvenlik-block-title {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.desk-page--office-settings .desk-office-guvenlik-block--alt {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e8edf4;
+}
+
+.desk-page--office-settings .desk-office-form-row {
+  gap: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.desk-page--office-settings .desk-office-form-footer {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #e8edf4;
+}
+
+.desk-page--office-settings .desk-backup-notice {
+  border-radius: var(--radius-input);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.desk-page--office-settings .desk-backup-notice--ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.desk-page--office-settings .desk-backup-notice--err {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.desk-page--office-settings .desk-about-app-body {
+  padding: 16px !important;
+}
+
+.desk-page--office-settings .desk-office-app-logo {
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+@media (max-width: 1100px) {
+  .desk-office-form-row--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .desk-office-form-row--5,
+  .desk-office-form-row--3,
+  .desk-office-form-row--guvenlik {
+    grid-template-columns: 1fr;
+  }
+
+  .desk-app-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

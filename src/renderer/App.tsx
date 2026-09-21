@@ -1,4 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { UpdatePromptHost } from "./components/UpdatePromptHost";
 import { AuthProvider } from "./context/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { GuestAuthRoute, ProtectedRoute, SetupOnlyRoute } from "./components/ProtectedRoute";
@@ -14,13 +15,22 @@ import { MuvekkillerPage } from "./pages/MuvekkillerPage";
 import { MuvekkilDetailPage } from "./pages/MuvekkilDetailPage";
 import { DosyaDetailPage } from "./pages/DosyaDetailPage";
 import { OfisKasaPage } from "./pages/OfisKasaPage";
+import { IcraTahsilatPage } from "./pages/IcraTahsilatPage";
 import { OfficeSettingsPage } from "./pages/settings/OfficeSettingsPage";
+import {
+  LegacyDosyalarPage,
+  LegacyRandevularPage,
+  LegacyRaporlarPage,
+  LegacyTahsilatMerkeziPage,
+} from "./pages/LegacyParityPages";
 import { OfisKasaRaporuPrintPage } from "./pages/print/OfisKasaRaporuPrintPage";
+import { IcraTahsilatRaporuPrintPage } from "./pages/print/IcraTahsilatRaporuPrintPage";
 import { BelgeYazdirmaOnizlemePage } from "./pages/print/BelgeYazdirmaOnizlemePage";
 
 export default function App() {
   return (
     <AuthProvider>
+      <UpdatePromptHost />
       <HashRouter>
         <Routes>
           <Route element={<LicenseGuestRoute />}>
@@ -44,8 +54,14 @@ export default function App() {
                 <Route path="/muvekkil/:id" element={<MuvekkilDetailPage />} />
                 <Route path="/muvekkil/:muvekkilId/dosya/:dosyaId" element={<DosyaDetailPage />} />
                 <Route path="/ofis-kasasi" element={<OfisKasaPage />} />
+                <Route path="/icra-tahsilat" element={<IcraTahsilatPage />} />
+                <Route path="/dosyalar" element={<LegacyDosyalarPage />} />
+                <Route path="/randevular" element={<LegacyRandevularPage />} />
+                <Route path="/raporlar" element={<LegacyRaporlarPage />} />
+                <Route path="/tahsilat-merkezi" element={<LegacyTahsilatMerkeziPage />} />
                 <Route path="/ayarlar/ofis" element={<OfficeSettingsPage />} />
                 <Route path="/print/ofis-kasa-raporu" element={<OfisKasaRaporuPrintPage />} />
+                <Route path="/print/icra-tahsilat-raporu" element={<IcraTahsilatRaporuPrintPage />} />
                 <Route path="/print/hesap-ozeti/:dosyaId" element={<BelgeYazdirmaOnizlemePage />} />
                 <Route path="/print/makbuz/kasa/:hareketId" element={<BelgeYazdirmaOnizlemePage />} />
                 <Route path="/print/makbuz/vekalet/:odemeId" element={<BelgeYazdirmaOnizlemePage />} />

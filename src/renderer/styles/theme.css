@@ -1,0 +1,195 @@
+/**
+ * Woontegra MKD — Premium masaüstü tasarım tokenları
+ */
+:root {
+  /* —— Marka & renk —— */
+  --color-navy: #0f2744;
+  --color-navy-mid: #1a3a5f;
+  --color-navy-deep: #0a1a2e;
+  --color-navy-toolbar: #12243d;
+
+  --color-accent: #2b6cb8;
+  --color-accent-hover: #245a9e;
+  --color-accent-soft: #e8f0fa;
+  --color-accent-muted: #a8c4e4;
+  --color-accent-ring: rgba(43, 108, 184, 0.22);
+
+  --color-success: #1f7a4d;
+  --color-success-soft: #e8f6ee;
+  --color-warning: #b8862b;
+  --color-warning-soft: #faf6ec;
+  --color-danger: #c44545;
+  --color-danger-soft: #faf0f0;
+
+  /* Uyumluluk aliasları */
+  --primary: var(--color-accent);
+  --primary-hover: var(--color-accent-hover);
+  --primary-soft: var(--color-accent-soft);
+  --primary-deep: var(--color-navy);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-soft: var(--color-accent-soft);
+  --color-primary-muted: var(--color-accent-muted);
+  --color-primary-ring: var(--color-accent-ring);
+  --color-secondary-deep: var(--color-navy-mid);
+
+  /* —— Yüzeyler —— */
+  --bg-app: #edf1f6;
+  --bg-page: var(--bg-app);
+  --bg-card: #ffffff;
+  --bg-elevated: #f6f8fb;
+  --bg-panel: #ffffff;
+  --bg-panel-subtle: #f4f7fb;
+  --bg-page-tint: linear-gradient(180deg, #f3f6fa 0%, var(--bg-app) 100%);
+
+  --border: #c8d4e3;
+  --border-soft: #dde5ef;
+  --text: #1a2b3f;
+  --text-main: #0f172a;
+  --text-muted: #5a6b82;
+  --text-subtle: #7b8ba0;
+
+  /* —— Metrik kutuları (pastel, turuncu ağırlıksız) —— */
+  --metric-danger-border: #e5c4c4;
+  --metric-danger-bg: #fdf6f6;
+  --metric-danger-fg: #9b4444;
+  --metric-warning-border: #e0d4b8;
+  --metric-warning-bg: #fdfaf4;
+  --metric-warning-fg: #8a6530;
+  --metric-info-border: #c5d8eb;
+  --metric-info-bg: #f4f8fd;
+  --metric-info-fg: #245a9e;
+  --metric-neutral-border: #cdd6e4;
+  --metric-neutral-bg: #fafbfd;
+
+  /* —— Panel & tablo —— */
+  --panel-head-bg: #f8fafc;
+  --panel-head-text: var(--color-navy);
+  --panel-head-meta: var(--text-muted);
+  --panel-head-border: var(--border-soft);
+  --panel-head-text-shadow: none;
+
+  --table-header-bg: #f4f7fb;
+  --table-header-fg: #5a6b82;
+  --table-header-border: var(--border-soft);
+  --table-row-stripe: #fafbfd;
+  --table-row-hover: #eef4fc;
+  --table-cell-border: #edf1f7;
+
+  /* —— Modal & toolbar —— */
+  --toolbar-bg: #f6f8fb;
+  --toolbar-border: var(--border);
+  --modal-desk-border: #a8b8cc;
+  --modal-desk-head-bg: #f8fafc;
+  --modal-desk-head-fg: var(--color-navy);
+  --modal-desk-head-border: var(--border-soft);
+  --modal-desk-body-bg: #ffffff;
+  --modal-desk-footer-bg: #f6f8fb;
+  --modal-desk-footer-border: var(--border-soft);
+
+  --input-border: #b8c8dc;
+  --surface-placeholder: #f4f7fb;
+  --kv-value-bg: #ffffff;
+  --surface-panel-accent: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
+
+  /* —— Boşluk sistemi —— */
+  --space-1: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --page-gutter-x: var(--space-4);
+  --page-gutter-y: var(--space-2);
+  --page-block-gap: var(--space-3);
+  --app-content-gutter: var(--space-4);
+
+  /* —— Boyutlar —— */
+  --radius-panel: 8px;
+  --radius-control: 7px;
+  --radius-card: var(--radius-panel);
+  --radius-input: var(--radius-control);
+  --radius-md: var(--radius-panel);
+  --radius-lg: var(--radius-panel);
+  --radius-pill: 999px;
+  --control-height: 34px;
+
+  --shadow-card: 0 1px 2px rgba(15, 39, 68, 0.04), 0 4px 14px rgba(15, 39, 68, 0.06);
+  --shadow-card-hover: 0 3px 10px rgba(15, 39, 68, 0.09), 0 6px 20px rgba(43, 108, 184, 0.08);
+  --shadow-modal: 0 12px 40px rgba(10, 26, 46, 0.22);
+
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --transition-fast: 140ms ease;
+}
+
+/* Ortak yardımcı sınıflar */
+.card,
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3) var(--space-3);
+}
+
+.form-input,
+.desk-input {
+  border-radius: var(--radius-control);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-4) var(--space-3);
+  color: var(--text-muted);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Sayfa geçişi — hafif fade */
+@keyframes desk-page-fade-in {
+  from {
+    opacity: 0.92;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes desk-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.app-main > * {
+  animation: desk-page-fade-in 0.16s ease;
+}
+
+.modal-backdrop > .modal,
+.modal-backdrop > .modal-desk {
+  animation: desk-modal-in 0.16s ease;
+}

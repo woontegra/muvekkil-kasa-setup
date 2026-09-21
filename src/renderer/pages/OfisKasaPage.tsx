@@ -5,15 +5,15 @@ import {
   DIGER_GIDER_KOD,
   PERSONEL_MAAS_KOD,
   OFIS_GELIR_KATEGORI_KODLARI,
-  OFIS_GELIR_KATEGORI_ETIKET,
   OFIS_GIDER_KATEGORI_KODLARI,
-  OFIS_GIDER_KATEGORI_ETIKET,
   OFIS_ODEME_YONTEMI_KODLARI,
   OFIS_ODEME_YONTEMI_ETIKET,
   ofisKategoriOzelAdGerekli,
 } from "@shared/constants/ofisKasa";
+import { getActiveAccountingPeriodRange } from "@shared/lib/accountingPeriod";
+import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfisKasaHareketListeSatir, OfisKasaUstOzet } from "@shared/types/ofisKasa";
-import { bugunYmd, formatDateTr, formatTry } from "../lib/format";
+import { bugunYmd, formatDateTr, formatTry, formatCurrencyInputTR } from "../lib/format";
 import {
   ayBasiSonu,
   duzeltmeListeTutar,
@@ -30,13 +30,33 @@ import {
   satirAuditTitle,
   tumKategoriSecenekleri,
 } from "../lib/ofisKasa";
+import { DeskTableIconBtn } from "../components/DeskTableIconBtn";
+import { IconDuzenle, IconDuzeltme, IconOnayla, IconSil } from "../components/DeskTableIcons";
 import { DeskModalPortal } from "../components/DeskModalPortal";
+import { DeskModalBackdrop } from "../components/DeskModalBackdrop";
+import { DeskConfirmDialog } from "../components/DeskConfirmDialog";
+import { DeskGuvenliSilModal, type DeskGuvenliSilOzet } from "../components/DeskGuvenliSilModal";
+import { canShowOfisGuvenliSil, type OfisGuvenliSilMode } from "@shared/lib/guvenliSil";
+import type { GuvenliSilInput } from "@shared/types/guvenliSil";
+import { MoneyInput } from "../components/MoneyInput";
+import { ParaBirimiSelect } from "../components/currency/CurrencyFields";
+import { PARA_BIRIMLERI, formatMoney, type ParaBirimi } from "@shared/lib/paraBirimi";
+import { DovizDonusumModal } from "../components/currency/DovizDonusumModal";
+
+type ConfirmState = {
+  title: string;
+  message: string;
+  variant?: "danger" | "primary";
+  confirmLabel?: string;
+  onConfirm: () => Promise<void> | void;
+};
 
 export function OfisKasaPage() {
   const navigate = useNavigate();
-  const { bas: ayBas, bit: ayBit } = useMemo(() => ayBasiSonu(), []);
-  const [tb, setTb] = useState(ayBas);
-  const [te, setTe] = useState(ayBit);
+  const fallbackAy = useMemo(() => ayBasiSonu(), []);
+  const [tb, setTb] = useState(fallbackAy.bas);
+  const [te, setTe] = useState(fallbackAy.bit);
+  const [periodEtiket, setPeriodEtiket] = useState("");
   const [tip, setTip] = useState("TUMU");
   const [katSel, setKatSel] = useState("");
   const [q, setQ] = useState("");
@@ -81,6 +101,27 @@ export function OfisKasaPage() {
   }, [filtre]);
 
   useEffect(() => {
+    const applyPeriod = async () => {
+      try {
+        const mode = (await window.api.getAccountingPeriodMode?.()) as AccountingPeriodMode | undefined;
+        const range = getActiveAccountingPeriodRange(mode === "MONTHLY" ? "MONTHLY" : "YEARLY");
+        setTb(range.bas);
+        setTe(range.bit);
+        setPeriodEtiket(range.etiket);
+      } catch {
+        /* ayBasiSonu fallback already set */
+      }
+    };
+    void applyPeriod();
+    const onPeriodChanged = () => {
+      void applyPeriod();
+      void yukleUst();
+    };
+    window.addEventListener("mkd:accounting-period-changed", onPeriodChanged);
+    return () => window.removeEventListener("mkd:accounting-period-changed", onPeriodChanged);
+  }, [yukleUst]);
+
+  useEffect(() => {
     void yukleUst();
   }, [yukleUst]);
 
@@ -97,32 +138,77 @@ export function OfisKasaPage() {
   const [fTip, setFTip] = useState<"GELIR" | "GIDER">("GIDER");
   const [fTarih, setFTarih] = useState(bugunYmd());
   const [fKat, setFKat] = useState<string>(OFIS_GIDER_KATEGORI_KODLARI[0]);
+  const [fKalemId, setFKalemId] = useState<number | null>(null);
+  const [fKalemler, setFKalemler] = useState<
+    { id: number; kod: string | null; ad: string; tur: "GELIR" | "GIDER" }[]
+  >([]);
+  const [fMuvekkilId, setFMuvekkilId] = useState<number | null>(null);
+  const [fMuvekkilQ, setFMuvekkilQ] = useState("");
+  const [fMuvekkilOpts, setFMuvekkilOpts] = useState<{ id: number; label: string }[]>([]);
+  const [fTahsilUserId, setFTahsilUserId] = useState<number | null>(null);
+  const [fKullanicilar, setFKullanicilar] = useState<{ id: number; adSoyad: string }[]>([]);
   const [fOzelKat, setFOzelKat] = useState("");
   const [fAciklama, setFAciklama] = useState("");
   const [fTutar, setFTutar] = useState("");
+  const [fParaBirimi, setFParaBirimi] = useState<ParaBirimi>("TRY");
   const [fOdeme, setFOdeme] = useState<string>(OFIS_ODEME_YONTEMI_KODLARI[0]);
   const [fBelge, setFBelge] = useState("");
   const [formErr, setFormErr] = useState<string | null>(null);
   const [formKaydediyor, setFormKaydediyor] = useState(false);
-  const digerSecili = fKat === DIGER_GELIR_KOD || fKat === DIGER_GIDER_KOD;
-  const personelMaasSecili = fKat === PERSONEL_MAAS_KOD;
-  const ozelAlanGerekli = digerSecili || personelMaasSecili;
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [guvenliSilOzet, setGuvenliSilOzet] = useState<DeskGuvenliSilOzet | null>(null);
+  const [guvenliSilErr, setGuvenliSilErr] = useState<string | null>(null);
+  const [guvenliSilBusy, setGuvenliSilBusy] = useState(false);
+  const [sayfaUyari, setSayfaUyari] = useState<string | null>(null);
+  const [dovizOpen, setDovizOpen] = useState(false);
+  const selectedKalemKod = fKalemler.find((k) => k.id === fKalemId)?.kod ?? fKat;
+  const digerSecili = selectedKalemKod === DIGER_GELIR_KOD || selectedKalemKod === DIGER_GIDER_KOD;
+  const personelMaasSecili = selectedKalemKod === PERSONEL_MAAS_KOD;
+  const ozelAlanGerekli = digerSecili || personelMaasSecili || ofisKategoriOzelAdGerekli(selectedKalemKod);
 
-  function modalSifirlaYeni() {
+  async function loadFormLookups(tip: "GELIR" | "GIDER") {
+    try {
+      const kalems = await window.api.finansKalemiList({ tur: tip, forForm: true });
+      setFKalemler(kalems.map((k) => ({ id: k.id, kod: k.kod, ad: k.ad, tur: k.tur })));
+      if (kalems.length > 0) {
+        setFKalemId(kalems[0].id);
+        setFKat(kalems[0].kod ?? kalems[0].ad);
+      }
+    } catch {
+      setFKalemler([]);
+      setFKalemId(null);
+    }
+    try {
+      const users = await window.api.kullaniciYonetimList();
+      setFKullanicilar(users.filter((u) => u.aktifMi).map((u) => ({ id: u.id, adSoyad: u.adSoyad })));
+    } catch {
+      setFKullanicilar([]);
+    }
+  }
+
+  function modalSifirlaYeni(tip: "GELIR" | "GIDER" = "GIDER") {
     setDuzenleId(null);
     setFormErr(null);
-    setFTip("GIDER");
+    setFTip(tip);
     setFTarih(bugunYmd());
-    setFKat(OFIS_GIDER_KATEGORI_KODLARI[0]);
+    setFKat(tip === "GELIR" ? OFIS_GELIR_KATEGORI_KODLARI[0] : OFIS_GIDER_KATEGORI_KODLARI[0]);
+    setFKalemId(null);
     setFOzelKat("");
     setFAciklama("");
     setFTutar("");
+    setFParaBirimi("TRY");
     setFOdeme(OFIS_ODEME_YONTEMI_KODLARI[0]);
     setFBelge("");
+    setFMuvekkilId(null);
+    setFMuvekkilQ("");
+    setFMuvekkilOpts([]);
+    setFTahsilUserId(null);
+    void loadFormLookups(tip);
   }
 
   function modalAcYeni() {
-    modalSifirlaYeni();
+    modalSifirlaYeni("GIDER");
     setModalAcik(true);
   }
 
@@ -136,29 +222,64 @@ export function OfisKasaPage() {
     if (h.islemTipi === "DUZELTME") return;
     setFormErr(null);
     setDuzenleId(h.id);
-    setFTip(h.islemTipi === "GELIR" ? "GELIR" : "GIDER");
+    const tip = h.islemTipi === "GELIR" ? "GELIR" : "GIDER";
+    setFTip(tip);
     setFTarih(h.tarih.slice(0, 10));
     setFKat(h.kategori);
+    setFKalemId(h.kalemId);
     setFOzelKat(h.ozelKategoriAdi?.trim() ?? "");
     setFAciklama((h.aciklama ?? "").trim() || (h.not ?? "").trim() || "");
-    setFTutar(String(h.tutar));
+    setFTutar(formatCurrencyInputTR(h.tutar));
+    setFParaBirimi(h.paraBirimi);
     setFOdeme(h.odemeYontemi);
     setFBelge(h.belgeNo ?? "");
+    setFMuvekkilId(h.muvekkilId);
+    setFMuvekkilQ(h.muvekkilAdiSnapshot ?? "");
+    setFTahsilUserId(h.tahsilatiYapanKullaniciId);
     setModalAcik(true);
+    void loadFormLookups(tip);
+  }
+
+  async function araMuvekkilForForm(q: string) {
+    setFMuvekkilQ(q);
+    if (!window.api?.muvekkilAra || q.trim().length < 1) {
+      setFMuvekkilOpts([]);
+      return;
+    }
+    try {
+      const rows = await window.api.muvekkilAra(q.trim());
+      setFMuvekkilOpts(
+        rows.slice(0, 20).map((m) => ({
+          id: m.id,
+          label:
+            m.muvekkilTuru === "TUZEL_KISI" && m.sirketUnvani?.trim()
+              ? m.sirketUnvani.trim()
+              : m.adSoyad.trim() || `Müvekkil #${m.id}`,
+        })),
+      );
+    } catch {
+      setFMuvekkilOpts([]);
+    }
   }
 
   async function formKaydet() {
+    if (formKaydediyor) return;
     setFormErr(null);
     const tutar = parseTutar(fTutar);
+    const selectedKalem = fKalemler.find((k) => k.id === fKalemId);
+    const katKod = selectedKalem?.kod ?? fKat;
+    const diger = katKod === DIGER_GELIR_KOD || katKod === DIGER_GIDER_KOD;
+    const personel = katKod === PERSONEL_MAAS_KOD;
+    const ozelGerekli = diger || personel || ofisKategoriOzelAdGerekli(katKod);
     if (!Number.isFinite(tutar) || tutar <= 0) {
       setFormErr("Tutar sıfırdan büyük ve geçerli olmalıdır.");
       return;
     }
-    if (personelMaasSecili && !fOzelKat.trim()) {
+    if (personel && !fOzelKat.trim()) {
       setFormErr("Personel ismi zorunludur.");
       return;
     }
-    if (digerSecili && !fOzelKat.trim()) {
+    if (diger && !fOzelKat.trim()) {
       setFormErr("Özel kategori adı zorunludur.");
       return;
     }
@@ -167,13 +288,16 @@ export function OfisKasaPage() {
       if (duzenleId != null) {
         const res = await window.api.ofisKasaGuncelle(duzenleId, {
           tarih: fTarih,
-          kategori: fKat,
-          ozelKategoriAdi: ozelAlanGerekli ? fOzelKat.trim() : null,
+          kategori: katKod,
+          kalemId: fKalemId,
+          ozelKategoriAdi: ozelGerekli ? fOzelKat.trim() : null,
           aciklama: fAciklama.trim() || null,
           tutar,
           odemeYontemi: fOdeme,
           belgeNo: fBelge.trim() || null,
           not: null,
+          muvekkilId: fMuvekkilId,
+          tahsilatiYapanKullaniciId: fTip === "GELIR" ? fTahsilUserId : null,
         });
         if (!res.ok) {
           setFormErr(res.error);
@@ -183,13 +307,17 @@ export function OfisKasaPage() {
         const res = await window.api.ofisKasaEkle({
           islemTipi: fTip,
           tarih: fTarih,
-          kategori: fKat,
-          ozelKategoriAdi: ozelAlanGerekli ? fOzelKat.trim() : null,
+          kategori: katKod,
+          kalemId: fKalemId,
+          ozelKategoriAdi: ozelGerekli ? fOzelKat.trim() : null,
           aciklama: fAciklama.trim() || null,
           tutar,
+          paraBirimi: fParaBirimi,
           odemeYontemi: fOdeme,
           belgeNo: fBelge.trim() || null,
           not: null,
+          muvekkilId: fMuvekkilId,
+          tahsilatiYapanKullaniciId: fTip === "GELIR" ? fTahsilUserId : null,
         });
         if (!res.ok) {
           setFormErr(res.error);
@@ -207,25 +335,76 @@ export function OfisKasaPage() {
   }
 
   async function onaylaHareket(id: number) {
-    if (!confirm("Bu işlemi onaylamak istediğinize emin misiniz? Onaylanan işlem silinemez.")) {
-      return;
-    }
-    const r = await window.api.ofisKasaOnayla(id);
-    if (!r.ok) {
-      alert(r.error ?? "Onaylanamadı");
-      return;
-    }
-    await tumunuYenile();
+    setConfirm({
+      title: "İşlemi onayla",
+      message: "Bu işlemi onaylamak istediğinize emin misiniz? Onaylanan işlem silinemez.",
+      onConfirm: async () => {
+        setConfirmBusy(true);
+        try {
+          const r = await window.api.ofisKasaOnayla(id);
+          if (!r.ok) {
+            setSayfaUyari(r.error ?? "Onaylanamadı");
+            return;
+          }
+          setConfirm(null);
+          await tumunuYenile();
+        } finally {
+          setConfirmBusy(false);
+        }
+      },
+    });
   }
 
   async function silHareket(id: number) {
-    if (!confirm("Bu işlemi silmek istediğinize emin misiniz?")) return;
-    const r = await window.api.ofisKasaSil(id);
-    if (!r.ok) {
-      alert(r.error ?? "Silinemedi");
-      return;
+    setConfirm({
+      title: "İşlemi sil",
+      message: "Bu işlemi silmek istediğinize emin misiniz?",
+      variant: "danger",
+      confirmLabel: "Sil",
+      onConfirm: async () => {
+        setConfirmBusy(true);
+        try {
+          const r = await window.api.ofisKasaSil(id);
+          if (!r.ok) {
+            setSayfaUyari(r.error ?? "Silinemedi");
+            return;
+          }
+          setConfirm(null);
+          await tumunuYenile();
+        } finally {
+          setConfirmBusy(false);
+        }
+      },
+    });
+  }
+
+  function acGuvenliSil(h: OfisKasaHareketListeSatir, mode: OfisGuvenliSilMode) {
+    setGuvenliSilErr(null);
+    setGuvenliSilOzet({
+      id: h.id,
+      tarih: h.tarih,
+      aciklama: h.aciklama?.trim() || ofisKasaKategoriListeEtiketi(h),
+      tutar: h.tutar,
+      odemeYontemi: h.odemeYontemi,
+      mode,
+    });
+  }
+
+  async function guvenliSilGonder(payload: GuvenliSilInput) {
+    if (!guvenliSilOzet || guvenliSilBusy) return;
+    setGuvenliSilErr(null);
+    setGuvenliSilBusy(true);
+    try {
+      const r = await window.api.ofisKasaGuvenliSil(guvenliSilOzet.id, payload);
+      if (!r.ok) {
+        setGuvenliSilErr(r.error ?? "Silinemedi");
+        return;
+      }
+      setGuvenliSilOzet(null);
+      await tumunuYenile();
+    } finally {
+      setGuvenliSilBusy(false);
     }
-    await tumunuYenile();
   }
 
   const [duzeltmeHedef, setDuzeltmeHedef] = useState<OfisKasaHareketListeSatir | null>(null);
@@ -245,7 +424,7 @@ export function OfisKasaPage() {
 
   function acDuzeltme(h: OfisKasaHareketListeSatir) {
     if (h.hasCorrection) {
-      alert("Bu kayıt için zaten düzeltme yapılmış.");
+      setSayfaUyari("Bu kayıt için zaten düzeltme yapılmış.");
       return;
     }
     setDErr(null);
@@ -262,7 +441,7 @@ export function OfisKasaPage() {
   }
 
   async function duzeltmeKaydet() {
-    if (!duzeltmeHedef) return;
+    if (!duzeltmeHedef || dKaydediyor) return;
     setDErr(null);
     const dogruTutar = parseTutar(dDogruTutar);
     if (!Number.isFinite(dogruTutar) || dDogruTutar.trim() === "") {
@@ -302,16 +481,16 @@ export function OfisKasaPage() {
       return (
         <>
           {h.islemTipi !== "DUZELTME" ? (
-            <button type="button" className="btn btn-sm" onClick={() => modalAcDuzenle(h)}>
-              Düzenle
-            </button>
+            <DeskTableIconBtn title="Düzenle" onClick={() => modalAcDuzenle(h)}>
+              <IconDuzenle />
+            </DeskTableIconBtn>
           ) : null}
-          <button type="button" className="btn btn-sm" onClick={() => void onaylaHareket(h.id)}>
-            Onayla
-          </button>
-          <button type="button" className="btn btn-sm btn-danger" onClick={() => void silHareket(h.id)}>
-            Sil
-          </button>
+          <DeskTableIconBtn title="Onayla" variant="primary" onClick={() => void onaylaHareket(h.id)}>
+            <IconOnayla />
+          </DeskTableIconBtn>
+          <DeskTableIconBtn title="Sil" variant="danger" onClick={() => void silHareket(h.id)}>
+            <IconSil />
+          </DeskTableIconBtn>
         </>
       );
     }
@@ -326,10 +505,18 @@ export function OfisKasaPage() {
           </span>
         );
       }
+      const guvenliMode = canShowOfisGuvenliSil(h);
       return (
-        <button type="button" className="btn btn-sm" onClick={() => acDuzeltme(h)}>
-          Düzeltme ekle
-        </button>
+        <>
+          <DeskTableIconBtn title="Düzeltme ekle" onClick={() => acDuzeltme(h)}>
+            <IconDuzeltme />
+          </DeskTableIconBtn>
+          {guvenliMode ? (
+            <DeskTableIconBtn title="Güvenli sil" variant="danger" onClick={() => acGuvenliSil(h, guvenliMode)}>
+              <IconSil />
+            </DeskTableIconBtn>
+          ) : null}
+        </>
       );
     }
     return null;
@@ -357,56 +544,75 @@ export function OfisKasaPage() {
   }
 
   return (
-    <div className="desk-page desk-page-shell desk-page--ofis-kasa">
-      <div className="desk-toolbar desk-toolbar--tight">
-        <div className="desk-toolbar-left">
-          <Link className="desk-link-back" to="/">
-            ← Ana sayfa
+    <div className="desk-page desk-page-shell desk-app-page desk-page--ofis-kasa">
+      <header className="desk-app-page-header">
+        <div className="desk-app-page-header-main">
+          <Link className="desk-app-page-back" to="/">
+            ← Müvekkil Kasa
           </Link>
-          <span className="desk-toolbar-title">Ofis kasası</span>
+          <h1 className="desk-app-page-title">Ofis kasası</h1>
         </div>
-        <div className="desk-toolbar-actions">
+        <div className="desk-app-page-header-actions">
           <button type="button" className="btn btn-primary btn-sm" onClick={() => modalAcYeni()}>
-            Yeni Ofis Kasa Hareketi
+            Yeni hareket
           </button>
-          <button type="button" className="btn btn-sm" onClick={() => raporYazdir()}>
-            Ofis Kasa Raporu Yazdır
+          <button type="button" className="btn btn-sm" onClick={() => setDovizOpen(true)}>
+            Döviz dönüşümü
+          </button>
+          <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => raporYazdir()}>
+            Rapor yazdır
           </button>
         </div>
-      </div>
+      </header>
 
-      <p className="desk-muted-compact desk-page-intro">
-        Bu modül müvekkil dosya kasasından ayrıdır. Vekalet ücreti tahsilatları otomatik olarak Ofis Kasası gelirlerine işlenir.
-      </p>
-
-      {ust ? (
-        <div className="desk-file-strip desk-ofis-ust-ozet">
-          <div className="desk-file-kvgrid desk-file-kvgrid--ofis-ozet">
-            <div className="desk-kv">
-              <span className="desk-kv-k">Devreden bakiye</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.devredenBakiye)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Bu ay gelir</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.buAyGelir)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Bu ay gider</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.buAyGider)}</span>
-            </div>
-            <div className="desk-kv">
-              <span className="desk-kv-k">Bu ay düzeltme etkisi</span>
-              <span className="desk-kv-v desk-num">{formatSignedTry(ust.buAyDuzeltmeEtkisi)}</span>
-            </div>
-            <div className="desk-kv desk-kv--emphasis">
-              <span className="desk-kv-k">Güncel kasa bakiyesi</span>
-              <span className="desk-kv-v desk-num">{formatTry(ust.kasaBakiyesi)}</span>
-            </div>
-          </div>
-        </div>
+      {sayfaUyari ? (
+        <p className="form-error desk-page-banner-error" role="alert">
+          {sayfaUyari}
+          <button type="button" className="btn btn-sm" style={{ marginLeft: 8 }} onClick={() => setSayfaUyari(null)}>
+            Kapat
+          </button>
+        </p>
       ) : null}
 
-      <section className="desk-panel">
+      {ust ? (
+        <section className="desk-ofis-kpi-section" aria-label="Ofis kasası özeti">
+          <h2 className="desk-ofis-kpi-section-title">
+            Kasa özeti{ust.period?.etiket || periodEtiket ? ` — ${ust.period?.etiket || periodEtiket}` : ""}
+          </h2>
+          <div className="desk-ofis-kpi-grid">
+            {PARA_BIRIMLERI.map((pb) => (
+              <article key={pb} className="desk-ofis-kpi-card desk-ofis-kpi-card--balance">
+                <span className="desk-ofis-kpi-label">Güncel bakiye · {pb}</span>
+                <span className="desk-ofis-kpi-value desk-num">{formatMoney(ust.bakiyeler[pb], pb)}</span>
+              </article>
+            ))}
+            <article className="desk-ofis-kpi-card">
+              <span className="desk-ofis-kpi-label">Devreden bakiye</span>
+              <span className="desk-ofis-kpi-value desk-num">{formatTry(ust.devredenBakiye)}</span>
+            </article>
+            <article className="desk-ofis-kpi-card desk-ofis-kpi-card--gelir">
+              <span className="desk-ofis-kpi-label">Dönem geliri</span>
+              <span className="desk-ofis-kpi-value desk-num">{formatTry(ust.donemGelir ?? ust.buAyGelir)}</span>
+            </article>
+            <article className="desk-ofis-kpi-card desk-ofis-kpi-card--gider">
+              <span className="desk-ofis-kpi-label">Dönem gideri</span>
+              <span className="desk-ofis-kpi-value desk-num">{formatTry(ust.donemGider ?? ust.buAyGider)}</span>
+            </article>
+            <article className="desk-ofis-kpi-card desk-ofis-kpi-card--duzeltme">
+              <span className="desk-ofis-kpi-label">Dönem düzeltme etkisi</span>
+              <span className="desk-ofis-kpi-value desk-num">
+                {formatSignedTry(ust.donemDuzeltmeEtkisi ?? ust.buAyDuzeltmeEtkisi)}
+              </span>
+            </article>
+            <article className="desk-ofis-kpi-card desk-ofis-kpi-card--balance">
+              <span className="desk-ofis-kpi-label">Güncel kasa bakiyesi</span>
+              <span className="desk-ofis-kpi-value desk-num">{formatTry(ust.kasaBakiyesi)}</span>
+            </article>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="section-card desk-panel">
         <div className="desk-panel-head">
           <span>Filtreler</span>
           <span className="desk-panel-meta">
@@ -457,7 +663,7 @@ export function OfisKasaPage() {
         </div>
       </section>
 
-      <section className="desk-panel desk-panel--grow desk-panel--ofis-liste">
+      <section className="section-card desk-panel desk-panel--grow desk-panel--ofis-liste">
         <div className="desk-panel-head">
           <span>İşlem listesi</span>
           <span className="desk-panel-meta">
@@ -472,7 +678,7 @@ export function OfisKasaPage() {
           {hareketler.length === 0 ? (
             <p className="desk-muted-compact">Bu filtrelere uygun kayıt yok.</p>
           ) : (
-            <table className="desk-table desk-table--striped desk-table--compact desk-table--ofis-kasa">
+            <table className="desk-table desk-table--striped desk-table--page desk-table--ofis-kasa data-table">
               <thead>
                 <tr>
                   <th className="desk-col-id">#</th>
@@ -480,6 +686,8 @@ export function OfisKasaPage() {
                   <th>Tip</th>
                   <th className="desk-num">Tutar</th>
                   <th>Tür / Ek</th>
+                  <th>Müvekkil</th>
+                  <th>Personel</th>
                   <th>Açıklama</th>
                   <th>Belge</th>
                   <th>Onay</th>
@@ -492,8 +700,10 @@ export function OfisKasaPage() {
                     <td className="desk-col-id">{h.id}</td>
                     <td>{formatDateTr(h.tarih)}</td>
                     <td>{islemTipiHucre(h)}</td>
-                    <td className="desk-num">{formatTry(duzeltmeListeTutar(h))}</td>
+                    <td className="desk-num">{formatMoney(duzeltmeListeTutar(h), h.paraBirimi)}</td>
                     <td className="desk-ofis-tur-ek-cell">{ofisKasaTurEkMetni(h)}</td>
+                    <td>{h.muvekkilAdiSnapshot?.trim() || "—"}</td>
+                    <td>{h.tahsilatiYapanKullaniciAdi?.trim() || "—"}</td>
                     <td className={h.islemTipi === "DUZELTME" ? "desk-kasa-aciklama-correction" : undefined}>
                       {ofisKasaAciklamaMetni(h)}
                     </td>
@@ -514,7 +724,7 @@ export function OfisKasaPage() {
 
       {modalAcik ? (
         <DeskModalPortal>
-          <div className="modal-backdrop" onClick={() => modalKapat()} role="presentation">
+          <DeskModalBackdrop onClose={() => modalKapat()}>
             <div className="modal modal-desk modal-desk--wide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
               <div className="modal-head">
                 <h2>{duzenleId != null ? "Ofis kasa hareketini düzenle" : "Yeni Ofis Kasa Hareketi"}</h2>
@@ -532,17 +742,18 @@ export function OfisKasaPage() {
                       onChange={(e) => {
                         const t = e.target.value as "GELIR" | "GIDER";
                         setFTip(t);
-                        if (t === "GELIR") {
-                          setFKat(OFIS_GELIR_KATEGORI_KODLARI[0]);
-                        } else {
-                          setFKat(OFIS_GIDER_KATEGORI_KODLARI[0]);
-                        }
                         setFOzelKat("");
+                        setFTahsilUserId(null);
+                        void loadFormLookups(t);
                       }}
                     >
                       <option value="GELIR">Gelir</option>
                       <option value="GIDER">Gider</option>
                     </select>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="ofk-fpb">Para birimi</label>
+                    <ParaBirimiSelect id="ofk-fpb" value={fParaBirimi} onChange={setFParaBirimi} disabled={duzenleId != null} />
                   </div>
                   <div className="field">
                     <label htmlFor="ofk-ftar">Tarih</label>
@@ -555,29 +766,25 @@ export function OfisKasaPage() {
                     />
                   </div>
                   <div className="field desk-form-span2">
-                    <label htmlFor="ofk-fkat">Kategori</label>
+                    <label htmlFor="ofk-fkat">Kalem</label>
                     <select
                       id="ofk-fkat"
                       className="desk-input"
-                      value={fKat}
+                      value={fKalemId ?? ""}
                       onChange={(e) => {
-                        setFKat(e.target.value);
-                        if (!ofisKategoriOzelAdGerekli(e.target.value)) {
-                          setFOzelKat("");
-                        }
+                        const id = Number(e.target.value);
+                        setFKalemId(Number.isFinite(id) ? id : null);
+                        const k = fKalemler.find((x) => x.id === id);
+                        if (k) setFKat(k.kod ?? k.ad);
+                        setFOzelKat("");
                       }}
                     >
-                      {fTip === "GELIR"
-                        ? OFIS_GELIR_KATEGORI_KODLARI.map((k) => (
-                            <option key={k} value={k}>
-                              {OFIS_GELIR_KATEGORI_ETIKET[k]}
-                            </option>
-                          ))
-                        : OFIS_GIDER_KATEGORI_KODLARI.map((k) => (
-                            <option key={k} value={k}>
-                              {OFIS_GIDER_KATEGORI_ETIKET[k]}
-                            </option>
-                          ))}
+                      {fKalemler.length === 0 ? <option value="">Kalem yükleniyor…</option> : null}
+                      {fKalemler.map((k) => (
+                        <option key={k.id} value={k.id}>
+                          {k.ad}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   {ozelAlanGerekli ? (
@@ -593,15 +800,19 @@ export function OfisKasaPage() {
                       />
                     </div>
                   ) : null}
+                  <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fac">Açıklama</label>
+                    <textarea
+                      id="ofk-fac"
+                      className="desk-input"
+                      value={fAciklama}
+                      onChange={(e) => setFAciklama(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
                   <div className="field">
                     <label htmlFor="ofk-ftut">Tutar</label>
-                    <input
-                      id="ofk-ftut"
-                      className="desk-input desk-num"
-                      value={fTutar}
-                      onChange={(e) => setFTutar(e.target.value)}
-                      inputMode="decimal"
-                    />
+                    <MoneyInput id="ofk-ftut" value={fTutar} onChange={setFTutar} />
                   </div>
                   <div className="field">
                     <label htmlFor="ofk-fod">Ödeme yöntemi</label>
@@ -614,18 +825,72 @@ export function OfisKasaPage() {
                     </select>
                   </div>
                   <div className="field desk-form-span2">
+                    <label htmlFor="ofk-fmv">İlgili müvekkil (isteğe bağlı)</label>
+                    <input
+                      id="ofk-fmv"
+                      className="desk-input"
+                      value={fMuvekkilQ}
+                      onChange={(e) => void araMuvekkilForForm(e.target.value)}
+                      placeholder="Müvekkil ara…"
+                      list="ofk-muvekkil-list"
+                    />
+                    <datalist id="ofk-muvekkil-list">
+                      {fMuvekkilOpts.map((o) => (
+                        <option key={o.id} value={o.label} />
+                      ))}
+                    </datalist>
+                    <div className="desk-ofis-muvekkil-pick" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                      {fMuvekkilOpts.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          className={`btn btn-sm ${fMuvekkilId === o.id ? "btn-primary" : ""}`}
+                          onClick={() => {
+                            setFMuvekkilId(o.id);
+                            void araMuvekkilForForm(o.label);
+                          }}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                      {fMuvekkilId != null ? (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => {
+                            setFMuvekkilId(null);
+                            void araMuvekkilForForm("");
+                          }}
+                        >
+                          Temizle
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  {fTip === "GELIR" ? (
+                    <div className="field desk-form-span2">
+                      <label htmlFor="ofk-ftahsil">Tahsilatı yapan personel (isteğe bağlı)</label>
+                      <select
+                        id="ofk-ftahsil"
+                        className="desk-input"
+                        value={fTahsilUserId ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFTahsilUserId(v ? Number(v) : null);
+                        }}
+                      >
+                        <option value="">— Seçilmedi —</option>
+                        {fKullanicilar.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.adSoyad}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <div className="field desk-form-span2">
                     <label htmlFor="ofk-fbel">Belge no / fiş no / dekont no</label>
                     <input id="ofk-fbel" className="desk-input" value={fBelge} onChange={(e) => setFBelge(e.target.value)} />
-                  </div>
-                  <div className="field desk-form-span2">
-                    <label htmlFor="ofk-fac">Açıklama</label>
-                    <textarea
-                      id="ofk-fac"
-                      className="desk-input"
-                      value={fAciklama}
-                      onChange={(e) => setFAciklama(e.target.value)}
-                      rows={2}
-                    />
                   </div>
                 </div>
               </div>
@@ -638,13 +903,13 @@ export function OfisKasaPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </DeskModalBackdrop>
         </DeskModalPortal>
       ) : null}
 
       {duzeltmeHedef ? (
         <DeskModalPortal>
-          <div className="modal-backdrop" role="presentation" onClick={() => kapatDuzeltme()}>
+          <DeskModalBackdrop onClose={() => kapatDuzeltme()}>
             <div className="modal modal-desk modal-desk--wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <h2>Düzeltme ekle</h2>
@@ -686,12 +951,10 @@ export function OfisKasaPage() {
                 </div>
                 <div className="field">
                   <label>Doğru tutar</label>
-                  <input
-                    className="desk-input desk-num"
+                  <MoneyInput
                     value={dDogruTutar}
-                    onChange={(e) => setDDogruTutar(e.target.value)}
+                    onChange={setDDogruTutar}
                     placeholder="Orijinal tutardan farklı tutar"
-                    inputMode="decimal"
                   />
                 </div>
                 <div className="field desk-form-span2">
@@ -723,9 +986,31 @@ export function OfisKasaPage() {
               </button>
             </div>
           </div>
-        </div>
+        </DeskModalBackdrop>
         </DeskModalPortal>
       ) : null}
+
+      <DeskGuvenliSilModal
+        ozet={guvenliSilOzet}
+        loading={guvenliSilBusy}
+        error={guvenliSilErr}
+        onClose={() => !guvenliSilBusy && setGuvenliSilOzet(null)}
+        onSubmit={(p) => void guvenliSilGonder(p)}
+      />
+
+      <DeskConfirmDialog
+        open={confirm != null}
+        title={confirm?.title ?? ""}
+        message={confirm?.message ?? ""}
+        variant={confirm?.variant}
+        confirmLabel={confirm?.confirmLabel}
+        busy={confirmBusy}
+        onConfirm={() => void confirm?.onConfirm()}
+        onCancel={() => {
+          if (!confirmBusy) setConfirm(null);
+        }}
+      />
+      <DovizDonusumModal open={dovizOpen} onClose={() => setDovizOpen(false)} onSaved={() => void tumunuYenile()} />
     </div>
   );
 }

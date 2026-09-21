@@ -4,8 +4,11 @@ import type { Dosya } from "@shared/types/dosya";
 import type { Muvekkil, MuvekkilInput } from "@shared/types/muvekkil";
 import { DosyaFormModal } from "../components/DosyaFormModal";
 import { MuvekkilFormModal } from "../components/MuvekkilFormModal";
+import { DeskTableIconLink } from "../components/DeskTableIconBtn";
+import { IconAc } from "../components/DeskTableIcons";
 import { dosyaDurumEtiket } from "../lib/dosya";
 import { muvekkilGorunenAd } from "../lib/muvekkil";
+import { LegacyMuvekkilKarlilikSection } from "../components/LegacyMuvekkilKarlilikSection";
 
 export function MuvekkilDetailPage() {
   const { id } = useParams();
@@ -32,7 +35,7 @@ export function MuvekkilDetailPage() {
   }, [yukle]);
 
   async function kaydetMuvekkil(input: MuvekkilInput) {
-    if (!window.api) return;
+    if (!window.api || editSaving) return;
     setEditErr(null);
     setEditSaving(true);
     try {
@@ -48,6 +51,7 @@ export function MuvekkilDetailPage() {
   }
 
   async function yeniDosyaKaydet(input: Parameters<typeof window.api.dosyaEkle>[0]) {
+    if (dosyaSaving) return;
     setDosyaErr(null);
     if (!window.api?.dosyaEkle) {
       setDosyaErr("Dosya kaydedilemedi.");
@@ -78,7 +82,7 @@ export function MuvekkilDetailPage() {
       <div className="desk-toolbar desk-toolbar--tight">
         <div className="desk-toolbar-left">
           <Link className="desk-link-back" to="/">
-            ← Ana sayfa
+            ← Müvekkil Kasa
           </Link>
           <span className="desk-toolbar-title">{muvekkilGorunenAd(m)}</span>
         </div>
@@ -193,9 +197,9 @@ export function MuvekkilDetailPage() {
                       <td>{(d.dosyaNumarasi ?? "").trim() || "—"}</td>
                       <td>{dosyaDurumEtiket(d.durum)}</td>
                       <td>
-                        <Link to={`/muvekkil/${mid}/dosya/${d.id}`} className="btn btn-sm btn-primary">
-                          Detay
-                        </Link>
+                        <DeskTableIconLink to={`/muvekkil/${mid}/dosya/${d.id}`} title="Detay" variant="primary">
+                          <IconAc />
+                        </DeskTableIconLink>
                       </td>
                     </tr>
                   ))}
@@ -205,6 +209,8 @@ export function MuvekkilDetailPage() {
           </div>
         </div>
       </div>
+
+      <LegacyMuvekkilKarlilikSection muvekkilId={mid} />
 
       <MuvekkilFormModal
         title="Müvekkili düzenle"

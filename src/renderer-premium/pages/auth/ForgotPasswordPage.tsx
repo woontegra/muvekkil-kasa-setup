@@ -72,17 +72,17 @@ export function ForgotPasswordPage() {
         <h2 className="pm-auth-card-title">Şifremi Unuttum</h2>
         {step === "user" ? (
           <>
-            <p className="pm-auth-card-sub">E-posta adresinizi girin.</p>
+            <p className="pm-auth-card-sub">E-posta veya kullanıcı adınızı girin.</p>
             {error ? <PremiumAlert tone="error">{error}</PremiumAlert> : null}
             <form className="pm-auth-form" onSubmit={(e) => void soruGetir(e)}>
-              <PremiumFormField label="E-posta" htmlFor={idUser}>
+              <PremiumFormField label="E-posta veya Kullanıcı Adı" htmlFor={idUser}>
                 <PremiumTextInput
                   id={idUser}
-                  autoComplete="email"
+                  autoComplete="username"
                   value={kullaniciAdi}
                   onChange={(e) => setKullaniciAdi(e.target.value)}
                   disabled={busy}
-                  placeholder="ornek@mail.com"
+                  placeholder="E-posta veya kullanıcı adınızı girin"
                 />
               </PremiumFormField>
               <PremiumButton type="submit" className="pm-auth-submit" disabled={busy}>

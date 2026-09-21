@@ -1,4 +1,4 @@
-import { DIGER_MASRAF_ETIKETI, ODEME_YONTEMI_ETIKET } from "@shared/constants/kasa";
+import { DIGER_MASRAF_ETIKETI, DIGER_ODEME_YONTEMI_ETIKETI, MASRAF_ODEME_YONTEMI_SECENEKLERI, ODEME_YONTEMI_ETIKET } from "@shared/constants/kasa";
 import type { KasaHareket, KasaIslemTipi } from "@shared/types/kasa";
 import { formatTry } from "./format";
 
@@ -18,6 +18,32 @@ export function tipEtiket(tip: KasaIslemTipi): string {
 
 export function odemeEtiket(kod: string): string {
   return ODEME_YONTEMI_ETIKET[kod as keyof typeof ODEME_YONTEMI_ETIKET] ?? kod;
+}
+
+/** Masraf formunda kayıtlı ödeme yöntemini select + diğer alanına çöz. */
+export function masrafOdemeFormFromKayit(stored: string | null | undefined): { select: string; diger: string } {
+  const raw = String(stored ?? "").trim();
+  if (!raw) return { select: "Nakit", diger: "" };
+  if (raw === "NAKIT") return { select: "Nakit", diger: "" };
+  const presets = MASRAF_ODEME_YONTEMI_SECENEKLERI as readonly string[];
+  if (presets.includes(raw) && raw !== DIGER_ODEME_YONTEMI_ETIKETI) {
+    return { select: raw, diger: "" };
+  }
+  const label = odemeEtiket(raw);
+  if (label === DIGER_ODEME_YONTEMI_ETIKETI || raw === "DIGER") {
+    return { select: DIGER_ODEME_YONTEMI_ETIKETI, diger: "" };
+  }
+  return { select: DIGER_ODEME_YONTEMI_ETIKETI, diger: label };
+}
+
+/** Select + diğer alanından kayda yazılacak ödeme yöntemi. */
+export function masrafOdemeKayitDegeri(select: string, diger: string): string | null {
+  if (select === DIGER_ODEME_YONTEMI_ETIKETI) {
+    const t = diger.trim();
+    return t || null;
+  }
+  const s = select.trim();
+  return s || null;
 }
 
 export function onayBadgeClass(h: KasaHareket): string {

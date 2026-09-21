@@ -1,7 +1,9 @@
 import type { DosyaHesapOzetPaketi } from "@shared/types/hesapOzet";
+import { formatMoney } from "@shared/lib/paraBirimi";
 import { formatDateTr, formatSignedTry, formatTry } from "../../lib/format";
 import { kasaIslemTipiEtiket, kasaTurEk, muvekkilHesapOzetSatirlari } from "../../lib/hesapOzet";
 import { hareketAciklamaMasraf, odemeEtiket, onayBadgeMetni } from "../../lib/kasa";
+import { ofisDeger } from "../../lib/makbuz";
 import { taksitDurumEtiket } from "../../lib/vekalet";
 import { PrintOfficeHeaderLeft } from "../print/PrintOfficeHeaderLeft";
 
@@ -13,6 +15,7 @@ export function HesapOzetSheet({
   logoSrc?: string | null;
 }) {
   const { muvekkil, dosya, kasaOzet, hareketler, vekalet, taksitler, vekaletOzet, office } = paket;
+  const vekaletPb = vekalet.paraBirimi;
 
   return (
     <article className="hesap-ozeti-doc">
@@ -125,20 +128,20 @@ export function HesapOzetSheet({
       </section>
 
       <section className="hesap-ozeti-block">
-        <h2 className="hesap-ozeti-h2">Vekalet ücreti</h2>
+        <h2 className="hesap-ozeti-h2">Vekalet ücreti ({vekaletPb})</h2>
         <table className="hesap-ozeti-kv">
           <tbody>
             <tr>
               <th>Anlaşılan vekalet ücreti</th>
-              <td className="hesap-ozeti-num">{formatTry(vekaletOzet.anlasilanTutar)}</td>
+              <td className="hesap-ozeti-num">{formatMoney(vekaletOzet.anlasilanTutar, vekaletPb)}</td>
             </tr>
             <tr>
               <th>Ödenen toplam</th>
-              <td className="hesap-ozeti-num">{formatTry(vekaletOzet.odenenToplam)}</td>
+              <td className="hesap-ozeti-num">{formatMoney(vekaletOzet.odenenToplam, vekaletPb)}</td>
             </tr>
             <tr>
               <th>Kalan vekalet ücreti</th>
-              <td className="hesap-ozeti-num hesap-ozeti-num--strong">{formatTry(vekaletOzet.kalanVekalet)}</td>
+              <td className="hesap-ozeti-num hesap-ozeti-num--strong">{formatMoney(vekaletOzet.kalanVekalet, vekaletPb)}</td>
             </tr>
             <tr>
               <th>Açıklama</th>
@@ -169,7 +172,7 @@ export function HesapOzetSheet({
                 <tr key={t.id}>
                   <td>{t.taksitNo}</td>
                   <td>{t.vadeTarihi ? formatDateTr(t.vadeTarihi) : "—"}</td>
-                  <td className="hesap-ozeti-col-num">{formatTry(t.tutar)}</td>
+                  <td className="hesap-ozeti-col-num">{formatMoney(t.tutar, t.paraBirimi)}</td>
                   <td>{taksitDurumEtiket(t.durum)}</td>
                   <td>{t.sonOdemeTarihi ? formatDateTr(t.sonOdemeTarihi) : "—"}</td>
                   <td>{ofisDeger(t.aciklama)}</td>
@@ -185,7 +188,7 @@ export function HesapOzetSheet({
           <strong>Dosya avans bakiyesi:</strong> {formatTry(kasaOzet.kalanAvans)}
         </p>
         <p className="hesap-ozeti-sonuc-line">
-          <strong>Kalan vekalet ücreti:</strong> {formatTry(vekaletOzet.kalanVekalet)}
+          <strong>Kalan vekalet ücreti:</strong> {formatMoney(vekaletOzet.kalanVekalet, vekaletPb)}
         </p>
         <p className="hesap-ozeti-notice">
           Bu özet, dosyaya ait kayıtlı avans, masraf, düzeltme, vekalet ücreti ve taksit bilgilerine dayanmaktadır.

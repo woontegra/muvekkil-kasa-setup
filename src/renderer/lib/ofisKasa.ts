@@ -18,6 +18,7 @@ import {
   hesaplaOfisKasaDuzeltme,
   type DuzeltmeTurEtiket,
 } from "@shared/ofisKasaDuzeltme";
+import { parseCurrencyInputTR } from "./format";
 import type { OfisKasaHareketListeSatir } from "@shared/types/ofisKasa";
 import { formatSignedTry, formatTry } from "./format";
 
@@ -110,7 +111,8 @@ export function satirAuditTitle(h: OfisKasaHareketListeSatir): string {
 }
 
 export function parseTutar(raw: string): number {
-  return Number(raw.replace(",", ".").trim());
+  const n = parseCurrencyInputTR(raw);
+  return n == null ? Number.NaN : n;
 }
 
 export function duzeltmeTurEtiketForRow(h: OfisKasaHareketListeSatir): DuzeltmeTurEtiket | null {

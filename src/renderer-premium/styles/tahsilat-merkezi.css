@@ -1,0 +1,204 @@
+/* Tahsilat Merkezi — premium sayfa */
+
+.pm-tahsilat-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-4);
+  padding-bottom: var(--pm-space-6);
+}
+
+.pm-tahsilat-summary {
+  background: linear-gradient(135deg, var(--pm-surface) 0%, var(--pm-surface-elevated) 100%);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  padding: var(--pm-space-4) var(--pm-space-5);
+}
+
+.pm-tahsilat-finance-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 960px) {
+  .pm-tahsilat-finance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pm-tahsilat-summary-error,
+.pm-tahsilat-table-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-3);
+  margin-bottom: var(--pm-space-3);
+  padding: var(--pm-space-3);
+  border-radius: var(--pm-radius-md);
+  background: color-mix(in srgb, var(--pm-danger) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--pm-danger) 25%, transparent);
+  color: var(--pm-danger);
+  font-size: var(--pm-font-size-sm);
+}
+
+.pm-tahsilat-filters {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  overflow: hidden;
+}
+
+.pm-tahsilat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-1);
+  padding: var(--pm-space-3) var(--pm-space-4) 0;
+  border-bottom: 1px solid var(--pm-border);
+}
+
+.pm-tahsilat-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--pm-text-muted);
+  font-size: var(--pm-font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pm-tahsilat-tab:hover {
+  color: var(--pm-text);
+}
+
+.pm-tahsilat-tab--active {
+  color: var(--pm-primary);
+  border-bottom-color: var(--pm-primary);
+}
+
+.pm-tahsilat-filters-body {
+  padding: var(--pm-space-4) var(--pm-space-5);
+}
+
+.pm-tahsilat-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--pm-space-3);
+}
+
+.pm-tahsilat-filters-search {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 960px) {
+  .pm-tahsilat-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pm-tahsilat-filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--pm-space-3);
+}
+
+.pm-tahsilat-table-wrap {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  padding: var(--pm-space-4) var(--pm-space-5);
+}
+
+.pm-tahsilat-table-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pm-space-3);
+  margin-bottom: var(--pm-space-3);
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-text-muted);
+}
+
+.pm-tahsilat-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+
+.pm-tahsilat-table-scroll {
+  overflow-x: auto;
+}
+
+.pm-tahsilat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--pm-font-size-sm);
+}
+
+.pm-tahsilat-table th {
+  text-align: left;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-bottom: 1px solid var(--pm-border);
+  color: var(--pm-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pm-tahsilat-table td {
+  padding: var(--pm-space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--pm-border) 60%, transparent);
+  vertical-align: top;
+}
+
+.pm-tahsilat-empty {
+  text-align: center;
+  color: var(--pm-text-muted);
+  padding: var(--pm-space-6) !important;
+}
+
+.pm-tahsilat-cell-main {
+  display: block;
+  font-weight: 500;
+  color: var(--pm-text);
+}
+
+.pm-tahsilat-cell-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--pm-font-size-xs);
+  color: var(--pm-text-muted);
+}
+
+.pm-tahsilat-cell-sub--danger {
+  color: var(--pm-danger);
+}
+
+.pm-tahsilat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--pm-radius-sm);
+  font-size: var(--pm-font-size-xs);
+  font-weight: 600;
+}
+
+.pm-tahsilat-badge--gecikti {
+  background: color-mix(in srgb, var(--pm-danger) 12%, #fff);
+  color: var(--pm-danger);
+}
+
+.pm-tahsilat-badge--kismi_odendi {
+  background: color-mix(in srgb, var(--pm-warning) 12%, #fff);
+  color: var(--pm-warning);
+}
+
+.pm-tahsilat-badge--odenmedi {
+  background: var(--pm-surface-elevated);
+  color: var(--pm-text-muted);
+}
+
+.pm-tahsilat-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2);
+  justify-content: flex-end;
+}

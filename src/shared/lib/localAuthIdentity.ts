@@ -42,3 +42,9 @@ export function resolveInternalUsername(input: {
 
 export const LOGIN_IDENTITY_SQL =
   "kullanici_adi = ? COLLATE NOCASE OR (eposta IS NOT NULL AND TRIM(eposta) != '' AND eposta = ? COLLATE NOCASE)";
+
+/** Login / forgot-password boş kimlik — trial setup e-posta doğrulaması buna dahil değil. */
+export const LOCAL_AUTH_IDENTITY_EMPTY_ERROR = "E-posta veya kullanıcı adı boş olamaz.";
+
+/** Login başarısız — e-posta veya legacy kullanıcı adı. */
+export const LOCAL_AUTH_CREDENTIALS_INVALID_ERROR = "E-posta, kullanıcı adı veya şifre hatalı.";
