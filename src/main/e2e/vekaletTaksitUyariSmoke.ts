@@ -95,10 +95,44 @@ export async function runVekaletTaksitUyariSmoke(): Promise<void> {
       sonuc.vadesiGecmisListe.every((s) => s.kalan > 0 && s.durum === "GECIKTI"),
       "liste satırları geçikmiş açık taksit olmalı",
     );
+    assert(
+      sonuc.vadesiGecmisListe.every(
+        (s) =>
+          Number.isFinite(s.taksitId) &&
+          Number.isFinite(s.dosyaId) &&
+          Number.isFinite(s.muvekkilId) &&
+          (s.muvekkilAdi ?? "").trim().length > 0 &&
+          (s.dosyaKonu ?? "").trim().length > 0,
+      ),
+      "JOIN edilen dosya/müvekkil alanları dolu olmalı",
+    );
+
+    // Soft-delete / iptal filtreleri — iptal edilen taksit ve silinen vekalet sayılmamalı
+    const oncekiGecmis = sonuc.ozet.vadesiGecmis;
+    db.prepare(`UPDATE vekalet_ucreti_taksit SET odeme_durumu = 'IPTAL' WHERE id = ?`).run(gecmis.row.id);
+    const iptalSonra = vekaletTaksitUyariOzet();
+    assert(
+      iptalSonra.ozet.vadesiGecmis === oncekiGecmis - 1,
+      `iptal edilen taksit düşmeli: önce=${oncekiGecmis} sonra=${iptalSonra.ozet.vadesiGecmis}`,
+    );
+    assert(
+      !iptalSonra.vadesiGecmisListe.some((s) => s.taksitId === gecmis.row.id),
+      "iptal edilen taksit listede olmamalı",
+    );
+
+    db.prepare(
+      `UPDATE anlasilan_vekalet_ucreti SET durum = 'IPTAL', silinme_tarihi = ? WHERE id = ?`,
+    ).run(t, vk.row.id);
+    const silinen = vekaletTaksitUyariOzet();
+    assert(silinen.ozet.vadesiGecmis === 0, "silinen vekaletin taksitleri sayılmamalı");
+    assert(silinen.ozet.bugunOdenecek === 0, "silinen vekalet bugün=0");
+    assert(silinen.ozet.odenmemis === 0, "silinen vekalet ödenmemiş=0");
+    assert(silinen.vadesiGecmisListe.length === 0, "silinen vekalet listesi boş");
 
     console.log(
       `[PASS] vekaletTaksitUyariOzet DB: geçmiş=${sonuc.ozet.vadesiGecmis}, bugün=${sonuc.ozet.bugunOdenecek}, ödenmemiş=${sonuc.ozet.odenmemis}, liste=${sonuc.vadesiGecmisListe.length}`,
     );
+    console.log("[PASS] vekaletTaksitUyariOzet JOIN + soft-delete/iptal filtreleri");
     console.log("\n=== Vekalet taksit uyarı smoke: TÜM TESTLER GEÇTİ ===\n");
   } finally {
     closeDb();

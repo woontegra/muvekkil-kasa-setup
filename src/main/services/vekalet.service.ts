@@ -888,9 +888,9 @@ export function vekaletTaksitUyariOzet(): VekaletTaksitUyariSonuc {
         COALESCE((SELECT SUM(o.tutar) FROM vekalet_taksit_odeme o WHERE o.taksit_id = t.id AND ${ODEME_AKTIF_OFIS_SQL}), 0) AS odenen
        FROM vekalet_ucreti_taksit t
        INNER JOIN anlasilan_vekalet_ucreti v ON v.id = t.vekalet_ucreti_id
-       WHERE ${TAKSIT_AKTIF_SQL} AND ${VEKALET_AKTIF_SQL}
        INNER JOIN dosya d ON d.id = v.dosya_id
-       INNER JOIN muvekkil m ON m.id = v.muvekkil_id`,
+       INNER JOIN muvekkil m ON m.id = v.muvekkil_id
+       WHERE ${TAKSIT_AKTIF_SQL} AND ${VEKALET_AKTIF_SQL}`,
     )
     .all() as {
     taksit_id: number;
