@@ -89,24 +89,29 @@ export function MuvekkilListPanel({
 
   if (!isPage) {
     return (
-      <section className="pm-mvk-panel pm-overview-panel" aria-label="Müvekkil listesi">
-        <div className="pm-overview-panel-head">
-          <p className="pm-overview-panel-meta">{loading ? "Yükleniyor…" : total === 1 ? "1 kayıt" : `Toplam ${total} kayıt`}</p>
-          <PremiumButton onClick={onNewMuvekkil}>+ Yeni müvekkil</PremiumButton>
-        </div>
-        <div className="pm-mvk-search-row pm-search-enter">
-          <div className="pm-mvk-search-field">
-            <svg className="pm-mvk-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              className="pm-input pm-mvk-search-input"
-              placeholder="Müvekkil adı, şirket adı veya telefon ara…"
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              aria-label="Müvekkil ara"
-            />
+      <section className="pm-mvk-panel pm-overview-panel pm-dash-client-panel" aria-label="Müvekkil listesi">
+        <div className="pm-dash-client-toolbar">
+          <div className="pm-dash-client-toolbar-copy">
+            <h2 className="pm-overview-panel-title">Müvekkiller</h2>
+            <p className="pm-overview-panel-meta">
+              {loading ? "Yükleniyor…" : total === 1 ? "1 kayıt" : `Toplam ${total} kayıt`}
+            </p>
+          </div>
+          <div className="pm-dash-client-toolbar-actions">
+            <div className="pm-mvk-search-field pm-dash-client-search">
+              <svg className="pm-mvk-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                className="pm-input pm-mvk-search-input"
+                placeholder="Müvekkil adı, şirket adı veya telefon ara…"
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                aria-label="Müvekkil ara"
+              />
+            </div>
+            <PremiumButton onClick={onNewMuvekkil}>+ Yeni müvekkil</PremiumButton>
           </div>
         </div>
         {error ? (
@@ -119,7 +124,7 @@ export function MuvekkilListPanel({
             ) : null}
           </div>
         ) : null}
-        <div className="pm-mvk-table-wrap">
+        <div className="pm-mvk-table-wrap pm-dash-client-table-wrap">
           {loading && items.length === 0 ? (
             <div className="pm-mvk-skeleton-list" aria-hidden>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -129,7 +134,7 @@ export function MuvekkilListPanel({
           ) : items.length === 0 ? (
             <EmptyState title="Kayıt yok" description="Gösterilecek müvekkil bulunamadı." />
           ) : (
-            <table className="pm-mvk-table">
+            <table className="pm-mvk-table pm-dash-client-table">
               <thead>
                 <tr>
                   <th>#</th>
@@ -143,19 +148,24 @@ export function MuvekkilListPanel({
               </thead>
               <tbody>
                 {items.map((m, idx) => (
-                  <tr key={m.id} className="pm-mvk-row-enter" style={{ "--pm-row-i": idx } as CSSProperties}>
-                    <td>{m.id}</td>
+                  <tr
+                    key={m.id}
+                    className="pm-mvk-row-enter pm-dash-client-row"
+                    style={{ "--pm-row-i": idx } as CSSProperties}
+                    onClick={() => navigate(`/muvekkil/${m.id}`)}
+                  >
+                    <td className="pm-dash-client-id">{m.id}</td>
                     <td>
-                      <StatusBadge tone="info">{muvekkilTurEtiket(m.muvekkilTuru)}</StatusBadge>
+                      <StatusBadge tone={m.muvekkilTuru === "TUZEL_KISI" ? "warning" : "info"}>
+                        {muvekkilTurEtiket(m.muvekkilTuru)}
+                      </StatusBadge>
                     </td>
                     <td className="pm-mvk-cell-name">{muvekkilGorunenAd(m)}</td>
                     <td>{muvekkilListeTelefonu(m)}</td>
                     <td className="pm-mvk-cell-ellipsis">{muvekkilListeEposta(m)}</td>
                     <td className="pm-mvk-cell-ellipsis">{(m.not ?? "").trim() || "—"}</td>
                     <td>
-                      <Link to={`/muvekkil/${m.id}`} className="pm-mvk-detail-link">
-                        Detay
-                      </Link>
+                      <MuvekkilRowActions item={m} showEdit={false} />
                     </td>
                   </tr>
                 ))}
@@ -163,6 +173,63 @@ export function MuvekkilListPanel({
             </table>
           )}
         </div>
+        {total > 0 ? (
+          <footer className="pm-mvk-pagination" aria-label="Sayfalama">
+            <span className="pm-mvk-pagination-summary">
+              <strong>
+                {rangeFrom}–{rangeTo}
+              </strong>{" "}
+              / {total} kayıt
+            </span>
+            <label className="pm-mvk-pagesize">
+              <span>Sayfa başına</span>
+              <select
+                className="pm-input pm-mvk-pagesize-select"
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                aria-label="Sayfa başına kayıt"
+              >
+                {MUVEKKIL_PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="pm-mvk-pagination-btns">
+              <button
+                type="button"
+                className="pm-btn pm-btn--ghost pm-btn--sm"
+                disabled={page <= 1 || loading}
+                onClick={() => onPageChange(Math.max(1, page - 1))}
+              >
+                Önceki
+              </button>
+              <div className="pm-mvk-page-nums">
+                {muvekkilListeSayfaNumaralari(page, totalPages).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`pm-mvk-page-num${n === page ? " pm-mvk-page-num--active" : ""}`}
+                    disabled={loading}
+                    onClick={() => onPageChange(n)}
+                    aria-current={n === page ? "page" : undefined}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="pm-btn pm-btn--ghost pm-btn--sm"
+                disabled={page >= totalPages || loading}
+                onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+              >
+                Sonraki
+              </button>
+            </div>
+          </footer>
+        ) : null}
       </section>
     );
   }
@@ -254,18 +321,33 @@ export function MuvekkilListPanel({
               <EmptyState
                 title="Henüz müvekkil kaydı yok"
                 description="İlk müvekkilinizi ekleyerek dosya, kasa ve taksit takibine başlayabilirsiniz."
+                action={
+                  <PremiumButton onClick={onNewMuvekkil} className="pm-mvk-empty-cta">
+                    + Yeni Müvekkil
+                  </PremiumButton>
+                }
               />
             ) : aramaBos ? (
               <EmptyState
                 title="Sonuç bulunamadı"
                 description={`"${query.trim()}" aramasıyla eşleşen kayıt bulunamadı. Farklı bir terim deneyin.`}
+                action={
+                  <PremiumButton onClick={onNewMuvekkil} className="pm-mvk-empty-cta">
+                    + Yeni Müvekkil
+                  </PremiumButton>
+                }
               />
             ) : (
-              <EmptyState title="Kayıt yok" description="Gösterilecek müvekkil bulunamadı." />
+              <EmptyState
+                title="Kayıt yok"
+                description="Gösterilecek müvekkil bulunamadı."
+                action={
+                  <PremiumButton onClick={onNewMuvekkil} className="pm-mvk-empty-cta">
+                    + Yeni Müvekkil
+                  </PremiumButton>
+                }
+              />
             )}
-            <PremiumButton onClick={onNewMuvekkil} className="pm-mvk-empty-cta">
-              + Yeni Müvekkil
-            </PremiumButton>
           </div>
         ) : (
           <div className="pm-mvk-table-scroll">

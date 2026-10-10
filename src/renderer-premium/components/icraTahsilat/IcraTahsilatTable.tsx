@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function IcraTahsilatTable({ icra }: Props) {
-  const { liste, listeLoading, listeError, highlightId, yukleListe, setDetay } = icra;
+  const { liste, listeLoading, listeError, highlightId, yukleListe, setDetay, setAlacakModalAcik } = icra;
 
   return (
     <section className="pm-dosya-section pm-dosya-section--table pm-icra-table-section pm-stagger-item" aria-label="Alacak listesi">
@@ -38,7 +38,15 @@ export function IcraTahsilatTable({ icra }: Props) {
         {listeLoading && liste.length === 0 ? (
           <div className="pm-icra-table-skeleton" aria-hidden />
         ) : liste.length === 0 ? (
-          <EmptyState title="Kayıt bulunamadı" description="Bu filtrelere uygun alacak kaydı yok." />
+          <EmptyState
+            title="Kayıt bulunamadı"
+            description="Bu filtrelere uygun alacak kaydı yok. Yeni icra tahsilat alacağı oluşturabilirsiniz."
+            action={
+              <button type="button" className="pm-btn pm-btn--primary pm-btn--sm" onClick={() => setAlacakModalAcik(true)}>
+                Yeni alacak
+              </button>
+            }
+          />
         ) : (
           <table className="pm-icra-table">
             <thead>

@@ -39,10 +39,10 @@ export function useAccountingPeriodFilter() {
     return { bas: prev.bas, bit: prev.bit };
   }, [filter, mode]);
 
-  function filterByPeriod<T extends { tarih: string }>(rows: T[]): T[] {
+  function filterByPeriod<T extends { tarih: string; economicTarih?: string }>(rows: T[]): T[] {
     if (!range) return rows;
     return rows.filter((h) => {
-      const t = (h.tarih ?? "").slice(0, 10);
+      const t = (h.economicTarih ?? h.tarih ?? "").slice(0, 10);
       return t >= range.bas && t <= range.bit;
     });
   }

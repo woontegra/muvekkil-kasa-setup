@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState } from "../EmptyState";
 import { PremiumButton } from "../PremiumButton";
 import { SettingsSectionFrame } from "./SettingsSectionFrame";
 import { usePremiumToast } from "../../context/PremiumToastContext";
@@ -111,7 +112,10 @@ export function SettingsKullanicilarSection() {
       <div className="pm-users-list-block">
         <h3 className="pm-kalem-block-title">Kayıtlı kullanıcılar</h3>
         {rows.length === 0 ? (
-          <p className="pm-muted">Henüz kullanıcı yok.</p>
+          <EmptyState
+            title="Henüz kullanıcı yok"
+            description="Büro sahibi, avukat veya kâtip hesabı ekleyerek ekip erişimini yönetebilirsiniz."
+          />
         ) : (
           <ul className="pm-kalem-rows">
             {rows.map((u) => (

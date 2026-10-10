@@ -8,12 +8,35 @@ import {
   type UyariSeviyesi,
   type UyariTuru,
 } from "@shared/types/maliKontrol";
+import { formatMoney, type ParaBirimi } from "@shared/lib/paraBirimi";
 import { buildMaliKontrolNavigateUrl, canNavigateMaliKontrolUyari } from "@shared/lib/maliKontrolNavigation";
 import { PremiumModal } from "../modal/PremiumModal";
 import { PremiumButton } from "../PremiumButton";
 
 type Props = { enabled: boolean };
 type ViewMode = "tum" | "kritik" | "uyari" | "bilgi";
+
+function parseUyariTutar(raw: string | null): number | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (!t) return null;
+  let normalized: string;
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t) || (t.includes(",") && t.includes("."))) {
+    normalized = t.replace(/\./g, "").replace(",", ".");
+  } else if (t.includes(",")) {
+    normalized = t.replace(",", ".");
+  } else {
+    normalized = t;
+  }
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatUyariTutar(tutar: string | null, paraBirimi: ParaBirimi | null): string | null {
+  const n = parseUyariTutar(tutar);
+  if (n == null) return tutar;
+  return formatMoney(n, paraBirimi ?? "TRY");
+}
 
 export function MaliKontrolCard({ enabled }: Props) {
   const navigate = useNavigate();
@@ -57,8 +80,22 @@ export function MaliKontrolCard({ enabled }: Props) {
 
   if (!enabled) return null;
 
+  /** Tek kaynak: API özeti (filtre dışı; dış kart + modal footer). */
   const toplam = data?.toplamUyari ?? 0;
   const kritik = data?.kritikUyari ?? 0;
+  const uyari = data?.uyariUyari ?? 0;
+  const bilgi = data?.bilgiUyari ?? 0;
+  const filteredCount = filtered.length;
+  const filterActive = view !== "tum" || turFilter !== "ALL";
+
+  const toneClass =
+    kritik > 0
+      ? "pm-mk-card--kritik"
+      : uyari > 0
+        ? "pm-mk-card--uyari"
+        : toplam === 0
+          ? "pm-mk-card--temiz"
+          : "pm-mk-card--bilgi";
 
   function git(u: MaliKontrolUyari) {
     if (!canNavigateMaliKontrolUyari(u)) return;
@@ -70,22 +107,58 @@ export function MaliKontrolCard({ enabled }: Props) {
   const seviyeClass = (s: UyariSeviyesi) =>
     s === "KRITIK" ? "pm-mk-row--kritik" : s === "UYARI" ? "pm-mk-row--uyari" : "pm-mk-row--bilgi";
 
+  function openMerkez() {
+    void yukle();
+    setOpen(true);
+  }
+
   return (
     <>
-      <button
-        type="button"
-        className={`pm-overview-alert-card ${kritik > 0 ? "pm-overview-alert-card--danger" : ""}`}
-        onClick={() => {
-          void yukle();
-          setOpen(true);
-        }}
+      <section
+        className={`pm-overview-panel pm-dash-side-card pm-mk-card ${toneClass}`}
+        aria-label="Mali Kontrol Merkezi"
+        data-mk-toplam={toplam}
+        data-mk-kritik={kritik}
+        data-mk-uyari={uyari}
+        data-mk-bilgi={bilgi}
       >
-        <span className="pm-overview-alert-label">Mali Kontrol</span>
-        <strong className="pm-overview-alert-value">{toplam}</strong>
-        <span className="pm-overview-alert-meta">
-          {err ? err : kritik > 0 ? `${kritik} kritik uyarı` : toplam === 0 ? "Temiz · Açık kontrol yok" : "Açık kontrol"}
-        </span>
-      </button>
+        <div className="pm-mk-card-head">
+          <div className="pm-mk-card-titles">
+            <h3 className="pm-overview-panel-title">Mali Kontrol Merkezi</h3>
+            {err ? <p className="pm-mk-card-err">{err}</p> : null}
+          </div>
+          <span className="pm-mk-card-badge" aria-label={`${toplam} açık kayıt`}>
+            {toplam === 0 ? "Temiz" : `${toplam} açık kayıt`}
+          </span>
+        </div>
+
+        {toplam === 0 && !err ? (
+          <p className="pm-mk-card-empty">Kontrol edilecek mali uyarı yok.</p>
+        ) : (
+          <>
+            <p className="pm-mk-card-breakdown">
+              <span className="pm-mk-chip pm-mk-chip--kritik">{kritik} kritik</span>
+              <span className="pm-mk-chip-sep" aria-hidden>
+                ·
+              </span>
+              <span className="pm-mk-chip pm-mk-chip--uyari">{uyari} uyarı</span>
+              <span className="pm-mk-chip-sep" aria-hidden>
+                ·
+              </span>
+              <span className="pm-mk-chip pm-mk-chip--bilgi">{bilgi} bilgi</span>
+            </p>
+            <div className="pm-mk-card-meters" aria-hidden>
+              <span className="pm-mk-meter pm-mk-meter--kritik" title={`${kritik} kritik`} />
+              <span className="pm-mk-meter pm-mk-meter--uyari" title={`${uyari} uyarı`} />
+              <span className="pm-mk-meter pm-mk-meter--bilgi" title={`${bilgi} bilgi`} />
+            </div>
+          </>
+        )}
+
+        <PremiumButton type="button" className="pm-mk-card-cta" onClick={openMerkez}>
+          Kontrol merkezini aç
+        </PremiumButton>
+      </section>
 
       <PremiumModal
         open={open}
@@ -94,13 +167,14 @@ export function MaliKontrolCard({ enabled }: Props) {
         onClose={() => setOpen(false)}
         footer={
           <>
-            <span className="pm-mk-footer-counts" style={{ marginRight: "auto" }}>
+            <span className="pm-mk-footer-counts" style={{ marginRight: "auto" }} data-mk-footer-toplam={toplam}>
               {data ? (
                 <>
-                  <span>{data.toplamUyari} toplam</span>
-                  <span className="pm-mk-count--kritik">{data.kritikUyari} kritik</span>
-                  <span className="pm-mk-count--uyari">{data.uyariUyari} uyarı</span>
-                  <span>{data.bilgiUyari} bilgi</span>
+                  <span>{toplam} toplam</span>
+                  <span className="pm-mk-count--kritik">{kritik} kritik</span>
+                  <span className="pm-mk-count--uyari">{uyari} uyarı</span>
+                  <span>{bilgi} bilgi</span>
+                  {filterActive ? <span className="pm-mk-footer-shown">Gösterilen: {filteredCount}</span> : null}
                 </>
               ) : null}
             </span>
@@ -114,7 +188,7 @@ export function MaliKontrolCard({ enabled }: Props) {
         }
       >
         <div className="pm-mk-toolbar">
-          <div className="pm-kalem-tabs" role="tablist" aria-label="Seviye filtresi">
+          <div className="pm-mk-tabs" role="tablist" aria-label="Seviye filtresi">
             {(
               [
                 ["tum", "Tüm açık"],
@@ -128,7 +202,7 @@ export function MaliKontrolCard({ enabled }: Props) {
                 type="button"
                 role="tab"
                 aria-selected={view === id}
-                className={`pm-kalem-tab${view === id ? " pm-kalem-tab--active" : ""}`}
+                className={`pm-mk-tab${view === id ? " pm-mk-tab--active" : ""}`}
                 onClick={() => setView(id)}
               >
                 {label}
@@ -161,28 +235,33 @@ export function MaliKontrolCard({ enabled }: Props) {
           </div>
         ) : (
           <ul className="pm-mk-list">
-            {filtered.map((u) => (
-              <li key={`${u.tur}:${u.id}`} className={`pm-mk-row ${seviyeClass(u.seviye)}`}>
-                <div className="pm-mk-row-top">
-                  <span className={`pm-mk-dot pm-mk-dot--${u.seviye.toLowerCase()}`} aria-hidden />
-                  <span className="pm-mk-badge">{UYARI_SEVIYE_ETIKET[u.seviye]}</span>
-                  <span className="pm-mk-tur">{UYARI_TUR_ETIKET[u.tur]}</span>
-                  {u.tutar ? <span className="pm-mk-tutar">{u.tutar}</span> : null}
-                </div>
-                <div className="pm-mk-row-body">
-                  <strong className="pm-mk-muvekkil">{u.muvekkilAd}</strong>
-                  <span className="pm-muted">{u.dosyaBaslik}</span>
-                  <p className="pm-mk-aciklama">{u.aciklama}</p>
-                </div>
-                {canNavigateMaliKontrolUyari(u) ? (
-                  <div className="pm-mk-row-actions">
-                    <button type="button" className="pm-btn pm-btn--sm pm-btn--ghost" onClick={() => git(u)}>
-                      Kayda git
-                    </button>
+            {filtered.map((u) => {
+              const tutarGoster = formatUyariTutar(u.tutar, u.paraBirimi);
+              return (
+                <li key={`${u.tur}:${u.id}`} className={`pm-mk-row ${seviyeClass(u.seviye)}`}>
+                  <div className="pm-mk-row-main">
+                    <div className="pm-mk-row-top">
+                      <span className={`pm-mk-dot pm-mk-dot--${u.seviye.toLowerCase()}`} aria-hidden />
+                      <span className="pm-mk-badge">{UYARI_SEVIYE_ETIKET[u.seviye]}</span>
+                      <span className="pm-mk-tur">{UYARI_TUR_ETIKET[u.tur]}</span>
+                      {tutarGoster ? <span className="pm-mk-tutar">{tutarGoster}</span> : null}
+                    </div>
+                    <div className="pm-mk-row-body">
+                      <strong className="pm-mk-muvekkil">{u.muvekkilAd}</strong>
+                      <span className="pm-muted">{u.dosyaBaslik}</span>
+                      <p className="pm-mk-aciklama">{u.aciklama}</p>
+                    </div>
                   </div>
-                ) : null}
-              </li>
-            ))}
+                  {canNavigateMaliKontrolUyari(u) ? (
+                    <div className="pm-mk-row-actions">
+                      <button type="button" className="pm-btn pm-btn--sm pm-btn--ghost" onClick={() => git(u)}>
+                        Kayda git
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </PremiumModal>

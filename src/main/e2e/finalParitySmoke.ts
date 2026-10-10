@@ -21,6 +21,7 @@ import { decideModuleIpcAccess, MODULE_FORBIDDEN_ERROR } from "../ipc/moduleAuth
 import { canShowOfisGuvenliSil } from "@shared/lib/guvenliSil";
 import { OFIS_KASA_KAYNAK_VEKALET_TAHSILATI } from "@shared/constants/ofisKasa";
 import { IPC } from "@shared/ipc";
+import { runDuzeltmeGroupingUnitSmoke } from "@shared/lib/financeDuzeltmeListe";
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -54,6 +55,7 @@ async function withTempDb(fn: () => Promise<void> | void): Promise<void> {
 }
 
 export async function runFinalParitySmoke(): Promise<void> {
+  runDuzeltmeGroupingUnitSmoke();
   await withTempDb(() => {
     const d = getDb();
     const t = nowIso();

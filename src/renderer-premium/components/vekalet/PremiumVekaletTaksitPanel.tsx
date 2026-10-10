@@ -1,7 +1,23 @@
 import { useMemo, useState } from "react";
-import { PremiumTaksitTopluSilModal } from "./PremiumTaksitTopluSilModal";
+import type { VekaletTaksitOdeme } from "@shared/types/vekalet";
+import { formatMoney } from "@shared/lib/paraBirimi";
+import { PremiumButton } from "../PremiumButton";
+import { StatusBadge } from "../StatusBadge";
+import { BugunkuTlKarsilikCell, BUGUNKU_TL_KUR_HINT } from "../kurlar/BugunkuTlKarsilikCell";
+import { useYaklasikTryBatch, yaklasikByKey } from "../../hooks/useYaklasikTryBatch";
+import type { UseVekaletTaksitReturn } from "../../hooks/useVekaletTaksit";
+import { formatDateTr } from "../../lib/format";
+import { taksitDurumEtiket, taksitDurumTone, taksitSmmHucre } from "../../lib/vekalet";
+import { PremiumTaksitDuzenleModal } from "./PremiumTaksitDuzenleModal";
+import { PremiumTaksitEkleModal } from "./PremiumTaksitEkleModal";
+import { PremiumTaksitOdemeGecmisiModal } from "./PremiumTaksitOdemeGecmisiModal";
+import { PremiumTaksitOdemeModal } from "./PremiumTaksitOdemeModal";
+import { PremiumTaksitPlaniModal } from "./PremiumTaksitPlaniModal";
 import { PremiumTaksitSilModal } from "./PremiumTaksitSilModal";
+import { PremiumTaksitTopluSilModal } from "./PremiumTaksitTopluSilModal";
 import { PremiumVekaletGuvenliIptalModal } from "./PremiumVekaletGuvenliIptalModal";
+import { PremiumVekaletOdemeEditModal } from "./PremiumVekaletOdemeEditModal";
+import { PremiumVekaletUcretModal } from "./PremiumVekaletUcretModal";
 
 type Props = {
   dosyaId: number;

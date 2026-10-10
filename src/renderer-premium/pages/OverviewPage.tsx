@@ -1,26 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfisKasaAnaSayfaOzet } from "@shared/types/ofisKasa";
 import type { MuvekkilListItem, MuvekkilPagedResult } from "@shared/types/muvekkil";
 import type { VekaletTaksitUyariSatir } from "@shared/types/vekalet";
+import type { TahsilatMerkeziOzet } from "@shared/types/tahsilatMerkezi";
 import { toLocalYmd } from "@shared/lib/accountingPeriod";
+import { canMaliKontrol } from "@shared/lib/rolYetki";
 import { usePremiumLicense } from "../context/PremiumLicenseContext";
 import { usePremiumToast } from "../context/PremiumToastContext";
+import { usePremiumAuth } from "../context/PremiumAuthContext";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { FinanceKpiCard } from "../components/overview/FinanceKpiCard";
 import { PeriodSegmentedSwitch } from "../components/overview/PeriodSegmentedSwitch";
-import { AlertsPanel, MuvekkilTableSection, QuickActionsPanel } from "../components/overview/OverviewSections";
 import { MaliKontrolCard } from "../components/overview/MaliKontrolCard";
 import { BugunkuRandevularWidget } from "../components/randevu/BugunkuRandevularWidget";
 import { PremiumButton } from "../components/PremiumButton";
-import { MKD_MUVEKKIL_CHANGED, MKD_OVERVIEW_REFRESH } from "../lib/events";
 import { PremiumMuvekkilFormModal } from "../components/muvekkil/PremiumMuvekkilFormModal";
 import { CurrencyBalanceCards } from "../components/currency/CurrencyFields";
-import { usePremiumAuth } from "../context/PremiumAuthContext";
-import { canMaliKontrol } from "@shared/lib/rolYetki";
-import { Link } from "react-router-dom";
-import type { TahsilatMerkeziOzet } from "@shared/types/tahsilatMerkezi";
+import { DashboardMetricCard } from "../components/dashboard/DashboardMetricCard";
+import { DashboardWorkflowCard } from "../components/dashboard/DashboardWorkflowCard";
+import { DashboardQuickActions } from "../components/dashboard/DashboardQuickActions";
+import { DashboardWarningCenter } from "../components/dashboard/DashboardWarningCenter";
+import { DashboardClientTable } from "../components/dashboard/DashboardClientTable";
+import { MKD_MUVEKKIL_CHANGED, MKD_OVERVIEW_REFRESH } from "../lib/events";
 
 async function muvekkilListesiniSayfaliYukle(
   arama: string,
@@ -299,10 +301,16 @@ export function OverviewPage() {
   }
 
   const netLabel = donemNetEtiket(ofisOzet?.donemNetSonucu ?? 0);
+  const onayBekleyen = ofisOzet?.onayBekleyenSayisi ?? 0;
+  const workflowLoading = ofisOzetLoading || yanOzetLoading;
 
   return (
     <div className="pm-overview pm-overview--enter">
-      <div className="pm-overview-hero pm-overview-hero--toolbar">
+      <div className="pm-overview-hero">
+        <div className="pm-overview-hero-copy">
+          <h2 className="pm-overview-welcome">Genel Bakış</h2>
+          <p className="pm-overview-sub">Ofis özeti ve güncel durum</p>
+        </div>
         <div className="pm-overview-hero-actions">
           <PeriodSegmentedSwitch mode={donemMode} busy={donemModeBusy} onChange={(m) => void donemModeSec(m)} />
           <PremiumButton onClick={yeniMuvekkilAc}>+ Yeni müvekkil</PremiumButton>
@@ -325,7 +333,7 @@ export function OverviewPage() {
           </h2>
         </div>
         <div className="pm-finance-grid">
-          <FinanceKpiCard
+          <DashboardMetricCard
             label="Devreden bakiye"
             hint="Önceki dönemden"
             value={ofisOzet?.devredenBakiye ?? 0}
@@ -334,7 +342,7 @@ export function OverviewPage() {
             tone="balance"
             icon={<span>↺</span>}
           />
-          <FinanceKpiCard
+          <DashboardMetricCard
             label="Dönem geliri"
             hint="Seçili dönem"
             value={ofisOzet?.donemGelir ?? 0}
@@ -343,7 +351,7 @@ export function OverviewPage() {
             staggerIndex={1}
             icon={<span>↑</span>}
           />
-          <FinanceKpiCard
+          <DashboardMetricCard
             label="Dönem gideri"
             hint="Seçili dönem"
             value={ofisOzet?.donemGider ?? 0}
@@ -352,7 +360,7 @@ export function OverviewPage() {
             staggerIndex={2}
             icon={<span>↓</span>}
           />
-          <FinanceKpiCard
+          <DashboardMetricCard
             label={netLabel}
             hint="Gelir − gider"
             value={ofisOzet?.donemNetSonucu ?? 0}
@@ -363,7 +371,7 @@ export function OverviewPage() {
             icon={<span>∑</span>}
           />
           <CurrencyBalanceCards bakiyeler={ofisOzet?.bakiyeler} loading={ofisOzetLoading} />
-          <FinanceKpiCard
+          <DashboardMetricCard
             label="SMM bekleyen tahsilat"
             hint="Kesim bekleyen kayıt"
             value={smmBekleyenSayisi}
@@ -378,7 +386,80 @@ export function OverviewPage() {
 
       <div className="pm-overview-grid">
         <div className="pm-overview-main">
-          <MuvekkilTableSection
+          <section className="pm-dash-workflow" aria-label="Güncel iş akışı">
+            <div className="pm-dash-workflow-head">
+              <h2 className="pm-overview-section-title">Güncel iş akışı</h2>
+              <p className="pm-dash-workflow-sub">Takip gerektiren ofis kayıtları</p>
+            </div>
+            <div className="pm-dash-workflow-grid">
+              <DashboardWorkflowCard
+                title="Onay bekleyen işlemler"
+                value={onayBekleyen}
+                hint="Ofis kasası onayı"
+                tone="approval"
+                loading={workflowLoading}
+                to="/ofis-kasasi"
+                staggerIndex={0}
+                emptyLabel="Onay bekleyen yok"
+                icon={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                }
+              />
+              <DashboardWorkflowCard
+                title="Vadesi geçmiş taksitler"
+                value={taksitOzet.vadesiGecmis}
+                hint="Acil takip"
+                tone="overdue"
+                loading={workflowLoading}
+                to="/tahsilat-merkezi"
+                staggerIndex={1}
+                emptyLabel="Gecikmiş yok"
+                icon={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                }
+              />
+              <DashboardWorkflowCard
+                title="Ödenmemiş taksitler"
+                value={taksitOzet.odenmemis}
+                hint="Açık bakiyeler"
+                tone="unpaid"
+                loading={workflowLoading}
+                to="/tahsilat-merkezi"
+                staggerIndex={2}
+                emptyLabel="Ödenmemiş yok"
+                icon={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="M3 10h18" />
+                  </svg>
+                }
+              />
+              <DashboardWorkflowCard
+                title="SMM bekleyen tahsilatlar"
+                value={smmBekleyenSayisi}
+                hint="Kesim bekleyen"
+                tone="smm"
+                loading={workflowLoading}
+                to="/tahsilat-merkezi"
+                staggerIndex={3}
+                emptyLabel="SMM bekleyen yok"
+                icon={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 2v6h6M9 15h6M9 11h6" />
+                  </svg>
+                }
+              />
+            </div>
+          </section>
+
+          <DashboardClientTable
             items={sonuc}
             loading={listeYukleniyor}
             total={listeTotal}
@@ -397,8 +478,9 @@ export function OverviewPage() {
             onRetry={() => void yukleKayitListesi()}
           />
         </div>
+
         <aside className="pm-overview-side">
-          <QuickActionsPanel
+          <DashboardQuickActions
             donemMode={donemMode}
             donemBusy={donemModeBusy}
             licenseBusy={lisansKontrol}
@@ -407,7 +489,7 @@ export function OverviewPage() {
             onLicenseCheck={() => void lisansKontrolEt()}
           />
           <MaliKontrolCard enabled={maliKontrolAcik} />
-          <section className="pm-overview-panel pm-tahsilat-side" aria-label="Tahsilat Merkezi özeti">
+          <section className="pm-overview-panel pm-tahsilat-side pm-dash-side-card" aria-label="Tahsilat Merkezi özeti">
             <div className="pm-overview-panel-head">
               <h3 className="pm-overview-panel-title">Tahsilat Merkezi</h3>
               <Link to="/tahsilat-merkezi" className="pm-btn pm-btn--sm pm-btn--ghost">
@@ -439,7 +521,7 @@ export function OverviewPage() {
               )}
             </div>
           </section>
-          <AlertsPanel
+          <DashboardWarningCenter
             vadesiGecmis={taksitOzet.vadesiGecmis}
             bugunOdenecek={taksitOzet.bugunOdenecek}
             odenmemis={taksitOzet.odenmemis}

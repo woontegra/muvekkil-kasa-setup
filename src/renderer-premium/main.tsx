@@ -1,6 +1,6 @@
+import { premiumRestartHint } from "./lib/bootErrorHint";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { premiumRestartHint } from "./lib/bootErrorHint";
 import App from "./App";
 import "./styles/tokens.css";
 import "./styles/base.css";
@@ -20,15 +20,30 @@ import "./styles/randevu.css";
 import "./styles/settings.css";
 import "./styles/raporlar.css";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function showBootError(message: string) {
   const root = document.getElementById("root");
   if (!root) return;
+  const detail = escapeHtml(message.trim() || "Bilinmeyen hata");
   root.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f8fafc;font-family:system-ui,sans-serif;">
-      <div style="max-width:520px;padding:24px;border-radius:12px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(15,23,42,.08);">
-        <h2 style="margin:0 0 12px;color:#0f2744;">Premium arayüz başlatılamadı</h2>
-        <p style="margin:0 0 16px;color:#64748b;font-size:14px;line-height:1.5;">${premiumRestartHint()}</p>
-        <pre style="margin:0;padding:12px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:12px;white-space:pre-wrap;overflow:auto;">${message}</pre>
+    <div class="pm-error-boundary">
+      <div class="pm-error-boundary-card" role="alert">
+        <h2 class="pm-error-boundary-title">Premium arayüz başlatılamadı</h2>
+        <p class="pm-error-boundary-desc">${escapeHtml(premiumRestartHint())}</p>
+        <details class="pm-error-boundary-details">
+          <summary>Teknik detay</summary>
+          <pre class="pm-error-boundary-pre">${detail}</pre>
+        </details>
+        <div class="pm-error-boundary-actions">
+          <button type="button" class="pm-btn pm-btn--primary" onclick="location.reload()">Sayfayı yenile</button>
+        </div>
       </div>
     </div>
   `;

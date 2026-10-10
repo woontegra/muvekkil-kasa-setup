@@ -72,6 +72,7 @@
   --pm-border-subtle: var(--pm-border-soft);
   --pm-bg: var(--pm-bg-app);
   --pm-font-size-md: var(--pm-font-size-base);
+  --pm-duration-fast: 150ms;
   --pm-duration-normal: 220ms;
   --pm-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }

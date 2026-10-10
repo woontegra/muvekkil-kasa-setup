@@ -19,7 +19,10 @@ import {
   type DuzeltmeTurEtiket,
 } from "@shared/ofisKasaDuzeltme";
 import type { OfisKasaHareketListeSatir } from "@shared/types/ofisKasa";
+import { balanceImpactTone, formatBalanceImpact } from "@shared/lib/paraBirimi";
 import { formatSignedTry, formatTry, parseCurrencyInputTR } from "./format";
+
+export { formatBalanceImpact, balanceImpactTone };
 
 export { formatSignedTry, hesaplaOfisKasaDuzeltme };
 
@@ -124,7 +127,15 @@ export function duzeltmeTurEtiketForRow(h: OfisKasaHareketListeSatir): DuzeltmeT
 
 export function duzeltmeListeTutar(h: OfisKasaHareketListeSatir): number {
   if (h.islemTipi !== "DUZELTME") return h.tutar;
-  return duzeltmeKasaEtkisiFromRow(h);
+  return h.bakiyeEtkisi ?? duzeltmeKasaEtkisiFromRow(h);
+}
+
+export function duzeltmeBakiyeSinifi(h: OfisKasaHareketListeSatir): string {
+  if (h.islemTipi !== "DUZELTME") return "";
+  const tone = balanceImpactTone(duzeltmeListeTutar(h));
+  if (tone === "positive") return "pm-ofis-impact--pos";
+  if (tone === "negative") return "pm-ofis-impact--neg";
+  return "pm-ofis-impact--neutral";
 }
 
 export function duzeltmeAltSatir(h: OfisKasaHareketListeSatir): string | null {

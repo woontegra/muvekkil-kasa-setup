@@ -4,8 +4,11 @@ import {
   MASRAF_ODEME_YONTEMI_SECENEKLERI,
   ODEME_YONTEMI_ETIKET,
 } from "@shared/constants/kasa";
+import { balanceImpactTone, formatBalanceImpact } from "@shared/lib/paraBirimi";
 import type { KasaHareket, KasaIslemTipi } from "@shared/types/kasa";
-import { formatTry } from "./format";
+import { formatDateTr, formatTry } from "./format";
+
+export { formatBalanceImpact, balanceImpactTone, formatDateTr };
 
 export function tipEtiket(tip: KasaIslemTipi): string {
   if (tip === "AVANS_GIRISI") return "Avans";
@@ -93,8 +96,21 @@ export function hareketKategori(h: KasaHareket): string {
 export function hareketGirisCikis(h: KasaHareket): { giris: number | null; cikis: number | null } {
   if (h.islemTipi === "AVANS_GIRISI") return { giris: h.tutar, cikis: null };
   if (h.islemTipi === "MASRAF") return { giris: null, cikis: Math.abs(h.tutar) };
+  if (h.islemTipi === "DUZELTME") {
+    const etki = h.bakiyeEtkisi ?? h.tutar;
+    if (etki >= 0) return { giris: etki, cikis: null };
+    return { giris: null, cikis: Math.abs(etki) };
+  }
   if (h.tutar >= 0) return { giris: h.tutar, cikis: null };
   return { giris: null, cikis: Math.abs(h.tutar) };
+}
+
+export function kasaDuzeltmeImpactSinifi(h: KasaHareket): string {
+  if (h.islemTipi !== "DUZELTME") return "";
+  const tone = balanceImpactTone(h.bakiyeEtkisi ?? h.tutar);
+  if (tone === "positive") return "pm-kasa-impact--pos";
+  if (tone === "negative") return "pm-kasa-impact--neg";
+  return "";
 }
 
 export function hareketSatirSinifi(h: KasaHareket): string {

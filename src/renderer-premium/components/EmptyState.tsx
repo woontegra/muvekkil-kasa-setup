@@ -4,9 +4,10 @@ type Props = {
   title: string;
   description: string;
   icon?: ReactNode;
+  action?: ReactNode;
 };
 
-export function EmptyState({ title, description, icon }: Props) {
+export function EmptyState({ title, description, icon, action }: Props) {
   return (
     <div className="pm-empty-state">
       <div className="pm-empty-state-icon" aria-hidden>
@@ -18,6 +19,7 @@ export function EmptyState({ title, description, icon }: Props) {
       </div>
       <h2 className="pm-empty-state-title">{title}</h2>
       <p className="pm-empty-state-desc">{description}</p>
+      {action ? <div className="pm-empty-state-action">{action}</div> : null}
     </div>
   );
 }

@@ -86,7 +86,12 @@ export type Api = {
   getAccountingPeriodMode: () => Promise<AccountingPeriodMode>;
   setAccountingPeriodMode: (mode: AccountingPeriodMode) => Promise<AccountingPeriodMode>;
   ofisKasaList: (f: OfisKasaListFilter) => Promise<OfisKasaHareketListeSatir[]>;
-  ofisKasaUstOzet: (opts?: { referenceDate?: string }) => Promise<OfisKasaUstOzet>;
+  ofisKasaUstOzet: (opts?: {
+    referenceDate?: string;
+    periodBas?: string | null;
+    periodBit?: string | null;
+    periodEtiket?: string;
+  }) => Promise<OfisKasaUstOzet>;
   ofisKasaAnaSayfaOzet: (opts?: { referenceDate?: string }) => Promise<OfisKasaAnaSayfaOzet>;
   ofisKasaEkle: (input: OfisKasaEkleInput) => Promise<OfisKasaIslemSonuc>;
   ofisKasaGuncelle: (id: number, patch: OfisKasaGuncellePatch) => Promise<OfisKasaIslemSonuc>;

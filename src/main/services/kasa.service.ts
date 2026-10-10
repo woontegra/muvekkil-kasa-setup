@@ -15,6 +15,7 @@ import type {
 } from "@shared/types/kasa";
 import { authGetSession } from "./auth.service";
 import { dosyaGet } from "./dosya.service";
+import { groupKasaHareketListe } from "@shared/lib/financeDuzeltmeListe";
 import { KASA_AKTIF_SQL } from "./kasaAktifSql";
 
 function rowHareket(r: Record<string, unknown>): KasaHareket {
@@ -182,11 +183,12 @@ export function kasaHareketList(dosyaId: number): KasaHareket[] {
         .all(dosyaId) as { x: number }[]
     ).map((r) => r.x)
   );
-  return rows.map((raw) => {
+  const enriched = rows.map((raw) => {
     const h = rowHareket(raw);
     const hasCorrection = correctedIds.has(h.id) && !h.duzeltmeMi;
     return { ...h, hasCorrection };
   });
+  return groupKasaHareketListe(enriched);
 }
 
 export function kasaHareketGet(id: number): KasaHareket | null {

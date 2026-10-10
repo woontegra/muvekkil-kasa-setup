@@ -493,7 +493,15 @@ function unitTcmbHeaderDtoAndFormat(): void {
     "utf8",
   );
   assert(vekaletPanel.includes("useYaklasikTryBatch"), "Premium vekalet yaklaşık TRY");
+  assert(
+    /import\s*\{[^}]*useYaklasikTryBatch[^}]*\}\s*from\s*["'].*useYaklasikTryBatch["']/.test(vekaletPanel),
+    "Premium vekalet must import useYaklasikTryBatch (prevents ReferenceError)",
+  );
   assert(vekaletPanel.includes("BugunkuTlKarsilikCell"), "Premium BugunkuTl cell");
+  assert(
+    /import\s*\{[^}]*BugunkuTlKarsilikCell[^}]*\}/.test(vekaletPanel),
+    "Premium vekalet must import BugunkuTlKarsilikCell",
+  );
 
   console.log("[PASS] TCMB header DTO + format parity");
 }

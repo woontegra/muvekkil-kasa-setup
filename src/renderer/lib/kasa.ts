@@ -1,6 +1,10 @@
 import { DIGER_MASRAF_ETIKETI, DIGER_ODEME_YONTEMI_ETIKETI, MASRAF_ODEME_YONTEMI_SECENEKLERI, ODEME_YONTEMI_ETIKET } from "@shared/constants/kasa";
+import { filterFinanceListePreservingGroups } from "@shared/lib/financeDuzeltmeListe";
+import { balanceImpactTone, formatBalanceImpact } from "@shared/lib/paraBirimi";
 import type { KasaHareket, KasaIslemTipi } from "@shared/types/kasa";
-import { formatTry } from "./format";
+import { formatDateTr, formatTry } from "./format";
+
+export { formatBalanceImpact, balanceImpactTone };
 
 export type KasaListeFiltre =
   | "tum"
@@ -97,22 +101,40 @@ export function masrafDuzenlemeSelectDiger(
   return { select: DIGER_MASRAF_ETIKETI, diger: t };
 }
 
+function kasaTipFiltreUygun(h: KasaHareket, filtre: KasaListeFiltre): boolean {
+  if (filtre === "tum") return true;
+  if (filtre === "avans") return h.islemTipi === "AVANS_GIRISI";
+  if (filtre === "masraf") return h.islemTipi === "MASRAF";
+  if (filtre === "onaysiz") return h.onayDurumu === "ONAYSIZ";
+  if (filtre === "onayli") return h.onayDurumu === "ONAYLI";
+  if (filtre === "reddedilen") return h.onayDurumu === "REDDEDILDI";
+  return true;
+}
+
+export function kasaDuzeltmeBakiye(h: KasaHareket): number {
+  return h.bakiyeEtkisi ?? h.tutar;
+}
+
 export function kasaHareketleriFiltrele(
   liste: KasaHareket[],
   arama: string,
   filtre: KasaListeFiltre
 ): KasaHareket[] {
-  let rows = [...liste];
-  if (filtre === "avans") rows = rows.filter((h) => h.islemTipi === "AVANS_GIRISI");
-  else if (filtre === "masraf") rows = rows.filter((h) => h.islemTipi === "MASRAF");
-  else if (filtre === "onaysiz") rows = rows.filter((h) => h.onayDurumu === "ONAYSIZ");
-  else if (filtre === "onayli") rows = rows.filter((h) => h.onayDurumu === "ONAYLI");
-  else if (filtre === "reddedilen") rows = rows.filter((h) => h.onayDurumu === "REDDEDILDI");
+  let rows = filterFinanceListePreservingGroups(
+    liste,
+    (h) => h.islemTipi === "DUZELTME",
+    (h) => h.duzeltilenIslemId,
+    (h) => kasaTipFiltreUygun(h, filtre),
+  );
 
   const q = arama.trim().toLocaleLowerCase("tr-TR");
   if (!q) return rows;
 
-  return rows.filter((h) => {
+  return filterFinanceListePreservingGroups(
+    rows,
+    (h) => h.islemTipi === "DUZELTME",
+    (h) => h.duzeltilenIslemId,
+    (h) => {
     const parcalar = [
       h.belgeNo ?? "",
       h.aciklama ?? "",
@@ -124,6 +146,7 @@ export function kasaHareketleriFiltrele(
       formatTry(h.tutar),
       tipEtiket(h.islemTipi),
     ];
-    return parcalar.some((p) => p.toLocaleLowerCase("tr-TR").includes(q));
-  });
+      return parcalar.some((p) => p.toLocaleLowerCase("tr-TR").includes(q));
+    },
+  );
 }

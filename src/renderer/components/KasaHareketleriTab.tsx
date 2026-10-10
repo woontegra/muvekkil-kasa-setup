@@ -7,7 +7,9 @@ import { KasaDuzeltmeModal } from "./KasaDuzeltmeModal";
 import { KasaMasrafModal } from "./KasaMasrafModal";
 import { formatDateTr, formatTry } from "../lib/format";
 import {
+  formatBalanceImpact,
   hareketAciklamaMasraf,
+  kasaDuzeltmeBakiye,
   kasaHareketleriFiltrele,
   kasaHareketSatirSinifi,
   KasaListeFiltre,
@@ -16,6 +18,7 @@ import {
   onayBadgeMetni,
   tipEtiket,
 } from "../lib/kasa";
+import { formatDateTr as formatDateTrLib } from "../lib/format";
 import { DeskTableIconBtn } from "./DeskTableIconBtn";
 import { IconDuzenle, IconDuzeltme, IconMakbuz, IconOnayla, IconReddet, IconSil } from "./DeskTableIcons";
 
@@ -260,7 +263,7 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
     return (
       <div className="desk-kasa-tip-cell">
         <span>{ana}</span>
-        {!h.duzeltmeMi && h.hasCorrection ? (
+        {!h.duzeltmeMi && (h.hasCorrection || h.duzeltildi) ? (
           <span className="desk-badge-duzeltildi" title="Bu işlem için düzeltme kaydı var">
             Düzeltildi
           </span>
@@ -364,15 +367,39 @@ export function KasaHareketleriTab({ dosyaId, muvekkilId }: Props) {
             <tbody>
               {filtrelenmis.map((h) => (
                 <tr key={h.id} className={kasaHareketSatirSinifi(h)}>
-                  <td>{formatDateTr(h.tarih)}</td>
+                  <td>
+                    {h.islemTipi === "DUZELTME" ? (
+                      <div className="desk-kasa-tarih-duzeltme">
+                        <span>{formatDateTrLib(h.economicTarih ?? h.tarih)}</span>
+                        <span className="desk-kasa-duzeltme-tarih-alt">Düzeltme: {formatDateTrLib(h.tarih)}</span>
+                      </div>
+                    ) : (
+                      formatDateTr(h.tarih)
+                    )}
+                  </td>
                   <td>{h.belgeNo?.trim() || "—"}</td>
                   <td>{kasaTipHucre(h)}</td>
-                  <td className={h.duzeltmeMi ? "desk-kasa-aciklama-correction" : undefined}>{hareketAciklamaMasraf(h)}</td>
+                  <td className={h.duzeltmeMi ? "desk-kasa-aciklama-correction" : undefined}>
+                    {h.islemTipi === "DUZELTME" ? (
+                      <div className="desk-kasa-duzeltme-aciklama">
+                        <strong>Düzeltme</strong>
+                        {h.duzeltenUserAd ? <p>Düzelten: {h.duzeltenUserAd}</p> : null}
+                        {(h.aciklama ?? "").trim() ? <p>Neden: {h.aciklama}</p> : null}
+                        {h.bagliIslemUyari ? <p className="desk-kasa-orphan">{h.bagliIslemUyari}</p> : null}
+                      </div>
+                    ) : (
+                      hareketAciklamaMasraf(h)
+                    )}
+                  </td>
                   <td>{h.islemTipi === "DUZELTME" ? "—" : odemeEtiket(h.odemeYontemi)}</td>
                   <td>
                     <span className={`badge ${onayBadgeClass(h)}`}>{onayBadgeMetni(h)}</span>
                   </td>
-                  <td className="desk-num">{formatTry(h.tutar)}</td>
+                  <td className="desk-num">
+                    {h.islemTipi === "DUZELTME"
+                      ? formatBalanceImpact(kasaDuzeltmeBakiye(h), "TRY")
+                      : formatTry(h.tutar)}
+                  </td>
                   <td>
                     <div className="row-actions">{islemRowActions(h)}</div>
                   </td>

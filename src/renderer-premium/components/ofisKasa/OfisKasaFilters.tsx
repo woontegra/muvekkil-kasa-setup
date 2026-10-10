@@ -1,3 +1,4 @@
+import { resolveFinancePeriodRange } from "@shared/lib/financePeriodRange";
 import { tumKategoriSecenekleri } from "../../lib/ofisKasa";
 import type { useOfisKasa } from "../../hooks/useOfisKasa";
 
@@ -29,7 +30,12 @@ export function OfisKasaFilters({ ofis }: Props) {
               className="pm-input"
               type="date"
               value={ofis.tb}
-              onChange={(e) => ofis.setTb(e.target.value)}
+              onChange={(e) => {
+                ofis.setTb(e.target.value);
+                ofis.applyFinancePeriod(
+                  resolveFinancePeriodRange("CUSTOM", { bas: e.target.value, bit: ofis.te }),
+                );
+              }}
             />
           </div>
           <div className="pm-field">
@@ -39,7 +45,12 @@ export function OfisKasaFilters({ ofis }: Props) {
               className="pm-input"
               type="date"
               value={ofis.te}
-              onChange={(e) => ofis.setTe(e.target.value)}
+              onChange={(e) => {
+                ofis.setTe(e.target.value);
+                ofis.applyFinancePeriod(
+                  resolveFinancePeriodRange("CUSTOM", { bas: ofis.tb, bit: e.target.value }),
+                );
+              }}
             />
           </div>
           <div className="pm-field">

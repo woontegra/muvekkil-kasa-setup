@@ -1,6 +1,8 @@
 import { formatMoney } from "@shared/lib/paraBirimi";
 import type { TahsilatMerkeziSatir } from "@shared/types/tahsilatMerkezi";
 import type { UseTahsilatMerkeziReturn } from "../../hooks/useTahsilatMerkezi";
+import { formatDateTr } from "../../lib/format";
+import { EmptyState } from "../EmptyState";
 import { PremiumButton } from "../PremiumButton";
 
 type Props = {
@@ -93,8 +95,16 @@ export function TahsilatMerkeziTable({ tm }: Props) {
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="pm-tahsilat-empty">
-                  Bu filtrede açık taksit bulunamadı.
+                <td colSpan={7} className="pm-tahsilat-empty pm-tahsilat-empty--rich">
+                  <EmptyState
+                    title="Açık taksit yok"
+                    description="Bu filtrede tahsil edilecek açık taksit bulunamadı. Filtreleri temizleyebilir veya dosya detayından taksit planı oluşturabilirsiniz."
+                    action={
+                      <PremiumButton type="button" variant="ghost" className="pm-btn--sm" onClick={() => void tm.yenile()}>
+                        Yenile
+                      </PremiumButton>
+                    }
+                  />
                 </td>
               </tr>
             ) : (
@@ -115,7 +125,7 @@ export function TahsilatMerkeziTable({ tm }: Props) {
                       {row.taksitAciklama ? <span className="pm-tahsilat-cell-sub">{row.taksitAciklama}</span> : null}
                     </td>
                     <td>
-                      <span className="pm-tahsilat-cell-main">{row.vadeTarihi}</span>
+                      <span className="pm-tahsilat-cell-main">{formatDateTr(row.vadeTarihi)}</span>
                       <span
                         className={`pm-tahsilat-cell-sub${row.gunFarki < 0 ? " pm-tahsilat-cell-sub--danger" : ""}`}
                       >

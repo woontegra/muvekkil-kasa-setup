@@ -31,6 +31,14 @@ export type KasaHareket = {
   makbuzTarihi: string | null;
   makbuzOlusturulduMu: boolean;
   hasCorrection?: boolean;
+  /** Düzeltme satırında parent işlem tarihi (dönem). */
+  economicTarih?: string;
+  orphanWarning?: boolean;
+  bagliIslemUyari?: string | null;
+  duzeltildi?: boolean;
+  bakiyeEtkisi?: number;
+  orijinalBelgeNo?: string | null;
+  duzeltenUserAd?: string | null;
 };
 
 export type KasaOzet = {

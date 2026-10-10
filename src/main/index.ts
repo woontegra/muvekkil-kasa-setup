@@ -24,8 +24,16 @@ import { runGuvenliSilSmoke } from "./e2e/guvenliSilSmoke";
 import { runVekaletGuvenliIptalSmoke } from "./e2e/vekaletGuvenliIptalSmoke";
 import { runMaliEkstreSmoke } from "./e2e/maliEkstreSmoke";
 import { runFinalParitySmoke } from "./e2e/finalParitySmoke";
+import { runPremiumNavSmoke } from "./e2e/premiumNavSmoke";
 
-if (process.env.MKD_FINAL_PARITY_TEST === "1") {
+if (process.env.MKD_PREMIUM_NAV_TEST === "1") {
+  void runPremiumNavSmoke()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+} else if (process.env.MKD_FINAL_PARITY_TEST === "1") {
   void runFinalParitySmoke()
     .then(() => process.exit(0))
     .catch((e) => {
@@ -164,6 +172,7 @@ function initDatabase(): void {
 
 if (
   process.env.MKD_E2E_VEKALET_OFIS !== "1" &&
+  process.env.MKD_PREMIUM_NAV_TEST !== "1" &&
   process.env.MKD_GUI_LIVE_TEST !== "1" &&
   process.env.MKD_VEKALET_SCROLL_TEST !== "1" &&
   process.env.MKD_VEKALET_UYARI_TEST !== "1" &&

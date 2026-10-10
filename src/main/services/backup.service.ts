@@ -1,7 +1,9 @@
 import { app, dialog } from "electron";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, openSync, readSync, closeSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { closeDb, getDb, getDbPath } from "../db/connection";
+
+const SQLITE_MAGIC = Buffer.from("SQLite format 3\0", "utf8");
 
 function copySqliteBundle(srcBase: string, destBase: string): void {
   copyFileSync(srcBase, destBase);
@@ -15,6 +17,20 @@ function removeWalShm(base: string): void {
   for (const ext of ["-wal", "-shm"]) {
     const p = base + ext;
     if (existsSync(p)) unlinkSync(p);
+  }
+}
+
+/** Bozuk / SQLite olmayan dosyayı mevcut DB üzerine yazmadan önce reddeder. */
+function assertReadableSqliteFile(filePath: string): void {
+  const fd = openSync(filePath, "r");
+  try {
+    const buf = Buffer.alloc(SQLITE_MAGIC.length);
+    const n = readSync(fd, buf, 0, buf.length, 0);
+    if (n < SQLITE_MAGIC.length || !buf.equals(SQLITE_MAGIC)) {
+      throw new Error("INVALID_SQLITE");
+    }
+  } finally {
+    closeSync(fd);
   }
 }
 
@@ -52,6 +68,12 @@ export async function restoreDatabase(): Promise<
     return { ok: false, error: "Geri yükleme iptal edildi." };
   }
   const src = filePaths[0];
+  try {
+    assertReadableSqliteFile(src);
+  } catch {
+    return { ok: false, error: "Seçilen dosya geçerli bir SQLite yedeği değil. Mevcut veritabanı değiştirilmedi." };
+  }
+
   const dbPath = getDbPath();
   const backupDir = join(app.getPath("userData"), "auto-backups");
   mkdirSync(backupDir, { recursive: true });

@@ -80,6 +80,28 @@ function formatFixed2AsTrDigits(fixed2: string): string {
 }
 
 /** SaaS formatMoneyDisplay paritesi. */
+const MINUS_SIGN = "\u2212";
+
+/** Bakiye etkisi — daima + veya − (sıfırda işaretsiz). */
+export function formatBalanceImpact(amount: number, currency: ParaBirimi = "TRY"): string {
+  if (!Number.isFinite(amount)) return "—";
+  if (amount === 0) return formatMoney(0, currency);
+  const fixed = roundMoney(Math.abs(amount)).toFixed(2);
+  const digits = formatFixed2AsTrDigits(fixed);
+  if (currency === "TRY") {
+    return amount > 0 ? `+${digits}${MONEY_NBSP}₺` : `${MINUS_SIGN}${digits}${MONEY_NBSP}₺`;
+  }
+  if (currency === "USD") {
+    return amount > 0 ? `+$${digits}` : `${MINUS_SIGN}$${digits}`;
+  }
+  return amount > 0 ? `+€${digits}` : `${MINUS_SIGN}€${digits}`;
+}
+
+export function balanceImpactTone(amount: number): "positive" | "negative" | "neutral" {
+  if (!Number.isFinite(amount) || amount === 0) return "neutral";
+  return amount > 0 ? "positive" : "negative";
+}
+
 export function formatMoney(amount: number, currency: ParaBirimi = "TRY"): string {
   if (!Number.isFinite(amount)) return "—";
   const fixed = roundMoney(amount).toFixed(2);

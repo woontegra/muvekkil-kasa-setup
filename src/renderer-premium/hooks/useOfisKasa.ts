@@ -9,8 +9,7 @@ import {
   PERSONEL_MAAS_KOD,
   ofisKategoriOzelAdGerekli,
 } from "@shared/constants/ofisKasa";
-import { getActiveAccountingPeriodRange } from "@shared/lib/accountingPeriod";
-import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
+import { donemBoundsFromFinanceRange, resolveFinancePeriodRange, type FinancePeriodRange } from "@shared/lib/financePeriodRange";
 import type { OfisKasaHareketListeSatir, OfisKasaListFilter, OfisKasaUstOzet } from "@shared/types/ofisKasa";
 import type { GuvenliSilInput } from "@shared/types/guvenliSil";
 import type { OfisGuvenliSilMode } from "@shared/lib/guvenliSil";
@@ -35,11 +34,13 @@ type ToastFn = (tone: PremiumToastTone, message: string) => void;
 export function useOfisKasa(showToast: ToastFn) {
   const navigate = useNavigate();
   const loadSeq = useRef(0);
-  const fallbackAy = useMemo(() => ayBasiSonu(), []);
+  const initialFinance = useMemo(() => resolveFinancePeriodRange("THIS_MONTH"), []);
+  const initialBounds = useMemo(() => donemBoundsFromFinanceRange(initialFinance), [initialFinance]);
 
-  const [tb, setTb] = useState(fallbackAy.bas);
-  const [te, setTe] = useState(fallbackAy.bit);
-  const [periodEtiket, setPeriodEtiket] = useState("");
+  const [financePeriod, setFinancePeriod] = useState<FinancePeriodRange>(initialFinance);
+  const [tb, setTb] = useState(initialBounds.bas);
+  const [te, setTe] = useState(initialBounds.bit);
+  const [periodEtiket, setPeriodEtiket] = useState(initialFinance.etiket);
   const [tip, setTip] = useState("TUMU");
   const [katSel, setKatSel] = useState("");
   const [q, setQ] = useState("");
@@ -100,16 +101,12 @@ export function useOfisKasa(showToast: ToastFn) {
     [tb, te, tip, katSel, q],
   );
 
-  const applyPeriod = useCallback(async () => {
-    try {
-      const mode = (await window.api.getAccountingPeriodMode?.()) as AccountingPeriodMode | undefined;
-      const range = getActiveAccountingPeriodRange(mode === "MONTHLY" ? "MONTHLY" : "YEARLY");
-      setTb(range.bas);
-      setTe(range.bit);
-      setPeriodEtiket(range.etiket);
-    } catch {
-      /* fallback already set */
-    }
+  const applyFinancePeriod = useCallback((next: FinancePeriodRange) => {
+    setFinancePeriod(next);
+    const bounds = donemBoundsFromFinanceRange(next);
+    setTb(bounds.bas);
+    setTe(bounds.bit);
+    setPeriodEtiket(next.etiket);
   }, []);
 
   const yukleUst = useCallback(async () => {
@@ -117,7 +114,12 @@ export function useOfisKasa(showToast: ToastFn) {
     setUstLoading(true);
     setUstError(null);
     try {
-      const r = await window.api.ofisKasaUstOzet();
+      const bounds = donemBoundsFromFinanceRange(financePeriod);
+      const r = await window.api.ofisKasaUstOzet({
+        periodBas: financePeriod.preset === "ALL_TIME" ? bounds.bas : financePeriod.bas ?? bounds.bas,
+        periodBit: financePeriod.preset === "ALL_TIME" ? bounds.bit : financePeriod.bit ?? bounds.bit,
+        periodEtiket: financePeriod.etiket,
+      });
       setUst(r);
     } catch {
       setUstError("Finans özeti yüklenemedi.");
@@ -125,7 +127,7 @@ export function useOfisKasa(showToast: ToastFn) {
     } finally {
       setUstLoading(false);
     }
-  }, []);
+  }, [financePeriod]);
 
   const yukleListe = useCallback(async () => {
     if (!window.api?.ofisKasaList) return;
@@ -148,16 +150,6 @@ export function useOfisKasa(showToast: ToastFn) {
   const tumunuYenile = useCallback(async () => {
     await Promise.all([yukleUst(), yukleListe()]);
   }, [yukleUst, yukleListe]);
-
-  useEffect(() => {
-    void applyPeriod();
-    const onPeriodChanged = () => {
-      void applyPeriod();
-      void yukleUst();
-    };
-    window.addEventListener("mkd:accounting-period-changed", onPeriodChanged);
-    return () => window.removeEventListener("mkd:accounting-period-changed", onPeriodChanged);
-  }, [applyPeriod, yukleUst]);
 
   useEffect(() => {
     void yukleUst();
@@ -507,6 +499,8 @@ export function useOfisKasa(showToast: ToastFn) {
   const ozelAlanGerekli = digerSecili || personelMaasSecili || ofisKategoriOzelAdGerekli(selectedKalemKod);
 
   return {
+    financePeriod,
+    applyFinancePeriod,
     tb,
     setTb,
     te,

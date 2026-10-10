@@ -11,6 +11,11 @@ import {
   ofisKategoriOzelAdGerekli,
 } from "@shared/constants/ofisKasa";
 import { getActiveAccountingPeriodRange } from "@shared/lib/accountingPeriod";
+import {
+  donemBoundsFromFinanceRange,
+  resolveFinancePeriodRange,
+  type FinancePeriodRange,
+} from "@shared/lib/financePeriodRange";
 import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfisKasaHareketListeSatir, OfisKasaUstOzet } from "@shared/types/ofisKasa";
 import { bugunYmd, formatDateTr, formatTry, formatCurrencyInputTR } from "../lib/format";
@@ -30,6 +35,7 @@ import {
   satirAuditTitle,
   tumKategoriSecenekleri,
 } from "../lib/ofisKasa";
+import { DeskFinancePeriodSelector } from "../components/DeskFinancePeriodSelector";
 import { DeskTableIconBtn } from "../components/DeskTableIconBtn";
 import { IconDuzenle, IconDuzeltme, IconOnayla, IconSil } from "../components/DeskTableIcons";
 import { DeskModalPortal } from "../components/DeskModalPortal";
@@ -40,7 +46,7 @@ import { canShowOfisGuvenliSil, type OfisGuvenliSilMode } from "@shared/lib/guve
 import type { GuvenliSilInput } from "@shared/types/guvenliSil";
 import { MoneyInput } from "../components/MoneyInput";
 import { ParaBirimiSelect } from "../components/currency/CurrencyFields";
-import { PARA_BIRIMLERI, formatMoney, type ParaBirimi } from "@shared/lib/paraBirimi";
+import { PARA_BIRIMLERI, formatBalanceImpact, formatMoney, type ParaBirimi } from "@shared/lib/paraBirimi";
 import { DovizDonusumModal } from "../components/currency/DovizDonusumModal";
 
 type ConfirmState = {
@@ -54,9 +60,12 @@ type ConfirmState = {
 export function OfisKasaPage() {
   const navigate = useNavigate();
   const fallbackAy = useMemo(() => ayBasiSonu(), []);
-  const [tb, setTb] = useState(fallbackAy.bas);
-  const [te, setTe] = useState(fallbackAy.bit);
-  const [periodEtiket, setPeriodEtiket] = useState("");
+  const [financePeriod, setFinancePeriod] = useState<FinancePeriodRange>(() =>
+    resolveFinancePeriodRange("THIS_MONTH"),
+  );
+  const [tb, setTb] = useState(() => financePeriod.bas ?? fallbackAy.bas);
+  const [te, setTe] = useState(() => financePeriod.bit ?? fallbackAy.bit);
+  const [periodEtiket, setPeriodEtiket] = useState(financePeriod.etiket);
   const [tip, setTip] = useState("TUMU");
   const [katSel, setKatSel] = useState("");
   const [q, setQ] = useState("");
@@ -105,9 +114,12 @@ export function OfisKasaPage() {
       try {
         const mode = (await window.api.getAccountingPeriodMode?.()) as AccountingPeriodMode | undefined;
         const range = getActiveAccountingPeriodRange(mode === "MONTHLY" ? "MONTHLY" : "YEARLY");
-        setTb(range.bas);
-        setTe(range.bit);
-        setPeriodEtiket(range.etiket);
+        // Finans dönem seçici yoksa accounting period fallback; seçici varsa dokunma
+        if (financePeriod.preset === "THIS_MONTH" && !financePeriod.bas) {
+          setTb(range.bas);
+          setTe(range.bit);
+          setPeriodEtiket(range.etiket);
+        }
       } catch {
         /* ayBasiSonu fallback already set */
       }
@@ -119,7 +131,20 @@ export function OfisKasaPage() {
     };
     window.addEventListener("mkd:accounting-period-changed", onPeriodChanged);
     return () => window.removeEventListener("mkd:accounting-period-changed", onPeriodChanged);
-  }, [yukleUst]);
+  }, [yukleUst, financePeriod.preset, financePeriod.bas]);
+
+  function applyFinancePeriod(next: FinancePeriodRange) {
+    setFinancePeriod(next);
+    setPeriodEtiket(next.etiket);
+    if (next.preset === "ALL_TIME") {
+      setTb("");
+      setTe("");
+      return;
+    }
+    const bounds = donemBoundsFromFinanceRange(next);
+    setTb(bounds.bas === "0000-01-01" ? "" : bounds.bas);
+    setTe(bounds.bit === "9999-12-31" ? "" : bounds.bit);
+  }
 
   useEffect(() => {
     void yukleUst();
@@ -527,7 +552,7 @@ export function OfisKasaPage() {
     return (
       <div className="desk-kasa-tip-cell">
         <span>{ana}</span>
-        {h.islemTipi !== "DUZELTME" && h.hasCorrection ? (
+        {h.islemTipi !== "DUZELTME" && (h.hasCorrection || h.duzeltildi) ? (
           <span className="desk-badge-duzeltildi" title="Bu işlem için düzeltme kaydı var">
             Düzeltildi
           </span>
@@ -621,13 +646,40 @@ export function OfisKasaPage() {
         </div>
         <div className="desk-panel-body desk-panel-body--pad-sm">
           <div className="desk-form-grid desk-ofis-filtre-grid">
+            <div className="field desk-form-span2">
+              <DeskFinancePeriodSelector value={financePeriod} onChange={applyFinancePeriod} />
+            </div>
             <div className="field">
               <label htmlFor="ofk-tb">Tarih başı</label>
-              <input id="ofk-tb" className="desk-input" type="date" value={tb} onChange={(e) => setTb(e.target.value)} />
+              <input
+                id="ofk-tb"
+                className="desk-input"
+                type="date"
+                value={tb}
+                onChange={(e) => {
+                  setTb(e.target.value);
+                  setFinancePeriod(
+                    resolveFinancePeriodRange("CUSTOM", { bas: e.target.value, bit: te || null }),
+                  );
+                  setPeriodEtiket("Özel Tarih");
+                }}
+              />
             </div>
             <div className="field">
               <label htmlFor="ofk-te">Tarih sonu</label>
-              <input id="ofk-te" className="desk-input" type="date" value={te} onChange={(e) => setTe(e.target.value)} />
+              <input
+                id="ofk-te"
+                className="desk-input"
+                type="date"
+                value={te}
+                onChange={(e) => {
+                  setTe(e.target.value);
+                  setFinancePeriod(
+                    resolveFinancePeriodRange("CUSTOM", { bas: tb || null, bit: e.target.value }),
+                  );
+                  setPeriodEtiket("Özel Tarih");
+                }}
+              />
             </div>
             <div className="field">
               <label htmlFor="ofk-tip">İşlem tipi</label>
@@ -698,14 +750,39 @@ export function OfisKasaPage() {
                 {hareketler.map((h) => (
                   <tr key={h.id} className={ofisKasaSatirSinifi(h)} title={satirAuditTitle(h)}>
                     <td className="desk-col-id">{h.id}</td>
-                    <td>{formatDateTr(h.tarih)}</td>
+                    <td>
+                      {h.islemTipi === "DUZELTME" ? (
+                        <div className="desk-kasa-tarih-duzeltme">
+                          <span>{formatDateTr(h.economicTarih ?? h.tarih)}</span>
+                          <span className="desk-kasa-duzeltme-tarih-alt">Düzeltme: {formatDateTr(h.tarih)}</span>
+                        </div>
+                      ) : (
+                        formatDateTr(h.tarih)
+                      )}
+                    </td>
                     <td>{islemTipiHucre(h)}</td>
-                    <td className="desk-num">{formatMoney(duzeltmeListeTutar(h), h.paraBirimi)}</td>
+                    <td className="desk-num">
+                      {h.islemTipi === "DUZELTME"
+                        ? formatBalanceImpact(duzeltmeListeTutar(h), h.paraBirimi)
+                        : formatMoney(duzeltmeListeTutar(h), h.paraBirimi)}
+                    </td>
                     <td className="desk-ofis-tur-ek-cell">{ofisKasaTurEkMetni(h)}</td>
                     <td>{h.muvekkilAdiSnapshot?.trim() || "—"}</td>
                     <td>{h.tahsilatiYapanKullaniciAdi?.trim() || "—"}</td>
                     <td className={h.islemTipi === "DUZELTME" ? "desk-kasa-aciklama-correction" : undefined}>
-                      {ofisKasaAciklamaMetni(h)}
+                      {h.islemTipi === "DUZELTME" ? (
+                        <div className="desk-ofis-duzeltme-aciklama">
+                          {h.duzeltenUserAd ? <p>Düzelten: {h.duzeltenUserAd}</p> : null}
+                          {(h.aciklama ?? "").trim() ? <p>Neden: {h.aciklama}</p> : null}
+                          {h.bagliIslemUyari ? (
+                            <p className="desk-ofis-orphan">{h.bagliIslemUyari}</p>
+                          ) : (
+                            <p>{ofisKasaAciklamaMetni(h)}</p>
+                          )}
+                        </div>
+                      ) : (
+                        ofisKasaAciklamaMetni(h)
+                      )}
                     </td>
                     <td>{h.belgeNo?.trim() ? h.belgeNo : "—"}</td>
                     <td>

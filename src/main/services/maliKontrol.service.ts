@@ -2,7 +2,7 @@
  * SaaS maliKontrol.service.ts paritesi — 10 kural, dönem bağımsız canlı snapshot.
  * Rol: çağıran IPC YONETICI olmalı (BURO_SAHIBI | AVUKAT_YONETICI).
  */
-import { moneyToFixed2, type ParaBirimi } from "@shared/lib/paraBirimi";
+import { formatMoney, type ParaBirimi } from "@shared/lib/paraBirimi";
 import { ODEME_AKTIF_OFIS_SQL, TAKSIT_AKTIF_SQL, VEKALET_AKTIF_SQL } from "@shared/lib/tahsilatOdemeAktif";
 import type {
   MaliKontrolActionPayload,
@@ -35,11 +35,11 @@ const MUVEKKIL_AD_SQL = `CASE
   END`;
 
 function fmt(n: number): string {
-  return moneyToFixed2(n);
+  return formatMoney(n, "TRY");
 }
 
 function fmtTry(n: number): string {
-  return `${fmt(n)} TRY`;
+  return formatMoney(n, "TRY");
 }
 
 function ymdLocal(d = new Date()): string {

@@ -1,9 +1,11 @@
 import type { OfisKasaHareketListeSatir } from "@shared/types/ofisKasa";
 import type { useOfisKasa } from "../../hooks/useOfisKasa";
 import { formatDateTr } from "../../lib/format";
-import { formatMoney } from "@shared/lib/paraBirimi";
+import { formatBalanceImpact, formatMoney } from "@shared/lib/paraBirimi";
 import {
   duzeltmeAltSatir,
+  duzeltmeBakiyeSinifi,
+  duzeltmeListeTutar,
   hareketGelirGiderHucre,
   islemTipiEtiket,
   ofisKasaAciklamaMetni,
@@ -81,11 +83,43 @@ function TipCell({ h }: { h: OfisKasaHareketListeSatir }) {
   return (
     <div className="pm-ofis-tip">
       <span>{ana}</span>
-      {h.islemTipi !== "DUZELTME" && h.hasCorrection ? (
+      {h.islemTipi !== "DUZELTME" && (h.hasCorrection || h.duzeltildi) ? (
         <span className="pm-ofis-badge-duzeltildi" title="Bu işlem için düzeltme kaydı var">
           Düzeltildi
         </span>
       ) : null}
+    </div>
+  );
+}
+
+function AciklamaCell({ h }: { h: OfisKasaHareketListeSatir }) {
+  if (h.islemTipi !== "DUZELTME") {
+    return (
+      <>
+        {ofisKasaAciklamaMetni(h)}
+        {duzeltmeAltSatir(h) ? <div className="pm-ofis-duzeltme-alt">{duzeltmeAltSatir(h)}</div> : null}
+      </>
+    );
+  }
+  const neden = (h.aciklama ?? h.not ?? "").trim();
+  return (
+    <div className="pm-ofis-duzeltme-aciklama">
+      <p className="pm-ofis-duzeltme-baslik">Düzeltme</p>
+      {h.duzeltenUserAd ? <p className="pm-ofis-duzeltme-meta">Düzelten: {h.duzeltenUserAd}</p> : null}
+      {neden ? <p className="pm-ofis-duzeltme-meta">Neden: {neden}</p> : null}
+      {duzeltmeAltSatir(h) ? <div className="pm-ofis-duzeltme-alt">{duzeltmeAltSatir(h)}</div> : null}
+      {h.bagliIslemUyari ? <p className="pm-ofis-duzeltme-orphan">{h.bagliIslemUyari}</p> : null}
+    </div>
+  );
+}
+
+function TarihCell({ h }: { h: OfisKasaHareketListeSatir }) {
+  const eco = h.economicTarih ?? h.tarih;
+  if (h.islemTipi !== "DUZELTME") return <>{formatDateTr(h.tarih)}</>;
+  return (
+    <div className="pm-ofis-tarih-duzeltme">
+      <span>{formatDateTr(eco)}</span>
+      <span className="pm-ofis-duzeltme-tarih-alt">Düzeltme: {formatDateTr(h.tarih)}</span>
     </div>
   );
 }
@@ -121,7 +155,15 @@ export function OfisKasaTable({ ofis }: Props) {
         {listeLoading && hareketler.length === 0 ? (
           <div className="pm-ofis-table-skeleton" aria-hidden />
         ) : hareketler.length === 0 ? (
-          <EmptyState title="Kayıt bulunamadı" description="Bu filtrelere uygun kayıt yok." />
+          <EmptyState
+            title="Kayıt bulunamadı"
+            description="Bu filtrelere uygun ofis kasa kaydı yok. Gelir veya gider ekleyerek başlayabilirsiniz."
+            action={
+              <button type="button" className="pm-btn pm-btn--primary pm-btn--sm" onClick={ofis.openGelirEkle}>
+                Gelir ekle
+              </button>
+            }
+          />
         ) : (
           <table className="pm-ofis-table">
             <thead>
@@ -144,6 +186,8 @@ export function OfisKasaTable({ ofis }: Props) {
             </thead>
             <tbody>
               {hareketler.map((h) => {
+                const isDuz = h.islemTipi === "DUZELTME";
+                const impact = isDuz ? duzeltmeListeTutar(h) : null;
                 const { gelir, gider } = hareketGelirGiderHucre(h);
                 const rowCls = [
                   ofisKasaSatirSinifi(h),
@@ -155,20 +199,33 @@ export function OfisKasaTable({ ofis }: Props) {
                 return (
                   <tr key={h.id} className={rowCls} title={satirAuditTitle(h)}>
                     <td className="pm-col-id">{h.id}</td>
-                    <td>{formatDateTr(h.tarih)}</td>
+                    <td>
+                      <TarihCell h={h} />
+                    </td>
                     <td>
                       <TipCell h={h} />
                     </td>
                     <td>{ofisKasaKategoriListeEtiketi(h.kategori, h.ozelKategoriAdi)}</td>
                     <td>{h.muvekkilAdiSnapshot?.trim() || "—"}</td>
                     <td>{h.tahsilatiYapanKullaniciAdi?.trim() || "—"}</td>
-                    <td className={h.islemTipi === "DUZELTME" ? "pm-ofis-aciklama--duzeltme" : undefined}>
-                      {ofisKasaAciklamaMetni(h)}
-                      {duzeltmeAltSatir(h) ? <div className="pm-ofis-duzeltme-alt">{duzeltmeAltSatir(h)}</div> : null}
+                    <td className={isDuz ? "pm-ofis-aciklama--duzeltme" : undefined}>
+                      <AciklamaCell h={h} />
                     </td>
                     <td>{odemeEtiket(h)}</td>
-                    <td className="num pm-ofis-gelir">{gelir != null ? formatMoney(gelir, h.paraBirimi) : "—"}</td>
-                    <td className="num pm-ofis-gider">{gider != null ? formatMoney(gider, h.paraBirimi) : "—"}</td>
+                    <td className={`num pm-ofis-gelir${isDuz && impact != null && impact > 0 ? ` ${duzeltmeBakiyeSinifi(h)}` : ""}`}>
+                      {isDuz && impact != null && impact > 0
+                        ? formatBalanceImpact(impact, h.paraBirimi)
+                        : gelir != null
+                          ? formatMoney(gelir, h.paraBirimi)
+                          : "—"}
+                    </td>
+                    <td className={`num pm-ofis-gider${isDuz && impact != null && impact < 0 ? ` ${duzeltmeBakiyeSinifi(h)}` : ""}`}>
+                      {isDuz && impact != null && impact < 0
+                        ? formatBalanceImpact(impact, h.paraBirimi)
+                        : gider != null
+                          ? formatMoney(gider, h.paraBirimi)
+                          : "—"}
+                    </td>
                     <td>{h.belgeNo?.trim() ? h.belgeNo : "—"}</td>
                     <td>
                       <StatusBadge tone={onayBadgeTone(h)}>{onayBadgeMetni(h)}</StatusBadge>

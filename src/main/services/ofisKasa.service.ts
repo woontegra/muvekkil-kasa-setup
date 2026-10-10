@@ -49,6 +49,7 @@ import {
   isCurrentAccountingPeriod,
   toLocalYmd,
 } from "@shared/lib/accountingPeriod";
+import { groupOfisKasaHareketListe } from "@shared/lib/financeDuzeltmeListe";
 import { getAccountingPeriodMode } from "./appSettings.service";
 import { getDb, nowIso } from "../db/connection";
 import { officeSettingsGetForMakbuz } from "./office.service";
@@ -217,9 +218,13 @@ function hesaplaParaBirimiOzetleri(rows: OfisKasaOzetSatir[], bas: string, bit: 
 function ofisKasaOzetSatirlari(d: ReturnType<typeof getDb>): OfisKasaOzetSatir[] {
   return d
     .prepare(
-      `SELECT islem_tipi, tutar, tarih, duzeltme_mi, onay_durumu, duzeltme_kasa_etkisi,
-              COALESCE(para_birimi, 'TRY') AS para_birimi
-       FROM ofis_kasa_hareketleri WHERE onay_durumu IN ('ONAYSIZ', 'ONAYLI') ${OFIS_KASA_AKTIF_SQL}`
+      `SELECT h.islem_tipi, h.tutar,
+              CASE WHEN h.islem_tipi = 'DUZELTME' THEN COALESCE(p.tarih, h.tarih) ELSE h.tarih END AS tarih,
+              h.duzeltme_mi, h.onay_durumu, h.duzeltme_kasa_etkisi,
+              COALESCE(h.para_birimi, 'TRY') AS para_birimi
+       FROM ofis_kasa_hareketleri h
+       LEFT JOIN ofis_kasa_hareketleri p ON p.id = h.orijinal_hareket_id AND p.silinme_tarihi IS NULL
+       WHERE h.onay_durumu IN ('ONAYSIZ', 'ONAYLI') AND h.silinme_tarihi IS NULL`
     )
     .all() as OfisKasaOzetSatir[];
 }
@@ -320,14 +325,71 @@ function ofisKasaHareketSilinmisMi(id: number): boolean {
   return Boolean(r?.silinme_tarihi);
 }
 
+function enrichOfisListeSatirlari(
+  d: ReturnType<typeof getDb>,
+  rows: Record<string, unknown>[],
+): OfisKasaHareketListeSatir[] {
+  const correctedIds = new Set(
+    (
+      d
+        .prepare(
+          `SELECT DISTINCT orijinal_hareket_id AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id IS NOT NULL ${OFIS_KASA_AKTIF_SQL}`,
+        )
+        .all() as { x: number }[]
+    ).map((r) => r.x),
+  );
+  const byRawId = new Map(rows.map((r) => [Number(r.id), r]));
+  return rows.map((raw) => {
+    const h = rowOfisKasaHareket(raw);
+    let satir: OfisKasaHareketListeSatir = {
+      ...h,
+      hasCorrection: correctedIds.has(h.id) && h.islemTipi !== "DUZELTME",
+    };
+    if (satir.islemTipi === "DUZELTME" && !satir.duzeltmeRefTipi && satir.orijinalHareketId != null) {
+      const origRaw = byRawId.get(satir.orijinalHareketId);
+      if (origRaw) {
+        const orig = rowOfisKasaHareket(origRaw);
+        if (orig.islemTipi === "GELIR" || orig.islemTipi === "GIDER") {
+          satir = { ...satir, duzeltmeRefTipi: orig.islemTipi };
+        }
+      } else {
+        const fetched = d
+          .prepare(`SELECT * FROM ofis_kasa_hareketleri WHERE id = ? AND silinme_tarihi IS NULL`)
+          .get(satir.orijinalHareketId) as Record<string, unknown> | undefined;
+        if (fetched) {
+          const orig = rowOfisKasaHareket(fetched);
+          if (orig.islemTipi === "GELIR" || orig.islemTipi === "GIDER") {
+            satir = { ...satir, duzeltmeRefTipi: orig.islemTipi };
+          }
+        }
+      }
+    }
+    return satir;
+  });
+}
+
 export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareketListeSatir[] {
   const d = getDb();
   const tb = (f.tarihBas ?? "").trim().slice(0, 10);
   const te = (f.tarihBit ?? "").trim().slice(0, 10);
   const q = (f.q ?? "").trim();
   const kat = (f.kategori ?? "").trim();
-  const conds = [`tarih >= ?`, `tarih <= ?`, `silinme_tarihi IS NULL`];
-  const params: unknown[] = [tb, te];
+  const conds = [`silinme_tarihi IS NULL`];
+  const params: unknown[] = [];
+
+  if (tb && te) {
+    conds.push(
+      `(
+        (islem_tipi != 'DUZELTME' AND tarih >= ? AND tarih <= ?)
+        OR (islem_tipi = 'DUZELTME' AND orijinal_hareket_id IS NULL AND tarih >= ? AND tarih <= ?)
+        OR (islem_tipi = 'DUZELTME' AND orijinal_hareket_id IN (
+          SELECT id FROM ofis_kasa_hareketleri WHERE silinme_tarihi IS NULL AND tarih >= ? AND tarih <= ?
+        ))
+      )`,
+    );
+    params.push(tb, te, tb, te, tb, te);
+  }
+
   if (f.islemTipi === "GELIR") {
     conds.push(`islem_tipi = 'GELIR'`);
   } else if (f.islemTipi === "GIDER") {
@@ -357,39 +419,74 @@ export function ofisKasaHareketList(f: OfisKasaListFilter = {}): OfisKasaHareket
     );
     params.push(like, like, like, like, like);
   }
-  const sql = `SELECT * FROM ofis_kasa_hareketleri WHERE ${conds.join(" AND ")} ORDER BY tarih DESC, id DESC`;
-  const rows = d.prepare(sql).all(...params) as Record<string, unknown>[];
-  const correctedIds = new Set(
-    (
-      d
-        .prepare(
-          `SELECT DISTINCT orijinal_hareket_id AS x FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id IS NOT NULL ${OFIS_KASA_AKTIF_SQL}`
-        )
-        .all() as { x: number }[]
-    ).map((r) => r.x)
-  );
-  return rows.map((raw) => {
-    const h = rowOfisKasaHareket(raw);
-    const hasCorrection = correctedIds.has(h.id) && h.islemTipi !== "DUZELTME";
-    if (h.islemTipi === "DUZELTME" && !h.duzeltmeRefTipi && h.orijinalHareketId != null) {
-      const origRaw = rows.find((r) => Number(r.id) === h.orijinalHareketId);
-      if (origRaw) {
-        const orig = rowOfisKasaHareket(origRaw);
-        if (orig.islemTipi === "GELIR" || orig.islemTipi === "GIDER") {
-          return { ...h, duzeltmeRefTipi: orig.islemTipi, hasCorrection };
-        }
-      }
+
+  const idRows = d
+    .prepare(`SELECT id, islem_tipi, orijinal_hareket_id FROM ofis_kasa_hareketleri WHERE ${conds.join(" AND ")}`)
+    .all(...params) as { id: number; islem_tipi: string; orijinal_hareket_id: number | null }[];
+
+  const parentIds = new Set<number>();
+  const correctionIds = new Set<number>();
+  for (const m of idRows) {
+    if (m.islem_tipi === "DUZELTME") {
+      correctionIds.add(m.id);
+      if (m.orijinal_hareket_id) parentIds.add(m.orijinal_hareket_id);
+    } else {
+      parentIds.add(m.id);
     }
-    return { ...h, hasCorrection };
-  });
+  }
+
+  if (parentIds.size > 0) {
+    const ph = [...parentIds].map(() => "?").join(",");
+    const linked = d
+      .prepare(
+        `SELECT id FROM ofis_kasa_hareketleri WHERE islem_tipi = 'DUZELTME' AND duzeltme_mi = 1 AND orijinal_hareket_id IN (${ph}) ${OFIS_KASA_AKTIF_SQL}`,
+      )
+      .all(...parentIds) as { id: number }[];
+    for (const l of linked) correctionIds.add(l.id);
+  }
+
+  if (f.islemTipi === "DUZELTME" && correctionIds.size > 0) {
+    for (const m of idRows) {
+      if (m.orijinal_hareket_id) parentIds.add(m.orijinal_hareket_id);
+    }
+  }
+
+  const allIds = [...new Set([...parentIds, ...correctionIds])];
+  if (allIds.length === 0) return [];
+
+  const phAll = allIds.map(() => "?").join(",");
+  const rows = d
+    .prepare(`SELECT * FROM ofis_kasa_hareketleri WHERE id IN (${phAll}) AND silinme_tarihi IS NULL`)
+    .all(...allIds) as Record<string, unknown>[];
+
+  const enriched = enrichOfisListeSatirlari(d, rows);
+  return groupOfisKasaHareketListe(enriched);
 }
 
-export function ofisKasaUstOzet(opts?: { referenceDate?: string }): OfisKasaUstOzet {
+export function ofisKasaUstOzet(opts?: {
+  referenceDate?: string;
+  periodBas?: string | null;
+  periodBit?: string | null;
+  periodEtiket?: string;
+}): OfisKasaUstOzet {
   const d = getDb();
   const rows = ofisKasaOzetSatirlari(d);
   const mode = getAccountingPeriodMode();
-  const period = getAccountingPeriod(mode, opts?.referenceDate ?? toLocalYmd());
+  const period =
+    opts?.periodBas && opts?.periodBit
+      ? {
+          mode,
+          bas: opts.periodBas,
+          bit: opts.periodBit,
+          etiket: opts.periodEtiket?.trim() || `${opts.periodBas} – ${opts.periodBit}`,
+        }
+      : getAccountingPeriod(mode, opts?.referenceDate ?? toLocalYmd());
   const { byCurrency, bakiyeler } = hesaplaParaBirimiOzetleri(rows, period.bas, period.bit);
+  const onayRow = d
+    .prepare(
+      `SELECT COUNT(*) AS c FROM ofis_kasa_hareketleri WHERE onay_durumu = 'ONAYSIZ' ${OFIS_KASA_AKTIF_SQL}`,
+    )
+    .get() as { c: number };
   const donem = byCurrency.TRY;
   const donemNetSonucu = donem.donemNetSonucu;
   return {
@@ -406,6 +503,7 @@ export function ofisKasaUstOzet(opts?: { referenceDate?: string }): OfisKasaUstO
     kasaBakiyesi: bakiyeler.TRY,
     bakiyeler,
     byCurrency,
+    onayBekleyenSayisi: Number(onayRow.c) || 0,
   };
 }
 

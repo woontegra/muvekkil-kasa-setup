@@ -8,6 +8,7 @@ import type { Muvekkil } from "@shared/types/muvekkil";
 
 import { PremiumDosyaFormModal } from "../components/dosya/PremiumDosyaFormModal";
 
+import { EmptyState } from "../components/EmptyState";
 import { MuvekkilDetailDosyaTable } from "../components/muvekkil/MuvekkilDetailDosyaTable";
 import { MuvekkilKarlilikSection } from "../components/muvekkil/MuvekkilKarlilikSection";
 import { MuvekkilRandevularSection } from "../components/randevu/MuvekkilRandevularSection";
@@ -233,33 +234,24 @@ export function MuvekkilDetailPage() {
 
 
   if (error || !m) {
-
     return (
-
       <div className="pm-mvk-detail pm-page-enter">
-
-        <div className="pm-overview-inline-error">
-
-          <p>{error ?? "Kayıt bulunamadı."}</p>
-
-          <button type="button" className="pm-btn pm-btn--ghost" onClick={() => void yukle()}>
-
-            Yeniden dene
-
-          </button>
-
-        </div>
-
-        <Link to="/muvekkiller" className="pm-link-back">
-
-          ← Müvekkiller
-
-        </Link>
-
+        <EmptyState
+          title="Müvekkil açılamadı"
+          description={error ?? "Kayıt bulunamadı."}
+          action={
+            <>
+              <button type="button" className="pm-btn pm-btn--primary" onClick={() => void yukle()}>
+                Yeniden dene
+              </button>
+              <Link to="/muvekkiller" className="pm-btn pm-btn--ghost">
+                Müvekkillere dön
+              </Link>
+            </>
+          }
+        />
       </div>
-
     );
-
   }
 
 

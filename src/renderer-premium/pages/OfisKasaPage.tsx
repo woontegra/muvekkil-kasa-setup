@@ -40,6 +40,11 @@ export function OfisKasaPage() {
         loading={ofis.ustLoading}
         error={ofis.ustError}
         periodEtiket={ofis.periodEtiket}
+        financePeriod={ofis.financePeriod}
+        onFinancePeriodChange={(next) => {
+          ofis.applyFinancePeriod(next);
+          void ofis.tumunuYenile();
+        }}
         onRetry={() => void ofis.yukleUst()}
       />
 

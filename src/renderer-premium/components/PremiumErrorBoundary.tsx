@@ -2,13 +2,13 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { premiumRestartHint } from "../lib/bootErrorHint";
 
 type Props = { children: ReactNode };
-type State = { error: Error | null; retryKey: number };
+type State = { error: Error | null; retryKey: number; showDetail: boolean };
 
 export class PremiumErrorBoundary extends Component<Props, State> {
-  state: State = { error: null, retryKey: 0 };
+  state: State = { error: null, retryKey: 0, showDetail: false };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    return { error };
+    return { error, showDetail: false };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -25,51 +25,33 @@ export class PremiumErrorBoundary extends Component<Props, State> {
 
   handleHashChange = () => {
     if (this.state.error) {
-      this.setState({ error: null, retryKey: this.state.retryKey + 1 });
+      this.setState({ error: null, retryKey: this.state.retryKey + 1, showDetail: false });
     }
   };
 
   handleRetry = () => {
-    this.setState((s) => ({ error: null, retryKey: s.retryKey + 1 }));
+    this.setState((s) => ({ error: null, retryKey: s.retryKey + 1, showDetail: false }));
   };
 
   render() {
     if (this.state.error) {
+      const detail = this.state.error.message?.trim() || "Bilinmeyen hata";
       return (
-        <div
-          className="pm-auth-page pm-auth-page--loading"
-          style={{ background: "#f1f5f9", minHeight: "100vh" }}
-        >
-          <div
-            className="pm-auth-card"
-            style={{
-              maxWidth: 520,
-              padding: 24,
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(15,23,42,.08)",
-            }}
-          >
-            <h2 style={{ margin: "0 0 12px", color: "#0f2744" }}>Arayüz yüklenemedi</h2>
-            <p style={{ margin: "0 0 16px", fontSize: 14, color: "#64748b", lineHeight: 1.5 }}>
+        <div className="pm-error-boundary">
+          <div className="pm-error-boundary-card" role="alert">
+            <h2 className="pm-error-boundary-title">Arayüz yüklenemedi</h2>
+            <p className="pm-error-boundary-desc">
               Beklenmeyen bir hata oluştu. Aşağıdaki düğmeyle yeniden deneyin veya {premiumRestartHint()}
             </p>
-            <pre
-              style={{
-                margin: "0 0 16px",
-                padding: 12,
-                borderRadius: 8,
-                background: "#fef2f2",
-                color: "#b91c1c",
-                fontSize: 12,
-                overflow: "auto",
-                whiteSpace: "pre-wrap",
-              }}
+            <details
+              className="pm-error-boundary-details"
+              open={this.state.showDetail}
+              onToggle={(e) => this.setState({ showDetail: (e.target as HTMLDetailsElement).open })}
             >
-              {this.state.error.message}
-            </pre>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <summary>Teknik detay</summary>
+              <pre className="pm-error-boundary-pre">{detail}</pre>
+            </details>
+            <div className="pm-error-boundary-actions">
               <button type="button" className="pm-btn pm-btn--primary" onClick={this.handleRetry}>
                 Tekrar dene
               </button>

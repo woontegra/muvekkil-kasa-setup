@@ -231,12 +231,8 @@ export function PremiumShell() {
       <div className="pm-main">
         <header className="pm-header">
           <div className="pm-header-left">
-            <h1 className="pm-page-header-title" style={{ margin: 0, fontSize: "var(--pm-font-size-xl)" }}>
-              {meta.title}
-            </h1>
-            <p className="pm-page-header-desc" style={{ margin: "2px 0 0", fontSize: "var(--pm-font-size-sm)" }}>
-              {meta.desc}
-            </p>
+            <h1 className="pm-page-header-title">{meta.title}</h1>
+            <p className="pm-page-header-desc">{meta.desc}</p>
           </div>
           <div className="pm-header-right">
             <PremiumTcmbHeaderRates />

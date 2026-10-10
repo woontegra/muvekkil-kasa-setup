@@ -129,7 +129,7 @@ export function LicenseTrialSetupPage() {
           <PremiumButton type="submit" className="pm-auth-submit" disabled={busy}>
             {busy ? "Hazırlanıyor…" : "Denemeyi Başlat"}
           </PremiumButton>
-          <Link to="/lisans" className="pm-btn pm-btn--ghost" style={{ textAlign: "center" }}>
+          <Link to="/lisans" className="pm-btn pm-btn--ghost pm-btn--block">
             Geri
           </Link>
         </form>

@@ -522,6 +522,20 @@
   gap: var(--pm-space-4);
 }
 
+.pm-auth-form--stack {
+  gap: var(--pm-space-3);
+}
+
+.pm-btn--block {
+  width: 100%;
+  text-align: center;
+  text-decoration: none !important;
+}
+
+.pm-btn--block:hover {
+  text-decoration: none !important;
+}
+
 .pm-form-field {
   display: flex;
   flex-direction: column;

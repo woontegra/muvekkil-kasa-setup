@@ -1,6 +1,6 @@
 {
   "name": "muvekkil-kasa-defteri",
-  "version": "0.1.11",
+  "version": "0.1.14",
   "description": "Woontegra Müvekkil Kasa Defteri — geliştirilebilir kaynak",
   "main": "./out/main/index.js",
   "private": true,
@@ -26,6 +26,10 @@
     "test:tahsilat-merkezi": "node scripts/run-tahsilat-merkezi-test.cjs",
     "test:mali-ekstre": "node scripts/run-mali-ekstre-test.cjs",
     "test:final-parity": "node scripts/run-final-parity-test.cjs",
+    "test:premium-nav": "node scripts/run-premium-nav-smoke-test.cjs",
+    "test:premium-smoke-gui": "node scripts/run-premium-smoke-gui-test.cjs",
+    "test:premium-smoke": "node scripts/run-premium-smoke-test.cjs",
+    "test:release-ready": "node scripts/run-release-ready-test.cjs",
     "test:ui-parity": "node scripts/run-ui-parity-source-test.cjs",
     "test:masraf-input": "node scripts/run-masraf-input-test.cjs",
     "test:input-modal": "node scripts/test-input-modal-regression.cjs",
@@ -94,7 +98,8 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "Woontegra Müvekkil Kasa Defteri"
     }
   }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Dosya } from "@shared/types/dosya";
 import type { Muvekkil } from "@shared/types/muvekkil";
+import { EmptyState } from "../components/EmptyState";
 import { PremiumDosyaFormModal } from "../components/dosya/PremiumDosyaFormModal";
 import { DosyaInfoPanel } from "../components/dosya/DosyaInfoPanel";
 import { DosyaKasaHareketleriTable } from "../components/dosya/DosyaKasaHareketleriTable";
@@ -54,7 +55,7 @@ export function DosyaDetailPage() {
       const [mu, d] = await Promise.all([window.api.muvekkilGet(mid), window.api.dosyaGet(did)]);
       setMuvekkil(mu);
       setDosya(d);
-      if (!d) setInfoError("Dosya bulunamadı.");
+      if (!d) setInfoError("Dosya bulunamadı veya silinmiş olabilir.");
     } catch {
       setInfoError("Dosya bilgileri yüklenemedi.");
     } finally {
@@ -97,11 +98,21 @@ export function DosyaDetailPage() {
 
   if (infoError || !dosya || !muvekkil) {
     return (
-      <div className="pm-dosya-page">
-        <p className="pm-form-error">{infoError ?? "Dosya yüklenemedi."}</p>
-        <button type="button" className="pm-btn pm-btn--ghost" onClick={() => void yukleInfo()}>
-          Yeniden dene
-        </button>
+      <div className="pm-dosya-page pm-page-enter">
+        <EmptyState
+          title="Dosya açılamadı"
+          description={infoError ?? "Dosya bulunamadı veya silinmiş olabilir."}
+          action={
+            <>
+              <button type="button" className="pm-btn pm-btn--primary" onClick={() => void yukleInfo()}>
+                Yeniden dene
+              </button>
+              <button type="button" className="pm-btn pm-btn--ghost" onClick={() => navigate(-1)}>
+                Geri dön
+              </button>
+            </>
+          }
+        />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { DosyaListeSatir } from "@shared/types/dosyaListe";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { EmptyState } from "../components/EmptyState";
+import { PremiumButton } from "../components/PremiumButton";
 import { formatDateTr } from "../lib/format";
 
 export function DosyalarPage() {
@@ -39,22 +40,45 @@ export function DosyalarPage() {
     void yukle();
   }, [yukle]);
 
+  const hasQuery = debouncedQ.trim().length > 0;
+
   return (
     <div className="pm-page-enter">
       <div className="pm-section-head">
         <h2 className="pm-section-title">Dosyalar</h2>
         <span className="pm-section-meta">{loading ? "Yükleniyor…" : `${total} dosya`}</span>
       </div>
-      <div className="pm-field" style={{ marginBottom: 12, maxWidth: 420 }}>
-        <input
-          className="pm-input"
-          placeholder="Dosya, müvekkil veya dosya no…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+
+      <div className="pm-filter-bar">
+        <div className="pm-field">
+          <label htmlFor="pm-dosya-search">Ara</label>
+          <input
+            id="pm-dosya-search"
+            className="pm-input"
+            placeholder="Dosya, müvekkil veya dosya no…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <PremiumButton type="button" variant="ghost" className="pm-btn--sm" onClick={() => navigate("/muvekkiller")}>
+          Müvekkilden yeni dosya
+        </PremiumButton>
       </div>
+
       {items.length === 0 && !loading ? (
-        <EmptyState title="Dosya yok" description="Aramanıza uygun dosya bulunamadı." />
+        <EmptyState
+          title={hasQuery ? "Sonuç bulunamadı" : "Henüz dosya yok"}
+          description={
+            hasQuery
+              ? "Aramanıza uygun dosya bulunamadı. Farklı bir terim deneyin."
+              : "Müvekkil kaydından yeni dosya oluşturabilirsiniz."
+          }
+          action={
+            <PremiumButton type="button" onClick={() => navigate("/muvekkiller")}>
+              Müvekkillere git
+            </PremiumButton>
+          }
+        />
       ) : (
         <div className="pm-ofis-table-wrap">
           <table className="pm-ofis-table">
@@ -79,10 +103,7 @@ export function DosyalarPage() {
                   <td>{d.durum}</td>
                   <td>{formatDateTr(d.guncellemeTarihi)}</td>
                   <td>
-                    <Link
-                      className="pm-btn pm-btn--sm pm-btn--ghost"
-                      to={`/muvekkil/${d.muvekkilId}/dosya/${d.id}`}
-                    >
+                    <Link className="pm-btn pm-btn--sm pm-btn--ghost" to={`/muvekkil/${d.muvekkilId}/dosya/${d.id}`}>
                       Aç
                     </Link>
                   </td>
@@ -92,8 +113,9 @@ export function DosyalarPage() {
           </table>
         </div>
       )}
+
       {totalPages > 1 ? (
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div className="pm-page-toolbar">
           <button type="button" className="pm-btn pm-btn--sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             Önceki
           </button>
@@ -107,9 +129,6 @@ export function DosyalarPage() {
             onClick={() => setPage((p) => p + 1)}
           >
             Sonraki
-          </button>
-          <button type="button" className="pm-btn pm-btn--sm pm-btn--ghost" onClick={() => navigate("/muvekkiller")}>
-            Müvekkilden yeni dosya
           </button>
         </div>
       ) : null}

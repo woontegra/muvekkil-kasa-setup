@@ -50,7 +50,16 @@ export type OfisKasaHareket = {
   kaynakId?: number | null;
 };
 
-export type OfisKasaHareketListeSatir = OfisKasaHareket & { hasCorrection?: boolean };
+export type OfisKasaHareketListeSatir = OfisKasaHareket & {
+  hasCorrection?: boolean;
+  economicTarih?: string;
+  orphanWarning?: boolean;
+  bagliIslemUyari?: string | null;
+  duzeltildi?: boolean;
+  bakiyeEtkisi?: number;
+  orijinalBelgeNo?: string | null;
+  duzeltenUserAd?: string | null;
+};
 
 export type OfisKasaListFilter = {
   tarihBas?: string;
@@ -142,6 +151,7 @@ export type OfisKasaUstOzet = {
   kasaBakiyesi: number;
   bakiyeler: Record<ParaBirimi, number>;
   byCurrency: Record<ParaBirimi, OfisKasaParaBirimiOzet>;
+  onayBekleyenSayisi?: number;
 };
 
 export type OfisKasaAnaSayfaOzet = {
@@ -160,6 +170,7 @@ export type OfisKasaAnaSayfaOzet = {
   kasaBakiyesi: number;
   bakiyeler: Record<ParaBirimi, number>;
   byCurrency: Record<ParaBirimi, OfisKasaParaBirimiOzet>;
+  onayBekleyenSayisi?: number;
 };
 
 export type OfisKasaRaporPaketi =
