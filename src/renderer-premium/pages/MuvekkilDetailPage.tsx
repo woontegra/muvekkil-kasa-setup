@@ -308,84 +308,51 @@ export function MuvekkilDetailPage() {
 
         </div>
 
-        <div className="pm-mvk-detail-actions">
-
-          <PremiumButton variant="ghost" type="button" onClick={() => setEditOpen(true)}>
-
-            Düzenle
-
-          </PremiumButton>
-
-          <PremiumButton type="button" onClick={openNewDosya}>
-
-            + Yeni dosya
-
-          </PremiumButton>
-
+        <div className="pm-mvk-detail-kpis" aria-label="Özet">
+          <div className="pm-mvk-stat-chip pm-mvk-stat-chip--primary">
+            <span className="pm-mvk-stat-value">{dosyalar.length}</span>
+            <span className="pm-mvk-stat-label">Toplam dosya</span>
+          </div>
+          <div className="pm-mvk-stat-chip pm-mvk-stat-chip--aktif">
+            <span className="pm-mvk-stat-value">{istatistik.aktif}</span>
+            <span className="pm-mvk-stat-label">Aktif</span>
+          </div>
+          <div className="pm-mvk-stat-chip">
+            <span className="pm-mvk-stat-value">{istatistik.kapandi}</span>
+            <span className="pm-mvk-stat-label">Kapandı</span>
+          </div>
+          <div className="pm-mvk-stat-chip">
+            <span className="pm-mvk-stat-value">{istatistik.pasif}</span>
+            <span className="pm-mvk-stat-label">Pasif</span>
+          </div>
         </div>
 
+        <div className="pm-mvk-detail-actions">
+          <PremiumButton variant="ghost" type="button" onClick={() => setEditOpen(true)}>
+            Düzenle
+          </PremiumButton>
+          <PremiumButton type="button" onClick={openNewDosya}>
+            + Yeni dosya
+          </PremiumButton>
+        </div>
       </header>
 
-
-
-      <div className="pm-mvk-detail-kpis pm-section-enter" aria-label="Özet">
-
-        <div className="pm-mvk-stat-chip pm-mvk-stat-chip--primary">
-
-          <span className="pm-mvk-stat-value">{dosyalar.length}</span>
-
-          <span className="pm-mvk-stat-label">Toplam dosya</span>
-
-        </div>
-
-        <div className="pm-mvk-stat-chip">
-
-          <span className="pm-mvk-stat-value">{istatistik.aktif}</span>
-
-          <span className="pm-mvk-stat-label">Aktif</span>
-
-        </div>
-
-        <div className="pm-mvk-stat-chip">
-
-          <span className="pm-mvk-stat-value">{istatistik.kapandi}</span>
-
-          <span className="pm-mvk-stat-label">Kapandı</span>
-
-        </div>
-
-        <div className="pm-mvk-stat-chip">
-
-          <span className="pm-mvk-stat-value">{istatistik.pasif}</span>
-
-          <span className="pm-mvk-stat-label">Pasif</span>
-
-        </div>
-
+      <div className="pm-mvk-detail-body pm-section-enter">
+        <MuvekkilDetailInfoAside muvekkil={m} />
+        <MuvekkilDetailDosyaTable
+          muvekkilId={mid}
+          dosyalar={dosyalar}
+          onNewDosya={openNewDosya}
+          onEditDosya={openEditDosya}
+        />
       </div>
 
-
-
-      <div className="pm-mvk-detail-body pm-section-enter">
-
-        <MuvekkilDetailInfoAside muvekkil={m} />
-
-        <MuvekkilDetailDosyaTable
-
-          muvekkilId={mid}
-
-          dosyalar={dosyalar}
-
-          onNewDosya={openNewDosya}
-
-          onEditDosya={openEditDosya}
-
-        />
-
+      <div className="pm-mvk-detail-lower pm-section-enter">
         <MuvekkilKarlilikSection muvekkilId={mid} />
+      </div>
 
+      <div className="pm-mvk-detail-randevu">
         <MuvekkilRandevularSection muvekkilId={mid} />
-
       </div>
 
 

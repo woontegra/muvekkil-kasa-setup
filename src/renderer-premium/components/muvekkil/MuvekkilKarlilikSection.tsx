@@ -72,6 +72,7 @@ export function MuvekkilKarlilikSection({ muvekkilId }: Props) {
     data == null ? null : scope === "donem" && data.buDonem ? data.buDonem : data.tumZamanlar;
 
   return (
+    <>
     <section className="pm-dosya-section pm-karlilik-section" aria-label="Müvekkil kârlılık">
       <div className="pm-section-head">
         <h2 className="pm-section-title">Kârlılık Analizi</h2>
@@ -161,42 +162,6 @@ export function MuvekkilKarlilikSection({ muvekkilId }: Props) {
           <p className="pm-karlilik-footnote">
             Tutarlar para birimine göre ayrıdır; TRY, USD ve EUR birleştirilmez. Net = ilgili PB geliri − aynı PB gideri.
           </p>
-          {KARLILIK_CURRENCIES.some((pb) => payload.kazancDagilimi[pb]) ? (
-            <div className="pm-karlilik-dagilim">
-              <h3 className="pm-section-title">Kazanç dağılımı</h3>
-              {KARLILIK_CURRENCIES.map((pb) => {
-                const d = payload.kazancDagilimi[pb];
-                if (!d) return null;
-                return (
-                  <div key={pb} className="pm-karlilik-dagilim-block">
-                    <h4 className="pm-karlilik-dagilim-pb">{pb}</h4>
-                    {d.enYuksekKazanc ? (
-                      <div className="pm-karlilik-dagilim-row">
-                        <span className="pm-muted">En yüksek:</span>
-                        <Link to={`/muvekkil/${muvekkilId}/dosya/${d.enYuksekKazanc.dosyaId}`}>
-                          {d.enYuksekKazanc.konuBasligi}
-                        </Link>
-                        <strong className={`pm-karlilik-stat-value--${netTone(Number(d.enYuksekKazanc.netKazanc))}`}>
-                          {formatMoney(Number(d.enYuksekKazanc.netKazanc), pb)}
-                        </strong>
-                      </div>
-                    ) : null}
-                    {d.enDusukKazanc && d.enDusukKazanc.dosyaId !== d.enYuksekKazanc?.dosyaId ? (
-                      <div className="pm-karlilik-dagilim-row">
-                        <span className="pm-muted">En düşük:</span>
-                        <Link to={`/muvekkil/${muvekkilId}/dosya/${d.enDusukKazanc.dosyaId}`}>
-                          {d.enDusukKazanc.konuBasligi}
-                        </Link>
-                        <strong className={`pm-karlilik-stat-value--${netTone(Number(d.enDusukKazanc.netKazanc))}`}>
-                          {formatMoney(Number(d.enDusukKazanc.netKazanc), pb)}
-                        </strong>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
         </>
       ) : null}
 
@@ -248,5 +213,49 @@ export function MuvekkilKarlilikSection({ muvekkilId }: Props) {
         </div>
       ) : null}
     </section>
+
+    <section className="pm-dosya-section pm-karlilik-dagilim-panel" aria-label="Kazanç dağılımı">
+      <div className="pm-section-head">
+        <h2 className="pm-section-title">Kazanç dağılımı</h2>
+      </div>
+      {payload && KARLILIK_CURRENCIES.some((pb) => payload.kazancDagilimi[pb]) ? (
+            <div className="pm-karlilik-dagilim">
+              {KARLILIK_CURRENCIES.map((pb) => {
+                const d = payload.kazancDagilimi[pb];
+                if (!d) return null;
+                return (
+                  <div key={pb} className="pm-karlilik-dagilim-block">
+                    <h4 className="pm-karlilik-dagilim-pb">{pb}</h4>
+                    {d.enYuksekKazanc ? (
+                      <div className="pm-karlilik-dagilim-row">
+                        <span className="pm-muted">En yüksek:</span>
+                        <Link to={`/muvekkil/${muvekkilId}/dosya/${d.enYuksekKazanc.dosyaId}`}>
+                          {d.enYuksekKazanc.konuBasligi}
+                        </Link>
+                        <strong className={`pm-karlilik-stat-value--${netTone(Number(d.enYuksekKazanc.netKazanc))}`}>
+                          {formatMoney(Number(d.enYuksekKazanc.netKazanc), pb)}
+                        </strong>
+                      </div>
+                    ) : null}
+                    {d.enDusukKazanc && d.enDusukKazanc.dosyaId !== d.enYuksekKazanc?.dosyaId ? (
+                      <div className="pm-karlilik-dagilim-row">
+                        <span className="pm-muted">En düşük:</span>
+                        <Link to={`/muvekkil/${muvekkilId}/dosya/${d.enDusukKazanc.dosyaId}`}>
+                          {d.enDusukKazanc.konuBasligi}
+                        </Link>
+                        <strong className={`pm-karlilik-stat-value--${netTone(Number(d.enDusukKazanc.netKazanc))}`}>
+                          {formatMoney(Number(d.enDusukKazanc.netKazanc), pb)}
+                        </strong>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+      ) : (
+        <p className="pm-muted pm-karlilik-dagilim-empty">Bu dönem için kazanç dağılımı yok.</p>
+      )}
+    </section>
+    </>
   );
 }

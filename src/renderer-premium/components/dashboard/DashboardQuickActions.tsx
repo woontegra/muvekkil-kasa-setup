@@ -1,24 +1,12 @@
 import { Link } from "react-router-dom";
-import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
-import { PeriodSegmentedSwitch } from "../overview/PeriodSegmentedSwitch";
 
 type Props = {
-  donemMode: AccountingPeriodMode;
-  donemBusy: boolean;
   licenseBusy: boolean;
   onNewMuvekkil: () => void;
-  onDonemChange: (mode: AccountingPeriodMode) => void;
   onLicenseCheck: () => void;
 };
 
-export function DashboardQuickActions({
-  donemMode,
-  donemBusy,
-  licenseBusy,
-  onNewMuvekkil,
-  onDonemChange,
-  onLicenseCheck,
-}: Props) {
+export function DashboardQuickActions({ licenseBusy, onNewMuvekkil, onLicenseCheck }: Props) {
   return (
     <section className="pm-overview-panel pm-quick-panel pm-dash-side-card" aria-label="Hızlı işlemler">
       <h2 className="pm-overview-panel-title">Hızlı işlemler</h2>
@@ -58,11 +46,6 @@ export function DashboardQuickActions({
           </span>
           Raporlar
         </Link>
-      </div>
-
-      <div className="pm-dash-period-block">
-        <span className="pm-quick-action-label">Hesap dönemi</span>
-        <PeriodSegmentedSwitch mode={donemMode} busy={donemBusy} onChange={onDonemChange} />
       </div>
 
       <button

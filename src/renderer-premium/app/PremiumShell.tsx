@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { usePremiumAuth } from "../context/PremiumAuthContext";
 import { usePremiumPageMeta } from "../context/PremiumPageMetaContext";
 import { PremiumTcmbHeaderRates } from "../components/kurlar/PremiumTcmbHeaderRates";
+import { PremiumHeaderPanels } from "../components/header/PremiumHeaderPanels";
 import { MKD_OVERVIEW_REFRESH } from "../lib/events";
 import { ofisKarsilamaAdi } from "../lib/settingsOffice";
 const NAV = [
@@ -231,8 +232,11 @@ export function PremiumShell() {
       <div className="pm-main">
         <header className="pm-header">
           <div className="pm-header-left">
-            <h1 className="pm-page-header-title">{meta.title}</h1>
-            <p className="pm-page-header-desc">{meta.desc}</p>
+            <div className="pm-header-titles">
+              <h1 className="pm-page-header-title">{meta.title}</h1>
+              <p className="pm-page-header-desc">{meta.desc}</p>
+            </div>
+            <PremiumHeaderPanels />
           </div>
           <div className="pm-header-right">
             <PremiumTcmbHeaderRates />

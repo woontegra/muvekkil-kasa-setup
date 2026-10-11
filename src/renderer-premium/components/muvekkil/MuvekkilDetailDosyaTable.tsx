@@ -30,9 +30,6 @@ export function MuvekkilDetailDosyaTable({ muvekkilId, dosyalar, onNewDosya, onE
                   : `${dosyalar.length} kayıtlı dosya`}
             </p>
           </div>
-          <PremiumButton type="button" onClick={onNewDosya}>
-            + Yeni dosya
-          </PremiumButton>
         </div>
 
         {dosyalar.length === 0 ? (

@@ -25,7 +25,7 @@ type Props = {
   value: number | null;
   loading?: boolean;
   format?: "money" | "count";
-  /** Only applied with format="count", e.g. "kayıt" → "6 kayıt". */
+  /** Yalnız format="count" için sayının arkasına eklenir (ör. "kayıt"). */
   unit?: string;
   signed?: boolean;
   tone?: FinanceKpiTone;
