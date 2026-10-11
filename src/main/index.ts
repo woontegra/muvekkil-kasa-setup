@@ -1,8 +1,11 @@
+import "./testPackageIsolation";
 import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { getDb, nowIso } from "./db/connection";
 import { runMigrations } from "./db/migrate";
 import { allMigrations } from "./migrations";
+import { cleanupBackupWorkspace } from "./services/backupCreate";
+import { cleanupRestoreWorkspace } from "./services/backupRestore";
 import { registerIpcHandlers, initAuthOnReady, initLicenseOnReady, initUpdateOnReady, scheduleAutoUpdateCheck } from "./ipc/handlers";
 import { installGracefulShutdown, runStartupPendingApprovalRecovery } from "./shutdown";
 import { createMainWindow } from "./window";
@@ -166,6 +169,8 @@ if (process.env.MKD_PREMIUM_NAV_TEST === "1") {
 let mainWindow: BrowserWindow | null = null;
 
 function initDatabase(): void {
+  cleanupRestoreWorkspace(app.getPath("userData"));
+  cleanupBackupWorkspace(app.getPath("userData"));
   const db = getDb();
   runMigrations(db, allMigrations, nowIso);
 }

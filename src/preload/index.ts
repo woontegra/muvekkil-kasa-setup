@@ -25,7 +25,7 @@ const api = {
   setAccountingPeriodMode: (mode: "MONTHLY" | "YEARLY") =>
     ipcRenderer.invoke(IPC.appSettings.setAccountingPeriodMode, mode),
   backupAl: () => ipcRenderer.invoke(IPC.backup.al),
-  backupGeriYukle: () => ipcRenderer.invoke(IPC.backup.geriYukle),
+  backupGeriYukle: (input?: unknown) => ipcRenderer.invoke(IPC.backup.geriYukle, input),
   ofisKasaList: (f: unknown) => ipcRenderer.invoke(IPC.ofisKasa.list, f),
   ofisKasaUstOzet: (opts?: { referenceDate?: string }) => ipcRenderer.invoke(IPC.ofisKasa.ustOzet, opts),
   ofisKasaAnaSayfaOzet: (opts?: { referenceDate?: string }) =>

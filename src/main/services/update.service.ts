@@ -9,6 +9,7 @@ import type {
   UpdateStatusSnapshot,
 } from "@shared/types/update";
 import { createPreUpdateBackup } from "./backup.service";
+import { IS_TEST_PACKAGE } from "../testPackageIsolation";
 
 function getAutoUpdater(): AppUpdater {
   const { autoUpdater } = electronUpdater;
@@ -239,6 +240,19 @@ export function dismissUpdatePrompt(): void {
 export async function checkForUpdates(source: UpdateCheckSource): Promise<UpdateActionResult> {
   lastCheckSource = source;
   bindUpdaterListeners();
+
+  if (IS_TEST_PACKAGE) {
+    log.info("[update] skip check (test package)", { source });
+    if (source === "manual") {
+      setStatus({
+        state: "not-available",
+        showPrompt: false,
+        infoMessage: "Test paketinde güncelleme kontrolü kapalıdır.",
+        errorMessage: null,
+      });
+    }
+    return { ok: true };
+  }
 
   if (!app.isPackaged) {
     if (process.env.MKD_UPDATE_MOCK === "1") {

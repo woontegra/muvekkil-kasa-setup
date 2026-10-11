@@ -413,6 +413,34 @@
   animation: pm-settings-backup-shimmer 1.2s ease-in-out infinite;
 }
 
+.pm-backup-secret-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-3);
+}
+
+.pm-backup-secret-note {
+  margin: 0;
+  font-size: var(--pm-font-size-xs);
+  color: var(--pm-text-muted);
+  line-height: 1.5;
+}
+
+.pm-backup-mode-link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pm-blue-500);
+  font-size: var(--pm-font-size-sm);
+  cursor: pointer;
+}
+
+.pm-backup-mode-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 @keyframes pm-settings-backup-shimmer {
   from {
     transform: translateX(-120%);

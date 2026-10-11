@@ -1,4 +1,4 @@
-import { ipcMain, app, shell } from "electron";
+import { ipcMain, app, shell, BrowserWindow } from "electron";
 import { pathToFileURL } from "node:url";
 import { IPC } from "@shared/ipc";
 import {
@@ -121,6 +121,7 @@ import {
 import type { ParaBirimi } from "@shared/lib/paraBirimi";
 import { tryResolveParaBirimi } from "@shared/lib/paraBirimi";
 import { backupDatabase, restoreDatabase } from "../services/backup.service";
+import { offerRestartAfterRestore } from "../restartAfterRestore";
 import { officeLogoDataUrl, officePickLogo, officeSettingsGet, officeSettingsSave } from "../services/office.service";
 import { getAccountingPeriodMode, setAccountingPeriodMode } from "../services/appSettings.service";
 import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
@@ -230,7 +231,12 @@ export function registerIpcHandlers(): void {
     setAccountingPeriodMode(mode),
   );
   ipcMain.handle(IPC.backup.al, () => backupDatabase());
-  ipcMain.handle(IPC.backup.geriYukle, () => restoreDatabase());
+  ipcMain.handle(IPC.backup.geriYukle, async (e, input) => {
+    const r = await restoreDatabase(input);
+    if (!r.ok) return r;
+    const restart = await offerRestartAfterRestore(BrowserWindow.fromWebContents(e.sender), r.autoBackupPath);
+    return { ...r, restart };
+  });
 
   ipcMain.handle(IPC.ofisKasa.list, (_e, f) => ofisKasaHareketList(f));
   ipcMain.handle(IPC.ofisKasa.ustOzet, (_e, opts?: { referenceDate?: string }) => ofisKasaUstOzet(opts));

@@ -8,11 +8,36 @@ import {
 
 let finalizeStarted = false;
 let finalizeCompleted = false;
+let relaunchRequested = false;
 
 function runFinalize(): PendingApprovalFinalizeResult {
   const result = finalizePendingApprovals();
   logPendingApprovalResult("kapanis", result);
   return result;
+}
+
+/**
+ * before-quit içinde preventDefault sonrası aynı olayda app.quit() çağrılırsa Electron kapanışı
+ * yarıda bırakır (macOS'ta pencere kapanır, süreç açık kalır); çıkış bir sonraki döngüye ertelenir.
+ */
+function quitOnNextTick(): void {
+  setImmediate(() => app.quit());
+}
+
+function completeShutdown(): void {
+  finalizeCompleted = true;
+  if (relaunchRequested) app.relaunch();
+  quitOnNextTick();
+}
+
+function cancelShutdown(): void {
+  finalizeStarted = false;
+  relaunchRequested = false;
+}
+
+/** Yeniden başlatma yalnızca kapanış kesinleştiğinde kaydedilir; kullanıcı kapanışı iptal ederse istek düşer. */
+export function requestRelaunchAfterQuit(): void {
+  relaunchRequested = true;
 }
 
 export function runStartupPendingApprovalRecovery(): void {
@@ -52,17 +77,16 @@ export function installGracefulShutdown(): void {
         });
         if (choice === 0) {
           finalizeStarted = false;
-          void app.quit();
+          quitOnNextTick();
           return;
         }
         if (choice === 2) {
-          finalizeStarted = false;
+          cancelShutdown();
           return;
         }
       }
       closeDb();
-      finalizeCompleted = true;
-      void app.quit();
+      completeShutdown();
     } catch (e) {
       console.error("[kapanis] finalize hatası", e);
       const choice = dialog.showMessageBoxSync({
@@ -76,7 +100,7 @@ export function installGracefulShutdown(): void {
       });
       if (choice === 0) {
         finalizeStarted = false;
-        void app.quit();
+        quitOnNextTick();
         return;
       }
       if (choice === 1) {
@@ -85,11 +109,10 @@ export function installGracefulShutdown(): void {
         } catch {
           /* ignore */
         }
-        finalizeCompleted = true;
-        void app.quit();
+        completeShutdown();
         return;
       }
-      finalizeStarted = false;
+      cancelShutdown();
     }
   });
 }

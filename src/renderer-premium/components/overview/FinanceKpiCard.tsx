@@ -25,6 +25,8 @@ type Props = {
   value: number | null;
   loading?: boolean;
   format?: "money" | "count";
+  /** Only applied with format="count", e.g. "kayıt" → "6 kayıt". */
+  unit?: string;
   signed?: boolean;
   tone?: FinanceKpiTone;
   icon?: ReactNode;
@@ -38,6 +40,7 @@ export function FinanceKpiCard({
   value,
   loading,
   format = "money",
+  unit,
   signed = false,
   tone = "default",
   icon,
@@ -45,7 +48,7 @@ export function FinanceKpiCard({
 }: Props) {
   const fmt =
     format === "count"
-      ? (n: number) => String(Math.round(n))
+      ? (n: number) => (unit ? `${Math.round(n)} ${unit}` : String(Math.round(n)))
       : signed
         ? formatSignedTry
         : formatTry;

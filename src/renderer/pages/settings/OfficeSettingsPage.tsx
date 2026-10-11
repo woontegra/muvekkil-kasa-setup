@@ -5,6 +5,7 @@ import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfficeSettings } from "@shared/types/office";
 import type { LicenseState } from "@shared/types/license";
 import { desktopLicenseActionCta, desktopLicenseKindLabel } from "@shared/lib/licenseExpiry";
+import { useAuth } from "../../context/AuthContext";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { LegacySettingsKalemleri } from "../../components/settings/LegacySettingsKalemleri";
 import { LegacySettingsDenetim, LegacySettingsKullanicilar } from "../LegacyParityPages";
@@ -64,6 +65,7 @@ export function OfficeSettingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state: licenseState, loading: licenseLoading, checkLicense, openRenewal } = useLicenseStatus();
+  const { refresh: refreshAuth } = useAuth();
   const [surum, setSurum] = useState("0.1.0");
   const [form, setForm] = useState(bosForm());
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -89,6 +91,9 @@ export function OfficeSettingsPage() {
 
   const [backupMesaj, setBackupMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [geriYukleToken, setGeriYukleToken] = useState<string | null>(null);
+  const [geriYukleSecret, setGeriYukleSecret] = useState("");
+  const [geriYukleKurtarma, setGeriYukleKurtarma] = useState(false);
   const [updateCheckBusy, setUpdateCheckBusy] = useState(false);
   const [updateCheckMesaj, setUpdateCheckMesaj] = useState<{ tip: "ok" | "err"; metin: string } | null>(null);
   const [lisansKontrolBusy, setLisansKontrolBusy] = useState(false);
@@ -327,6 +332,31 @@ export function OfficeSettingsPage() {
     }
   }
 
+  async function geriYuklemeSonucu(
+    r: Awaited<ReturnType<typeof window.api.backupGeriYukle>>,
+  ): Promise<void> {
+    if (r.ok) {
+      setGeriYukleToken(null);
+      setGeriYukleSecret("");
+      setBackupMesaj({
+        tip: "ok",
+        metin: `Geri yükleme tamamlandı. Önceki veritabanı yedeği: ${r.autoBackupPath}\n\nGüvenlik için oturum kapatıldı; lütfen yeniden giriş yapın.`,
+      });
+      await refreshAuth().catch(() => window.location.reload());
+      return;
+    }
+    if (r.needsSecret && r.token) {
+      setGeriYukleToken(r.token);
+      setBackupMesaj({ tip: "err", metin: r.error });
+      return;
+    }
+    setGeriYukleToken(null);
+    setGeriYukleSecret("");
+    if (!r.error.includes("iptal")) {
+      setBackupMesaj({ tip: "err", metin: r.error });
+    }
+  }
+
   async function yedektenGeriYukle() {
     const onay = window.confirm(
       "Seçilen yedek dosyası mevcut veritabanının üzerine yazılacaktır.\n\n" +
@@ -337,20 +367,22 @@ export function OfficeSettingsPage() {
     setBackupBusy(true);
     setBackupMesaj(null);
     try {
-      const r = await window.api.backupGeriYukle();
-      if (!r.ok) {
-        if (!r.error.includes("iptal")) {
-          setBackupMesaj({ tip: "err", metin: r.error });
-        }
-        return;
-      }
-      setBackupMesaj({
-        tip: "ok",
-        metin: `Geri yükleme tamamlandı. Önceki veritabanı yedeği: ${r.autoBackupPath}\n\nDeğişikliklerin tam yansıması için programı yeniden başlatmanız önerilir.`,
-      });
-      await yukle();
-    } catch (e) {
-      console.error("[backupGeriYukle]", e);
+      await geriYuklemeSonucu(await window.api.backupGeriYukle());
+    } catch {
+      setBackupMesaj({ tip: "err", metin: "Geri yükleme başarısız." });
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function sifreliGeriYukle() {
+    if (!geriYukleToken || !geriYukleSecret.trim()) return;
+    setBackupBusy(true);
+    try {
+      const secret = geriYukleKurtarma ? { recoveryKey: geriYukleSecret } : { password: geriYukleSecret };
+      await geriYuklemeSonucu(await window.api.backupGeriYukle({ token: geriYukleToken, ...secret }));
+    } catch {
+      setGeriYukleToken(null);
       setBackupMesaj({ tip: "err", metin: "Geri yükleme başarısız." });
     } finally {
       setBackupBusy(false);
@@ -731,13 +763,68 @@ export function OfficeSettingsPage() {
               {backupMesaj.metin}
             </div>
           ) : null}
+          {geriYukleToken ? (
+            <div className="desk-office-form-row">
+              <div className="field">
+                <label htmlFor="yedek-ac">{geriYukleKurtarma ? "Kurtarma anahtarı" : "Yedek parolası"}</label>
+                <input
+                  id="yedek-ac"
+                  className="desk-input"
+                  type={geriYukleKurtarma ? "text" : "password"}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={geriYukleSecret}
+                  onChange={(e) => setGeriYukleSecret(e.target.value)}
+                  disabled={backupBusy}
+                />
+              </div>
+            </div>
+          ) : null}
           <div className="desk-office-settings-actions desk-office-backup-actions">
-            <button type="button" className="btn btn-sm" onClick={() => void yedekAl()} disabled={backupBusy}>
-              Yedek Al
-            </button>
-            <button type="button" className="btn btn-sm" onClick={() => void yedektenGeriYukle()} disabled={backupBusy}>
-              Yedekten Geri Yükle
-            </button>
+            {geriYukleToken ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => void sifreliGeriYukle()}
+                  disabled={backupBusy || !geriYukleSecret.trim()}
+                >
+                  Şifreli Yedeği Geri Yükle
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    setGeriYukleKurtarma(!geriYukleKurtarma);
+                    setGeriYukleSecret("");
+                  }}
+                  disabled={backupBusy}
+                >
+                  {geriYukleKurtarma ? "Parola ile aç" : "Kurtarma anahtarı kullan"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    setGeriYukleToken(null);
+                    setGeriYukleSecret("");
+                    setBackupMesaj(null);
+                  }}
+                  disabled={backupBusy}
+                >
+                  Vazgeç
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="btn btn-sm" onClick={() => void yedekAl()} disabled={backupBusy}>
+                  Yedek Al
+                </button>
+                <button type="button" className="btn btn-sm" onClick={() => void yedektenGeriYukle()} disabled={backupBusy}>
+                  Yedekten Geri Yükle
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>

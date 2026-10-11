@@ -1,10 +1,16 @@
 import { app } from "electron";
 import { getDb, nowIso } from "../db/connection";
-import { computeDeviceHash, getDeviceName, getPlatformLabel } from "./deviceHash.service";
+import {
+  computeDeviceHash,
+  DeviceIdentityUnavailableError,
+  getDeviceName,
+  getPlatformLabel,
+} from "./deviceHash.service";
 import { isLicenseExpiredByDate, shouldRunAutomaticValidate } from "@shared/lib/licenseExpiry";
 import { DESKTOP_LICENSE_RENEWAL_LINK_URL } from "@shared/constants/licenseRenewal";
 import { requireTrialEmail, requireTurkishMobile, TRIAL_NETWORK_REQUIRED_MESSAGE } from "@shared/lib/trialContact";
 import { applyPaidOfflineFlag, evaluateLicenseRecord, isBusinessLicensePhase } from "./licenseEvaluate";
+import { classifyPaidValidateResponse, type PaidValidateOutcome } from "./licenseValidateResponse";
 import {
   APP_CODE_MUVEKKIL_KASA_DESKTOP,
   OFFLINE_GRACE_DAYS,
@@ -164,6 +170,26 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
   return (await res.json()) as T;
 }
 
+async function postPaidValidate(body: Record<string, unknown>): Promise<PaidValidateOutcome> {
+  let res: Response;
+  try {
+    res = await fetch(`${LICENSE_API_BASE}/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { kind: "transient", reason: "network" };
+  }
+  let parsed: unknown = null;
+  try {
+    parsed = await res.json();
+  } catch {
+    parsed = null;
+  }
+  return classifyPaidValidateResponse(res.status, parsed);
+}
+
 export async function licenseRequestRenewalLink(): Promise<
   { ok: true; purchaseUrl: string } | { ok: false; error: string }
 > {
@@ -226,7 +252,15 @@ export async function licenseStartTrial(input: LicenseStartTrialInput): Promise<
     return { ok: false, error: e instanceof Error ? e.message : "İletişim bilgileri geçersiz." };
   }
 
-  const deviceHash = computeDeviceHash();
+  let deviceHash: string;
+  try {
+    deviceHash = computeDeviceHash();
+  } catch (e) {
+    if (e instanceof DeviceIdentityUnavailableError) {
+      return { ok: false, error: e.message, code: e.code };
+    }
+    throw e;
+  }
   try {
     const out = await postJson<{
       success?: boolean;
@@ -289,7 +323,15 @@ export async function licenseActivate(input: LicenseActivateInput): Promise<Lice
     return { ok: false, error: "Lisans anahtarı ve aktivasyon şifresi zorunludur." };
   }
 
-  const deviceHash = computeDeviceHash();
+  let deviceHash: string;
+  try {
+    deviceHash = computeDeviceHash();
+  } catch (e) {
+    if (e instanceof DeviceIdentityUnavailableError) {
+      return { ok: false, error: e.message };
+    }
+    throw e;
+  }
   try {
     const out = await postJson<{
       success: boolean;
@@ -431,24 +473,19 @@ export async function licenseValidate(options?: LicenseValidateOptions): Promise
     return { ok: false, error: localState.message ?? "Lisans süreniz sona erdi.", locked: true };
   }
 
-  try {
-    const out = await postJson<{
-      valid: boolean;
-      message?: string;
-      expiresAt?: string | null;
-      offlineGraceDays?: number;
-      status?: string;
-    }>("/validate", {
-      licenseKey: record.licenseKey,
-      deviceHash: record.deviceHash,
-      appCode: APP_CODE_MUVEKKIL_KASA_DESKTOP,
-    });
+  const outcome = await postPaidValidate({
+    licenseKey: record.licenseKey,
+    deviceHash: record.deviceHash,
+    appCode: APP_CODE_MUVEKKIL_KASA_DESKTOP,
+  });
 
-    if (!out.valid) {
-      lockLocal();
-      return { ok: false, error: out.message ?? "Lisans doğrulanamadı.", locked: true };
-    }
+  if (outcome.kind === "rejected") {
+    lockLocal();
+    return { ok: false, error: outcome.body.message ?? "Lisans doğrulanamadı.", locked: true };
+  }
 
+  if (outcome.kind === "valid") {
+    const out = outcome.body;
     const validatedAt = new Date().toISOString();
     saveLocalLicense({
       kind: "paid",
@@ -467,39 +504,36 @@ export async function licenseValidate(options?: LicenseValidateOptions): Promise
       message: out.message ?? "Lisans doğrulandı.",
       expiresAt: out.expiresAt ?? record.expiresAt,
     };
-  } catch (e) {
-    const unreachable = e instanceof Error && e.message === "SERVER_UNREACHABLE";
-    const expired = isLicenseExpiredByDate(record.expiresAt);
+  }
 
-    if (expired) {
-      lockLocal();
-      return {
-        ok: false,
-        error: "Lisans süreniz sona erdi. Yenileme sonrası Lisansı Kontrol Et ile tekrar deneyin.",
-        locked: true,
-      };
-    }
-
-    const graceMs = record.offlineGraceUntil ? new Date(record.offlineGraceUntil).getTime() : 0;
-    if (graceMs >= Date.now()) {
-      lastOfflineDegraded = true;
-      return {
-        ok: true,
-        message: "Lisans sunucusuna ulaşılamadı. Son doğrulama bilgisiyle devam ediyorsunuz.",
-        expiresAt: record.expiresAt,
-        offlineDegraded: true,
-      };
-    }
-
-    lockLocal();
+  // Geçici hata: yerel kayıt (status, lastValidatedAt) değiştirilmez.
+  if (isLicenseExpiredByDate(record.expiresAt)) {
     return {
       ok: false,
-      error: unreachable
-        ? "Lisans sunucusuna ulaşılamadı ve çevrimdışı süre doldu."
-        : "Lisans doğrulanamadı ve çevrimdışı süre doldu.",
+      error: "Lisans süreniz sona erdi. Yenileme sonrası Lisansı Kontrol Et ile tekrar deneyin.",
       locked: true,
     };
   }
+
+  const graceMs = record.offlineGraceUntil ? new Date(record.offlineGraceUntil).getTime() : 0;
+  if (graceMs >= Date.now()) {
+    lastOfflineDegraded = true;
+    return {
+      ok: true,
+      message: "Lisans sunucusuna ulaşılamadı. Son doğrulama bilgisiyle devam ediyorsunuz.",
+      expiresAt: record.expiresAt,
+      offlineDegraded: true,
+    };
+  }
+
+  return {
+    ok: false,
+    error:
+      outcome.reason === "network"
+        ? "Lisans sunucusuna ulaşılamadı ve çevrimdışı süre doldu."
+        : "Lisans doğrulanamadı ve çevrimdışı süre doldu.",
+    locked: true,
+  };
 }
 
 /** Uygulama açılışında arka planda çağrılır (paid: günde en fazla 1 otomatik validate). */

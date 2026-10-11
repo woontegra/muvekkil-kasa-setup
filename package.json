@@ -42,6 +42,7 @@
     "build": "electron-vite build && electron-vite build --config electron.vite.premium.config.ts",
     "dist:win": "npm run build && electron-builder --win nsis",
     "dist:win:update": "node scripts/run-dist-win-update.cjs",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --arm64 --publish never",
     "release:update": "node scripts/run-release-update.cjs",
     "release:update:metadata": "node scripts/run-release-update-metadata.cjs",
     "split-css": "node scripts/split-css.mjs"
@@ -72,6 +73,7 @@
     "appId": "com.woontegra.muvekkilkasadefteri",
     "productName": "Woontegra Müvekkil Kasa Defteri",
     "artifactName": "Woontegra-Muvekkil-Kasa-Defteri-Setup-${version}.${ext}",
+    "afterPack": "scripts/mac-ascii-bundle-names.cjs",
     "directories": {
       "output": "release"
     },
@@ -100,6 +102,28 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Woontegra Müvekkil Kasa Defteri"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
+      ],
+      "artifactName": "Woontegra-Muvekkil-Kasa-Defteri-${version}-mac-${arch}.${ext}",
+      "category": "public.app-category.business",
+      "icon": "resources/icon.icns",
+      "hardenedRuntime": true,
+      "publish": [
+        {
+          "provider": "generic",
+          "url": "https://updates.woontegra.com/updates/muvekkil-kasa-defteri/macos"
+        }
+      ]
     }
   }
 }

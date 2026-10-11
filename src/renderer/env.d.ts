@@ -82,7 +82,10 @@ export type Api = {
   officePickLogo: () => Promise<{ ok: true; path: string } | { ok: false; error: string }>;
   officeLogoDataUrl: (filePath: string) => Promise<string | null>;
   backupAl: () => Promise<{ ok: true; path: string } | { ok: false; error: string }>;
-  backupGeriYukle: () => Promise<{ ok: true; autoBackupPath: string } | { ok: false; error: string }>;
+  backupGeriYukle: (input?: { token: string; password?: string; recoveryKey?: string }) => Promise<
+    | { ok: true; autoBackupPath: string; restart?: "restarting" | "later" | "manual" }
+    | { ok: false; error: string; needsSecret?: true; token?: string; fileName?: string }
+  >;
   getAccountingPeriodMode: () => Promise<AccountingPeriodMode>;
   setAccountingPeriodMode: (mode: AccountingPeriodMode) => Promise<AccountingPeriodMode>;
   ofisKasaList: (f: OfisKasaListFilter) => Promise<OfisKasaHareketListeSatir[]>;

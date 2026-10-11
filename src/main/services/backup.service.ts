@@ -1,9 +1,14 @@
 import { app, dialog } from "electron";
-import { copyFileSync, existsSync, mkdirSync, openSync, readSync, closeSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
-import { closeDb, getDb, getDbPath } from "../db/connection";
-
-const SQLITE_MAGIC = Buffer.from("SQLite format 3\0", "utf8");
+import { randomUUID } from "node:crypto";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+import { parseRecoveryKey } from "@shared/backupPassword";
+import { closeDb, getDb, getDbPath, nowIso } from "../db/connection";
+import { allMigrations } from "../migrations";
+import { createPlainBackup } from "./backupCreate";
+import { ENCRYPTED_BACKUP_EXTENSION, isEncryptedBackupFile, type BackupSecret } from "./backupCrypto";
+import { restoreFromBackupFile } from "./backupRestore";
+import { authLogout } from "./auth.service";
 
 function copySqliteBundle(srcBase: string, destBase: string): void {
   copyFileSync(srcBase, destBase);
@@ -13,29 +18,13 @@ function copySqliteBundle(srcBase: string, destBase: string): void {
   }
 }
 
-function removeWalShm(base: string): void {
-  for (const ext of ["-wal", "-shm"]) {
-    const p = base + ext;
-    if (existsSync(p)) unlinkSync(p);
-  }
-}
-
-/** Bozuk / SQLite olmayan dosyayı mevcut DB üzerine yazmadan önce reddeder. */
-function assertReadableSqliteFile(filePath: string): void {
-  const fd = openSync(filePath, "r");
-  try {
-    const buf = Buffer.alloc(SQLITE_MAGIC.length);
-    const n = readSync(fd, buf, 0, buf.length, 0);
-    if (n < SQLITE_MAGIC.length || !buf.equals(SQLITE_MAGIC)) {
-      throw new Error("INVALID_SQLITE");
-    }
-  } finally {
-    closeSync(fd);
-  }
+function isLiveDbFile(filePath: string): boolean {
+  const target = resolve(filePath);
+  const dbPath = resolve(getDbPath());
+  return [dbPath, dbPath + "-wal", dbPath + "-shm"].includes(target);
 }
 
 export async function backupDatabase(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  const dbPath = getDbPath();
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const { canceled, filePath } = await dialog.showSaveDialog({
     title: "Veritabanı yedeğini kaydet",
@@ -45,58 +34,131 @@ export async function backupDatabase(): Promise<{ ok: true; path: string } | { o
   if (canceled || !filePath?.trim()) {
     return { ok: false, error: "Yedekleme iptal edildi." };
   }
+  if (isLiveDbFile(filePath)) {
+    return { ok: false, error: "Yedek, programın kendi veritabanı dosyasının üzerine kaydedilemez." };
+  }
   try {
-    const db = getDb();
-    db.pragma("wal_checkpoint(TRUNCATE)");
-    copySqliteBundle(dbPath, filePath);
+    await createPlainBackup({ db: getDb(), destPath: filePath });
     return { ok: true, path: filePath };
   } catch (e) {
-    console.error("[backupDatabase]", e);
-    return { ok: false, error: "Yedek alınamadı." };
+    console.error("[backupDatabase]", e instanceof Error ? e.message : e);
+    return { ok: false, error: "Yedek alınamadı. Mevcut dosyalar değiştirilmedi." };
   }
 }
 
-export async function restoreDatabase(): Promise<
-  { ok: true; autoBackupPath: string } | { ok: false; error: string }
-> {
+type PendingRestore = { path: string; expiresAt: number; attempts: number };
+const pendingRestores = new Map<string, PendingRestore>();
+const PENDING_RESTORE_TTL_MS = 10 * 60 * 1000;
+const PENDING_RESTORE_MAX_ATTEMPTS = 5;
+
+export type RestoreDatabaseResult =
+  | { ok: true; autoBackupPath: string }
+  | { ok: false; error: string; needsSecret?: true; token?: string; fileName?: string };
+
+/** Bellekteki oturum eski veritabanının kullanıcı/rolünü taşır; yeni veritabanında geçerli sayılamaz. */
+function endSessionAfterRestore(): void {
+  authLogout();
+  pendingRestores.clear();
+}
+
+function restoreDeps() {
+  return {
+    dbPath: getDbPath(),
+    userDataDir: app.getPath("userData"),
+    getDb,
+    closeDb,
+    migrations: allMigrations,
+    nowIso,
+  };
+}
+
+/**
+ * Argümansız: dosya seçtirir; şifresiz eski yedek doğrudan geri yüklenir, şifreli yedekte token döner.
+ * { token, password } veya { token, recoveryKey }: seçilmiş şifreli yedeği geri yükler.
+ */
+export async function restoreDatabase(
+  input?: { token?: unknown; password?: unknown; recoveryKey?: unknown },
+): Promise<RestoreDatabaseResult> {
+  const now = Date.now();
+  for (const [t, p] of pendingRestores) if (p.expiresAt < now) pendingRestores.delete(t);
+
+  if (input && typeof input.token === "string") {
+    const token = input.token;
+    const pending = pendingRestores.get(token);
+    if (!pending) {
+      return { ok: false, error: "Yedek seçimi zaman aşımına uğradı. Lütfen dosyayı yeniden seçin." };
+    }
+    let secret: BackupSecret | null = null;
+    if (typeof input.password === "string" && input.password.length > 0) {
+      secret = { kind: "password", value: input.password };
+    } else if (typeof input.recoveryKey === "string" && input.recoveryKey.trim().length > 0) {
+      if (!parseRecoveryKey(input.recoveryKey)) {
+        return {
+          ok: false,
+          needsSecret: true,
+          token,
+          fileName: basename(pending.path),
+          error: "Kurtarma anahtarı biçimi geçersiz (32 karakter, 4'lü gruplar).",
+        };
+      }
+      secret = { kind: "recovery", value: input.recoveryKey };
+    }
+    if (!secret) {
+      return { ok: false, needsSecret: true, token, fileName: basename(pending.path), error: "Parola veya kurtarma anahtarı girin." };
+    }
+    const result = restoreFromBackupFile(pending.path, restoreDeps(), secret);
+    if (result.ok) {
+      endSessionAfterRestore();
+      return { ok: true, autoBackupPath: result.autoBackupPath };
+    }
+    if (result.code === "WRONG_SECRET") {
+      pending.attempts += 1;
+      if (pending.attempts >= PENDING_RESTORE_MAX_ATTEMPTS) {
+        pendingRestores.delete(token);
+        return { ok: false, error: `${result.error} Çok fazla hatalı deneme; dosyayı yeniden seçin.` };
+      }
+      return { ok: false, needsSecret: true, token, fileName: basename(pending.path), error: result.error };
+    }
+    pendingRestores.delete(token);
+    return { ok: false, error: result.error };
+  }
+
   const { canceled, filePaths } = await dialog.showOpenDialog({
     title: "Yedekten geri yükle",
-    filters: [{ name: "SQLite veritabanı", extensions: ["sqlite", "db"] }],
+    filters: [
+      { name: "Müvekkil Kasa yedeği", extensions: [ENCRYPTED_BACKUP_EXTENSION, "sqlite", "db"] },
+      { name: "Şifreli yedek", extensions: [ENCRYPTED_BACKUP_EXTENSION] },
+      { name: "SQLite veritabanı (eski yedek)", extensions: ["sqlite", "db"] },
+    ],
     properties: ["openFile"],
   });
   if (canceled || !filePaths[0]?.trim()) {
     return { ok: false, error: "Geri yükleme iptal edildi." };
   }
   const src = filePaths[0];
+  let encrypted = false;
   try {
-    assertReadableSqliteFile(src);
+    encrypted = isEncryptedBackupFile(src);
   } catch {
-    return { ok: false, error: "Seçilen dosya geçerli bir SQLite yedeği değil. Mevcut veritabanı değiştirilmedi." };
+    /* okunamayan dosya aşağıda reddedilir */
   }
-
-  const dbPath = getDbPath();
-  const backupDir = join(app.getPath("userData"), "auto-backups");
-  mkdirSync(backupDir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const autoBackupPath = join(backupDir, `oncesi-${stamp}.sqlite`);
-  try {
-    closeDb();
-    if (existsSync(dbPath)) {
-      copySqliteBundle(dbPath, autoBackupPath);
-    }
-    copyFileSync(src, dbPath);
-    removeWalShm(dbPath);
-    getDb();
-    return { ok: true, autoBackupPath };
-  } catch (e) {
-    console.error("[restoreDatabase]", e);
-    try {
-      getDb();
-    } catch {
-      /* ignore */
-    }
-    return { ok: false, error: "Geri yükleme başarısız." };
+  if (encrypted) {
+    const token = randomUUID();
+    pendingRestores.set(token, { path: src, expiresAt: now + PENDING_RESTORE_TTL_MS, attempts: 0 });
+    return {
+      ok: false,
+      needsSecret: true,
+      token,
+      fileName: basename(src),
+      error: "Bu yedek şifreli; parola veya kurtarma anahtarı gerekli.",
+    };
   }
+  const result = restoreFromBackupFile(src, restoreDeps());
+  if (result.ok) {
+    endSessionAfterRestore();
+    return { ok: true, autoBackupPath: result.autoBackupPath };
+  }
+  return { ok: false, error: result.error };
 }
 
 function stampForFolder(): string {

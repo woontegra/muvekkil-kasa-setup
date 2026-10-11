@@ -3,7 +3,7 @@
 .pm-ofis-page {
   display: flex;
   flex-direction: column;
-  gap: var(--pm-space-4);
+  gap: var(--pm-space-3);
   padding-bottom: var(--pm-space-6);
 }
 
@@ -27,14 +27,117 @@
   background: linear-gradient(135deg, var(--pm-surface) 0%, var(--pm-surface-elevated) 100%);
   border: 1px solid var(--pm-border);
   border-radius: var(--pm-radius-lg);
-  padding: var(--pm-space-4) var(--pm-space-5);
+  padding: var(--pm-space-3) var(--pm-space-5) var(--pm-space-4);
+}
+
+.pm-ofis-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-2) var(--pm-space-4);
+  margin-bottom: var(--pm-space-3);
 }
 
 .pm-ofis-period-label {
-  margin: 0 0 var(--pm-space-3);
+  margin: 0;
   font-size: var(--pm-font-size-sm);
   color: var(--pm-text-muted);
   font-weight: 500;
+}
+
+/* Para birimi bazında dönem özeti */
+
+.pm-ofis-pb-ozet {
+  margin-top: var(--pm-space-3);
+}
+
+.pm-ofis-pb-ozet-title {
+  margin: 0 0 var(--pm-space-2);
+  font-size: var(--pm-font-size-sm);
+  font-weight: 600;
+  color: var(--pm-text);
+}
+
+.pm-ofis-pb-ozet-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-surface);
+}
+
+.pm-ofis-pb-ozet-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.pm-ofis-pb-ozet-table th,
+.pm-ofis-pb-ozet-table td {
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--pm-border-subtle);
+  white-space: nowrap;
+}
+
+.pm-ofis-pb-ozet-table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pm-text-muted);
+  background: var(--pm-surface-elevated);
+}
+
+.pm-ofis-pb-ozet-table tbody th {
+  font-weight: 600;
+  color: var(--pm-text);
+}
+
+.pm-ofis-pb-ozet-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-ofis-pb-sembol {
+  display: inline-block;
+  min-width: 1.1em;
+  margin-right: 0.35rem;
+  color: var(--pm-text-muted);
+  text-align: center;
+}
+
+.pm-ofis-pb-ad {
+  margin-left: 0.4rem;
+  font-weight: 400;
+  color: var(--pm-text-muted);
+}
+
+.pm-ofis-pb-net {
+  font-weight: 600;
+}
+
+.pm-ofis-pb-net--positive {
+  color: #047857;
+}
+
+.pm-ofis-pb-net--negative {
+  color: #b91c1c;
+}
+
+.pm-ofis-pb-ozet-table tbody tr:last-child th,
+.pm-ofis-pb-ozet-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 720px) {
+  .pm-ofis-pb-ozet-table th,
+  .pm-ofis-pb-ozet-table td {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .pm-ofis-pb-ad {
+    display: none;
+  }
 }
 
 .pm-ofis-finance-grid {
