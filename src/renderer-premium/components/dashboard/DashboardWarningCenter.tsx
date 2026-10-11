@@ -6,45 +6,17 @@ import { formatDateTr, formatTry } from "../../lib/format";
 import { taksitDurumEtiket, taksitDurumTone } from "../../lib/vekalet";
 
 type Props = {
-  vadesiGecmis: number;
-  bugunOdenecek: number;
-  odenmemis: number;
-  smmBekleyen: number;
   vadesiGecmisListe: VekaletTaksitUyariSatir[];
   loading?: boolean;
 };
 
-export function DashboardWarningCenter({
-  vadesiGecmis,
-  bugunOdenecek,
-  odenmemis,
-  smmBekleyen,
-  vadesiGecmisListe,
-  loading,
-}: Props) {
+export function DashboardWarningCenter({ vadesiGecmisListe, loading }: Props) {
   return (
-    <section className="pm-overview-panel pm-alerts-panel pm-dash-side-card" aria-label="Taksit ve SMM uyarıları">
-      <h2 className="pm-overview-panel-title">Uyarı merkezi</h2>
-      <div className="pm-alert-metrics">
-        <div className={`pm-alert-metric pm-alert-metric--danger${vadesiGecmis > 0 ? " pm-alert-metric--pulse" : ""}`}>
-          <span className="pm-alert-metric-label">Vadesi geçmiş</span>
-          <span className="pm-alert-metric-value">{loading ? "…" : vadesiGecmis}</span>
-        </div>
-        <div className="pm-alert-metric pm-alert-metric--warning">
-          <span className="pm-alert-metric-label">Bugün ödenecek</span>
-          <span className="pm-alert-metric-value">{loading ? "…" : bugunOdenecek}</span>
-        </div>
-        <div className="pm-alert-metric pm-alert-metric--info">
-          <span className="pm-alert-metric-label">Ödenmemiş</span>
-          <span className="pm-alert-metric-value">{loading ? "…" : odenmemis}</span>
-        </div>
-        <div className="pm-alert-metric pm-alert-metric--smm">
-          <span className="pm-alert-metric-label">SMM bekleyen</span>
-          <span className="pm-alert-metric-value">{loading ? "…" : smmBekleyen}</span>
-        </div>
+    <section className="pm-overview-panel pm-alerts-panel pm-dash-side-card" aria-label="Vadesi geçmiş taksitler">
+      <div className="pm-alerts-head">
+        <h2 className="pm-overview-panel-title">Uyarı merkezi</h2>
+        <h3 className="pm-alerts-subtitle">Vadesi geçmiş taksitler</h3>
       </div>
-
-      <h3 className="pm-alerts-subtitle">Vadesi geçmiş taksitler</h3>
       <div className="pm-alerts-table-wrap">
         {loading ? (
           <div className="pm-mvk-skeleton-list" aria-hidden>

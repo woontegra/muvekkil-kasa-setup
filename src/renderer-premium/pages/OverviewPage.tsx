@@ -1,25 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import type { AccountingPeriodMode } from "@shared/types/accountingPeriod";
 import type { OfisKasaAnaSayfaOzet } from "@shared/types/ofisKasa";
 import type { MuvekkilListItem, MuvekkilPagedResult } from "@shared/types/muvekkil";
 import type { VekaletTaksitUyariSatir } from "@shared/types/vekalet";
-import type { TahsilatMerkeziOzet } from "@shared/types/tahsilatMerkezi";
 import { toLocalYmd } from "@shared/lib/accountingPeriod";
-import { canMaliKontrol } from "@shared/lib/rolYetki";
-import { usePremiumLicense } from "../context/PremiumLicenseContext";
 import { usePremiumToast } from "../context/PremiumToastContext";
-import { usePremiumAuth } from "../context/PremiumAuthContext";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { PeriodSegmentedSwitch } from "../components/overview/PeriodSegmentedSwitch";
-import { MaliKontrolCard } from "../components/overview/MaliKontrolCard";
 import { BugunkuRandevularWidget } from "../components/randevu/BugunkuRandevularWidget";
 import { PremiumButton } from "../components/PremiumButton";
 import { PremiumMuvekkilFormModal } from "../components/muvekkil/PremiumMuvekkilFormModal";
 import { CurrencyBalanceCards } from "../components/currency/CurrencyFields";
 import { DashboardMetricCard } from "../components/dashboard/DashboardMetricCard";
 import { DashboardWorkflowCard } from "../components/dashboard/DashboardWorkflowCard";
-import { DashboardQuickActions } from "../components/dashboard/DashboardQuickActions";
 import { DashboardWarningCenter } from "../components/dashboard/DashboardWarningCenter";
 import { DashboardClientTable } from "../components/dashboard/DashboardClientTable";
 import { MKD_MUVEKKIL_CHANGED, MKD_OVERVIEW_REFRESH } from "../lib/events";
@@ -39,13 +33,8 @@ function donemNetEtiket(n: number): string {
 }
 
 export function OverviewPage() {
-  const { checkLicense } = usePremiumLicense();
   const { showToast } = usePremiumToast();
-  const { user } = usePremiumAuth();
   const location = useLocation();
-  const maliKontrolAcik = canMaliKontrol(user?.rol);
-
-  const [tahsilatOzet, setTahsilatOzet] = useState<TahsilatMerkeziOzet | null>(null);
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 350);
@@ -69,7 +58,6 @@ export function OverviewPage() {
   const [yanOzetLoading, setYanOzetLoading] = useState(true);
   const [yanOzetHata, setYanOzetHata] = useState<string | null>(null);
 
-  const [lisansKontrol, setLisansKontrol] = useState(false);
   const [muvekkilModalOpen, setMuvekkilModalOpen] = useState(false);
   const [viewingRefDate, setViewingRefDate] = useState<string | null>(null);
   const lastYmdRef = useRef(toLocalYmd());
@@ -129,18 +117,11 @@ export function OverviewPage() {
       }
       hadError = true;
     }
-    try {
-      const tahsil = await window.api.tahsilatMerkeziOzet();
-      if (mountedRef.current) setTahsilatOzet(tahsil);
-    } catch {
-      if (mountedRef.current) setTahsilatOzet(null);
-    } finally {
-      if (mountedRef.current) {
-        setYanOzetLoading(false);
-        if (hadError) {
-          setYanOzetHata("Taksit uyarıları yüklenemedi.");
-          showToast("error", "Taksit uyarıları yüklenemedi.");
-        }
+    if (mountedRef.current) {
+      setYanOzetLoading(false);
+      if (hadError) {
+        setYanOzetHata("Taksit uyarıları yüklenemedi.");
+        showToast("error", "Taksit uyarıları yüklenemedi.");
       }
     }
   }, [showToast]);
@@ -274,23 +255,6 @@ export function OverviewPage() {
     }
   }
 
-  async function lisansKontrolEt() {
-    if (lisansKontrol) return;
-    setLisansKontrol(true);
-    try {
-      const result = await checkLicense();
-      if (result.ok) {
-        showToast("success", result.message?.trim() || "Lisans doğrulandı.");
-      } else {
-        showToast("error", result.error?.trim() || "Lisans doğrulanamadı.");
-      }
-    } catch {
-      showToast("error", "Lisans kontrolü sırasında bir hata oluştu.");
-    } finally {
-      setLisansKontrol(false);
-    }
-  }
-
   function yeniMuvekkilAc() {
     setMuvekkilModalOpen(true);
   }
@@ -306,11 +270,7 @@ export function OverviewPage() {
 
   return (
     <div className="pm-overview pm-overview--enter">
-      <div className="pm-overview-hero">
-        <div className="pm-overview-hero-copy">
-          <h2 className="pm-overview-welcome">Genel Bakış</h2>
-          <p className="pm-overview-sub">Ofis özeti ve güncel durum</p>
-        </div>
+      <div className="pm-overview-toolbar">
         <div className="pm-overview-hero-actions">
           <PeriodSegmentedSwitch mode={donemMode} busy={donemModeBusy} onChange={(m) => void donemModeSec(m)} />
           <PremiumButton onClick={yeniMuvekkilAc}>+ Yeni müvekkil</PremiumButton>
@@ -326,13 +286,13 @@ export function OverviewPage() {
         </div>
       )}
 
-      <section className="pm-finance-strip" aria-label="Finans özeti">
+      <section className="pm-finance-strip pm-overview-finance" aria-label="Finans özeti">
         <div className="pm-finance-strip-head">
           <h2 className="pm-overview-section-title">
             {ofisOzet?.period?.etiket ? `Ofis kasası — ${ofisOzet.period.etiket}` : "Ofis kasası özeti"}
           </h2>
         </div>
-        <div className="pm-finance-grid">
+        <div className="pm-finance-grid pm-overview-finance-grid">
           <DashboardMetricCard
             label="Devreden bakiye"
             hint="Önceki dönemden"
@@ -370,21 +330,14 @@ export function OverviewPage() {
             staggerIndex={3}
             icon={<span>∑</span>}
           />
+        </div>
+        <h3 className="pm-overview-subsection-title">Güncel kasa bakiyeleri</h3>
+        <div className="pm-finance-grid pm-overview-balance-grid">
           <CurrencyBalanceCards bakiyeler={ofisOzet?.bakiyeler} loading={ofisOzetLoading} />
-          <DashboardMetricCard
-            label="SMM bekleyen tahsilat"
-            hint="Kesim bekleyen kayıt"
-            value={smmBekleyenSayisi}
-            loading={ofisOzetLoading || yanOzetLoading}
-            format="count"
-            tone="pending"
-            staggerIndex={5}
-            icon={<span>!</span>}
-          />
         </div>
       </section>
 
-      <div className="pm-overview-grid">
+      <div className="pm-overview-body">
         <div className="pm-overview-main">
           <section className="pm-dash-workflow" aria-label="Güncel iş akışı">
             <div className="pm-dash-workflow-head">
@@ -458,79 +411,31 @@ export function OverviewPage() {
               />
             </div>
           </section>
-
-          <DashboardClientTable
-            items={sonuc}
-            loading={listeYukleniyor}
-            total={listeTotal}
-            totalPages={listeTotalPages}
-            page={page}
-            pageSize={pageSize}
-            query={q}
-            onPageChange={setPage}
-            onPageSizeChange={(n) => {
-              setPage(1);
-              setPageSize(n);
-            }}
-            onNewMuvekkil={yeniMuvekkilAc}
-            onQueryChange={handleQueryChange}
-            error={listeHata}
-            onRetry={() => void yukleKayitListesi()}
-          />
         </div>
 
-        <aside className="pm-overview-side">
-          <DashboardQuickActions
-            donemMode={donemMode}
-            donemBusy={donemModeBusy}
-            licenseBusy={lisansKontrol}
-            onNewMuvekkil={yeniMuvekkilAc}
-            onDonemChange={(m) => void donemModeSec(m)}
-            onLicenseCheck={() => void lisansKontrolEt()}
-          />
-          <MaliKontrolCard enabled={maliKontrolAcik} />
-          <section className="pm-overview-panel pm-tahsilat-side pm-dash-side-card" aria-label="Tahsilat Merkezi özeti">
-            <div className="pm-overview-panel-head">
-              <h3 className="pm-overview-panel-title">Tahsilat Merkezi</h3>
-              <Link to="/tahsilat-merkezi" className="pm-btn pm-btn--sm pm-btn--ghost">
-                Aç
-              </Link>
-            </div>
-            <div className="pm-tahsilat-side-grid">
-              {yanOzetLoading && !tahsilatOzet ? (
-                <p className="pm-muted">Yükleniyor…</p>
-              ) : (
-                <>
-                  <div className="pm-tahsilat-side-stat pm-tahsilat-side-stat--danger">
-                    <span className="pm-tahsilat-side-label">Gecikmiş</span>
-                    <strong className="pm-tahsilat-side-value">{tahsilatOzet?.gecikmisAdet ?? 0}</strong>
-                  </div>
-                  <div className="pm-tahsilat-side-stat pm-tahsilat-side-stat--pending">
-                    <span className="pm-tahsilat-side-label">Bugün</span>
-                    <strong className="pm-tahsilat-side-value">{tahsilatOzet?.bugunAdet ?? 0}</strong>
-                  </div>
-                  <div className="pm-tahsilat-side-stat pm-tahsilat-side-stat--info">
-                    <span className="pm-tahsilat-side-label">7 gün</span>
-                    <strong className="pm-tahsilat-side-value">{tahsilatOzet?.yakin7GunAdet ?? 0}</strong>
-                  </div>
-                  <div className="pm-tahsilat-side-stat pm-tahsilat-side-stat--neutral">
-                    <span className="pm-tahsilat-side-label">Kısmi</span>
-                    <strong className="pm-tahsilat-side-value">{tahsilatOzet?.kismiAdet ?? 0}</strong>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-          <DashboardWarningCenter
-            vadesiGecmis={taksitOzet.vadesiGecmis}
-            bugunOdenecek={taksitOzet.bugunOdenecek}
-            odenmemis={taksitOzet.odenmemis}
-            smmBekleyen={smmBekleyenSayisi}
-            vadesiGecmisListe={vadesiGecmisTaksitler}
-            loading={yanOzetLoading}
-          />
+        <div className="pm-overview-panels">
+          <DashboardWarningCenter vadesiGecmisListe={vadesiGecmisTaksitler} loading={yanOzetLoading} />
           <BugunkuRandevularWidget />
-        </aside>
+        </div>
+
+        <DashboardClientTable
+          items={sonuc}
+          loading={listeYukleniyor}
+          total={listeTotal}
+          totalPages={listeTotalPages}
+          page={page}
+          pageSize={pageSize}
+          query={q}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => {
+            setPage(1);
+            setPageSize(n);
+          }}
+          onNewMuvekkil={yeniMuvekkilAc}
+          onQueryChange={handleQueryChange}
+          error={listeHata}
+          onRetry={() => void yukleKayitListesi()}
+        />
       </div>
 
       <PremiumMuvekkilFormModal

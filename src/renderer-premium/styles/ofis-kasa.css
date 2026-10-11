@@ -67,6 +67,104 @@
   font-size: var(--pm-font-size-sm);
 }
 
+/* Para birimi bazında dönem özeti */
+
+.pm-ofis-currency-period {
+  margin-top: var(--pm-space-3);
+}
+
+.pm-ofis-currency-period-title {
+  margin: 0 0 var(--pm-space-2);
+  font-size: var(--pm-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-ofis-currency-period-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-surface);
+}
+
+.pm-ofis-currency-period-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: var(--pm-font-size-xs);
+}
+
+.pm-ofis-currency-period-table th,
+.pm-ofis-currency-period-table td {
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--pm-border-subtle);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.pm-ofis-currency-period-table thead th {
+  font-weight: 600;
+  color: var(--pm-text-muted);
+  background: var(--pm-bg-subtle, var(--pm-surface-hover));
+}
+
+.pm-ofis-currency-period-table tbody th {
+  font-weight: 600;
+  color: var(--pm-text);
+}
+
+.pm-ofis-currency-period-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-ofis-currency-period-table tbody td.num {
+  font-size: var(--pm-font-size-sm);
+  color: var(--pm-text);
+}
+
+.pm-ofis-currency-period-table tbody td.pm-ofis-gelir {
+  color: var(--pm-success, #059669);
+}
+
+.pm-ofis-currency-period-table tbody td.pm-ofis-gider {
+  color: var(--pm-danger, #dc2626);
+}
+
+.pm-ofis-currency-period-table tbody tr:last-child th,
+.pm-ofis-currency-period-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pm-ofis-currency-period-code {
+  display: inline-block;
+  min-width: 2.6em;
+}
+
+.pm-ofis-currency-period-name {
+  margin-left: var(--pm-space-2);
+  font-weight: 400;
+  color: var(--pm-text-muted);
+}
+
+@media (max-width: 720px) {
+  .pm-ofis-currency-period-name {
+    display: none;
+  }
+
+  .pm-ofis-currency-period-table {
+    min-width: 0;
+  }
+
+  .pm-ofis-currency-period-table th,
+  .pm-ofis-currency-period-table td {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
 /* Filtreler */
 
 .pm-ofis-filters-body {

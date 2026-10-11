@@ -13,7 +13,8 @@ import { buildMaliKontrolNavigateUrl, canNavigateMaliKontrolUyari } from "@share
 import { PremiumModal } from "../modal/PremiumModal";
 import { PremiumButton } from "../PremiumButton";
 
-type Props = { enabled: boolean };
+/** `refreshKey` değiştiğinde (0 hariç) uyarılar yeniden yüklenir. */
+type Props = { enabled: boolean; refreshKey?: number };
 type ViewMode = "tum" | "kritik" | "uyari" | "bilgi";
 
 function parseUyariTutar(raw: string | null): number | null {
@@ -38,7 +39,7 @@ function formatUyariTutar(tutar: string | null, paraBirimi: ParaBirimi | null): 
   return formatMoney(n, paraBirimi ?? "TRY");
 }
 
-export function MaliKontrolCard({ enabled }: Props) {
+export function MaliKontrolCard({ enabled, refreshKey = 0 }: Props) {
   const navigate = useNavigate();
   const [data, setData] = useState<MaliKontrolResponse | null>(null);
   const [open, setOpen] = useState(false);
@@ -66,6 +67,10 @@ export function MaliKontrolCard({ enabled }: Props) {
   useEffect(() => {
     void yukle();
   }, [yukle]);
+
+  useEffect(() => {
+    if (refreshKey > 0) void yukle();
+  }, [refreshKey, yukle]);
 
   const filtered = useMemo(() => {
     if (!data) return [] as MaliKontrolUyari[];

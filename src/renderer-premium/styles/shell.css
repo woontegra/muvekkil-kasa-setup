@@ -693,6 +693,132 @@
   font-size: var(--pm-font-size-sm);
 }
 
+/* Üst çubuk hızlı paneller (Hızlı İşlemler / Mali Kontrol / Tahsilat) */
+.pm-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-4);
+}
+
+.pm-header-titles {
+  min-width: 0;
+}
+
+.pm-header-titles .pm-page-header-title,
+.pm-header-titles .pm-page-header-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-hq {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pm-hq-item {
+  position: relative;
+}
+
+.pm-hq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--pm-border-soft);
+  border-radius: var(--pm-radius-md);
+  background: var(--pm-bg-elevated);
+  color: var(--pm-navy-800);
+  font-size: var(--pm-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--pm-duration-fast) var(--pm-ease),
+    border-color var(--pm-duration-fast) var(--pm-ease),
+    color var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-hq-chip-icon {
+  display: inline-flex;
+  color: var(--pm-blue-600);
+}
+
+.pm-hq-chip:hover,
+.pm-hq-item--open .pm-hq-chip {
+  background: var(--pm-blue-50);
+  border-color: #bfdbfe;
+  color: var(--pm-blue-600);
+}
+
+.pm-hq-chip:focus-visible {
+  outline: 2px solid var(--pm-blue-600);
+  outline-offset: 2px;
+}
+
+.pm-hq-pop {
+  position: fixed;
+  z-index: 1500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--pm-radius-lg);
+  box-shadow: 0 16px 40px rgba(15, 39, 68, 0.18);
+  animation: pm-hq-pop-in var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-hq-pop > .pm-overview-panel {
+  margin: 0;
+  padding: var(--pm-space-4);
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.pm-hq-pop .pm-dash-side-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes pm-hq-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-hq-pop {
+    animation: none;
+  }
+}
+
+@media (max-width: 1280px) {
+  .pm-hq-chip {
+    padding: 0 8px;
+  }
+
+  .pm-hq-chip-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .pm-header-left .pm-page-header-desc {
+    display: none;
+  }
+}
+
 .pm-page-toolbar {
   display: flex;
   align-items: center;

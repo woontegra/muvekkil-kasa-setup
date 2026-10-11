@@ -1,6 +1,6 @@
 import { FinanceKpiCard } from "../overview/FinanceKpiCard";
 import type { OfisKasaUstOzet } from "@shared/types/ofisKasa";
-import { PARA_BIRIMLERI } from "@shared/lib/paraBirimi";
+import { PARA_BIRIMLERI, PARA_BIRIMI_LABEL, formatMoney } from "@shared/lib/paraBirimi";
 import { CurrencyBalanceCards } from "../currency/CurrencyFields";
 import { FinancePeriodSelector } from "../mali/FinancePeriodSelector";
 import type { FinancePeriodRange } from "@shared/lib/financePeriodRange";
@@ -92,36 +92,51 @@ export function OfisKasaSummaryStrip({
         <FinanceKpiCard
           label="Onay bekleyen"
           value={onayBekleyen}
+          format="count"
+          unit="kayıt"
           loading={loading}
           staggerIndex={6}
           tone="neutral"
         />
       </div>
       {ust?.byCurrency ? (
-        <div className="pm-ofis-currency-period-grid pm-stagger-item">
-          {PARA_BIRIMLERI.map((pb) => {
-            const o = ust.byCurrency[pb];
-            if (!o) return null;
-            return (
-              <div key={pb} className="pm-ofis-currency-period-card" data-pb={pb}>
-                <h3 className="pm-ofis-currency-period-title">{pb} dönem özeti</h3>
-                <dl className="pm-ofis-currency-period-dl">
-                  <div>
-                    <dt>Gelir</dt>
-                    <dd>{loading ? "…" : o.donemGelir.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</dd>
-                  </div>
-                  <div>
-                    <dt>Gider</dt>
-                    <dd>{loading ? "…" : o.donemGider.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</dd>
-                  </div>
-                  <div>
-                    <dt>Net</dt>
-                    <dd>{loading ? "…" : o.donemNetSonucu.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</dd>
-                  </div>
-                </dl>
-              </div>
-            );
-          })}
+        <div className="pm-ofis-currency-period pm-stagger-item">
+          <h3 className="pm-ofis-currency-period-title" id="pm-ofis-currency-period-title">
+            Para Birimi Bazında Dönem Özeti
+          </h3>
+          <div className="pm-ofis-currency-period-wrap">
+            <table className="pm-ofis-currency-period-table" aria-labelledby="pm-ofis-currency-period-title">
+              <thead>
+                <tr>
+                  <th scope="col">Para Birimi</th>
+                  <th scope="col" className="num">Gelir</th>
+                  <th scope="col" className="num">Gider</th>
+                  <th scope="col" className="num">Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PARA_BIRIMLERI.map((pb) => {
+                  const o = ust.byCurrency[pb];
+                  if (!o) return null;
+                  const netTone =
+                    o.donemNetSonucu > 0 ? "pm-ofis-gelir" : o.donemNetSonucu < 0 ? "pm-ofis-gider" : undefined;
+                  return (
+                    <tr key={pb} data-pb={pb}>
+                      <th scope="row">
+                        <span className="pm-ofis-currency-period-code">{pb}</span>
+                        <span className="pm-ofis-currency-period-name">{PARA_BIRIMI_LABEL[pb]}</span>
+                      </th>
+                      <td className="num">{loading ? "…" : formatMoney(o.donemGelir, pb)}</td>
+                      <td className="num">{loading ? "…" : formatMoney(o.donemGider, pb)}</td>
+                      <td className={netTone ? `num ${netTone}` : "num"}>
+                        {loading ? "…" : formatMoney(o.donemNetSonucu, pb)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </section>

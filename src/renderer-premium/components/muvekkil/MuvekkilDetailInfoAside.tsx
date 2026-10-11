@@ -2,12 +2,14 @@ import type { ReactNode } from "react";
 import type { Muvekkil } from "@shared/types/muvekkil";
 import { muvekkilAlanDegeri } from "../../lib/muvekkil";
 
-type InfoRow = { icon: ReactNode; label: string; value: string };
+type InfoRow = { icon: ReactNode; label: string; value: string; wide?: boolean; span2?: boolean };
 
-function InfoField({ icon, label, value }: InfoRow) {
+function InfoField({ icon, label, value, wide, span2 }: InfoRow) {
   const bos = value === "—";
   return (
-    <div className={`pm-mvk-info-field${bos ? " pm-mvk-info-field--empty" : ""}`}>
+    <div
+      className={`pm-mvk-info-field${bos ? " pm-mvk-info-field--empty" : ""}${wide ? " pm-mvk-info-field--wide" : ""}${span2 && !bos ? " pm-mvk-info-field--span2" : ""}`}
+    >
       <div className="pm-mvk-info-field-icon" aria-hidden>
         {icon}
       </div>
@@ -94,10 +96,11 @@ function gercekAlanlar(m: Muvekkil): InfoRow[] {
 type Props = { muvekkil: Muvekkil };
 
 export function MuvekkilDetailInfoAside({ muvekkil: m }: Props) {
+  const tuzel = m.muvekkilTuru === "TUZEL_KISI";
   const alanlar: InfoRow[] = [
-    ...(m.muvekkilTuru === "TUZEL_KISI" ? tuzelAlanlar(m) : gercekAlanlar(m)),
-    { icon: <IconMail />, label: "E-posta", value: muvekkilAlanDegeri(m.eposta) },
-    { icon: <IconPin />, label: "Adres", value: muvekkilAlanDegeri(m.adres) },
+    ...(tuzel ? tuzelAlanlar(m) : gercekAlanlar(m)),
+    { icon: <IconMail />, label: "E-posta", value: muvekkilAlanDegeri(m.eposta), span2: true },
+    { icon: <IconPin />, label: "Adres", value: muvekkilAlanDegeri(m.adres), wide: tuzel },
   ];
 
   const not = (m.not ?? "").trim();
@@ -105,7 +108,7 @@ export function MuvekkilDetailInfoAside({ muvekkil: m }: Props) {
   return (
     <aside className="pm-mvk-detail-aside" aria-label="Müvekkil bilgileri">
       <h3 className="pm-mvk-detail-panel-title">İletişim bilgileri</h3>
-      <div className="pm-mvk-info-grid">
+      <div className={`pm-mvk-info-grid pm-mvk-info-grid--${tuzel ? "tuzel" : "gercek"}`}>
         {alanlar.map((a) => (
           <InfoField key={a.label} {...a} />
         ))}

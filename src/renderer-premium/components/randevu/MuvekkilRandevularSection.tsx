@@ -15,6 +15,7 @@ export function MuvekkilRandevularSection({ muvekkilId }: Props) {
   const [formOpen, setFormOpen] = useState(false);
   const [selected, setSelected] = useState<Randevu | null>(null);
   const [editing, setEditing] = useState<Randevu | null>(null);
+  const [tab, setTab] = useState<"yaklasan" | "gecmis">("yaklasan");
 
   const yukle = useCallback(async () => {
     setLoading(true);
@@ -74,20 +75,35 @@ export function MuvekkilRandevularSection({ muvekkilId }: Props) {
     <section className="pm-randevu-section pm-section-enter" aria-label="Randevular">
       <div className="pm-randevu-section-head">
         <h3 className="pm-randevu-section-title">Randevular</h3>
+        <div className="pm-kalem-tabs pm-randevu-section-tabs" role="tablist" aria-label="Randevu listesi">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "yaklasan"}
+            className={`pm-kalem-tab${tab === "yaklasan" ? " pm-kalem-tab--active" : ""}`}
+            onClick={() => setTab("yaklasan")}
+          >
+            Yaklaşan
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "gecmis"}
+            className={`pm-kalem-tab${tab === "gecmis" ? " pm-kalem-tab--active" : ""}`}
+            onClick={() => setTab("gecmis")}
+          >
+            Geçmiş
+          </button>
+        </div>
         <PremiumButton type="button" variant="ghost" onClick={() => setFormOpen(true)}>
           + Randevu Oluştur
         </PremiumButton>
       </div>
-
-      <h4 className="pm-randevu-section-title" style={{ marginBottom: 8, fontSize: "var(--pm-font-size-sm)" }}>
-        Yaklaşan
-      </h4>
-      {renderList(upcoming, "Yaklaşan randevu yok.")}
-
-      <h4 className="pm-randevu-section-title" style={{ margin: "16px 0 8px", fontSize: "var(--pm-font-size-sm)" }}>
-        Geçmiş
-      </h4>
-      {renderList(past, "Geçmiş randevu yok.")}
+      <div role="tabpanel">
+        {tab === "yaklasan"
+          ? renderList(upcoming, "Yaklaşan randevu yok.")
+          : renderList(past, "Geçmiş randevu yok.")}
+      </div>
 
       <RandevuFormModal
         open={formOpen}
