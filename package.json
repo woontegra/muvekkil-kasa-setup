@@ -1,6 +1,6 @@
 {
   "name": "muvekkil-kasa-defteri",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Woontegra Müvekkil Kasa Defteri — geliştirilebilir kaynak",
   "main": "./out/main/index.js",
   "private": true,
@@ -42,7 +42,9 @@
     "build": "electron-vite build && electron-vite build --config electron.vite.premium.config.ts",
     "dist:win": "npm run build && electron-builder --win nsis",
     "dist:win:update": "node scripts/run-dist-win-update.cjs",
-    "dist:mac": "npm run build && electron-builder --mac dmg zip --arm64 --publish never",
+    "dist:mac": "node scripts/release-mac.cjs",
+    "release:mac:preflight": "node scripts/release-mac.cjs --preflight",
+    "test:mac-release": "node scripts/test-mac-release.cjs",
     "release:update": "node scripts/run-release-update.cjs",
     "release:update:metadata": "node scripts/run-release-update-metadata.cjs",
     "split-css": "node scripts/split-css.mjs"
@@ -124,6 +126,9 @@
           "url": "https://updates.woontegra.com/updates/muvekkil-kasa-defteri/macos"
         }
       ]
+    },
+    "dmg": {
+      "sign": true
     }
   }
 }
